@@ -14,21 +14,21 @@ local offset = UDim2.fromOffset
 local scale = UDim2.fromScale
 local center = Vector2.new(0.5, 0.5)
 local colors = {
-	shell = rgb(11, 16, 23),
-	rail = rgb(14, 21, 30),
-	card = rgb(21, 31, 42),
-	control = rgb(30, 43, 56),
-	stroke = rgb(48, 63, 78),
-	text = rgb(237, 245, 249),
-	secondary = rgb(158, 180, 194),
-	ink = rgb(14, 27, 32),
-	scrim = rgb(3, 7, 11),
+	shell = rgb(8, 7, 10),
+	rail = rgb(11, 9, 13),
+	card = rgb(18, 14, 20),
+	control = rgb(26, 18, 24),
+	stroke = rgb(62, 35, 48),
+	text = rgb(246, 241, 245),
+	secondary = rgb(177, 157, 169),
+	ink = rgb(20, 7, 12),
+	scrim = rgb(4, 2, 5),
 }
 
 local palettes = {
-	{ name = "Menta", color = rgb(112, 243, 206), shade = rgb(27, 73, 70) },
-	{ name = "Violeta", color = rgb(208, 170, 255), shade = rgb(62, 43, 86) },
-	{ name = "Hielo", color = rgb(158, 219, 255), shade = rgb(33, 64, 88) },
+	{ name = "Ryou", color = rgb(226, 55, 94), shade = rgb(76, 16, 38) },
+	{ name = "Carmín", color = rgb(244, 82, 111), shade = rgb(96, 23, 43) },
+	{ name = "Humo", color = rgb(190, 166, 179), shade = rgb(53, 42, 50) },
 }
 local sizes = {
 	{ name = "Chico", factor = 0.91 },
@@ -284,7 +284,7 @@ function Ryou.mount(playerGui, configuration)
 			BackgroundColor3 = palettes[1].color, BackgroundTransparency = 0.87,
 		})
 	end
-	local heroMark = label(hero, "HeroMark", "R", 134, {
+	local heroMark = label(hero, "HeroMark", "R", 146, {
 		AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -14, 0.5, 0),
 		Size = offset(119, 148), TextTransparency = 0.84,
 		Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Right,
@@ -292,7 +292,7 @@ function Ryou.mount(playerGui, configuration)
 	label(hero, "Greeting", "Hola, " .. displayName, 26, {
 		Position = offset(16, 19), Size = UDim2.new(1, -34, 0, 36), Font = Enum.Font.GothamBold,
 	})
-	label(hero, "HeroDescription", "Tema, tamaño y movimiento", 13, {
+	label(hero, "HeroDescription", "Crimson Noir · interfaz Ryou", 13, {
 		Position = offset(16, 58), Size = UDim2.new(1, -35, 0, 22), TextColor3 = colors.secondary,
 	})
 	local customize = button(hero, "Personalizar", "Personalizar  ›", {
