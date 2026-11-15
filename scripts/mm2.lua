@@ -510,7 +510,7 @@ local ryouUIEnv = (getgenv and getgenv()) or _G
 local XERO_MM2_UI_URL = tostring(
     ryouUIEnv.RYOU_UI_URL
     or ryouUIEnv.NOX_UI_URL
-    or "https://raw.githubusercontent.com/xero-scripts-repo/xero-scripts/refs/heads/main/main%20(3).lua"
+    or "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/ui/compat.lua"
 )
 
 local ok, result = pcall(function()
@@ -9063,7 +9063,7 @@ do
     local skyEnv = (getgenv and getgenv()) or _G
     local SKYBOX_REPO_BASE = tostring(
         skyEnv.XERO_SKYBOX_BASE_URL
-        or "https://raw.githubusercontent.com/OnyxDevv/Onyx-web/refs/heads/main/skyboxes"
+        or "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/skyboxes"
     ):gsub("/+$", "")
 
     local customAsset = getcustomasset
