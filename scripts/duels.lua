@@ -1093,7 +1093,7 @@ local xeroRepoRaw = "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/
 local ryouUIOverride = tostring(xeroUIEnv.RYOU_UI_URL or "")
 local function xeroAssetDefault(key, value)
     local current = xeroUIEnv[key]
-    if current == nil or (type(current) == "string" and current:find("OnyxDevv/Onyx-web", 1, true)) then
+    if current == nil then
         xeroUIEnv[key] = value
     end
 end
