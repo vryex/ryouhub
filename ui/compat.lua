@@ -32,13 +32,13 @@ end
 local THEME_BACKGROUNDS = {
     Xero = {
     URL = tostring(XeroEnv.XERO_BACKGROUND_URL or
-        "https://raw.githubusercontent.com/OnyxDevv/Onyx-web/refs/heads/main/assets/backgrounds/rei-brush.png"),
+        "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/assets/backgrounds/rei-brush.png"),
     CACHE = tostring(XeroEnv.XERO_BACKGROUND_CACHE or
         "Ryou/Assets/rei_brush_v1.png"),
     },
     Blanco = {
         URL = tostring(XeroEnv.XERO_BACKGROUND_LIGHT_URL or XeroEnv.XERO_BACKGROUND_WHITE_URL or
-            "https://raw.githubusercontent.com/OnyxDevv/Onyx-web/refs/heads/main/assets/backgrounds/xero_anime_white.png"),
+            "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/assets/backgrounds/xero_anime_white.png"),
         CACHE = tostring(XeroEnv.XERO_BACKGROUND_LIGHT_CACHE or XeroEnv.XERO_BACKGROUND_WHITE_CACHE or
             "Ryou/Assets/xero_anime_white_v1.png"),
     },
@@ -260,7 +260,7 @@ end
 -- PNGs live in /icons on GitHub. They are downloaded lazily once, cached locally
 -- and reused by every control/tab that declares Icon = "name".
 local XERO_ICON_BASE_URL = tostring(XeroEnv.XERO_ICON_BASE_URL or
-    "https://raw.githubusercontent.com/OnyxDevv/Onyx-web/refs/heads/main/icons/")
+    "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/icons/")
 local XERO_ICON_CACHE_FOLDER = tostring(XeroEnv.XERO_ICON_CACHE_FOLDER or "Ryou/Icons/v1")
 
 local XERO_ICON_FILES = {
