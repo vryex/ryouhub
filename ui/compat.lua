@@ -17,7 +17,7 @@ local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local TextService = game:GetService("TextService")
 
--- XeroHub themes + backgrounds --------------------------------------------
+-- Ryou themes + backgrounds --------------------------------------------
 local XeroEnv = (getgenv and getgenv()) or _G
 local XERO_BACKGROUND_FOLDER = "Ryou/Assets"
 
@@ -34,13 +34,13 @@ local THEME_BACKGROUNDS = {
     URL = tostring(XeroEnv.XERO_BACKGROUND_URL or
         "https://raw.githubusercontent.com/OnyxDevv/Onyx-web/refs/heads/main/assets/backgrounds/rei-brush.png"),
     CACHE = tostring(XeroEnv.XERO_BACKGROUND_CACHE or
-        "XeroHub/Assets/rei_brush_v1.png"),
+        "Ryou/Assets/rei_brush_v1.png"),
     },
     Blanco = {
         URL = tostring(XeroEnv.XERO_BACKGROUND_LIGHT_URL or XeroEnv.XERO_BACKGROUND_WHITE_URL or
             "https://raw.githubusercontent.com/OnyxDevv/Onyx-web/refs/heads/main/assets/backgrounds/xero_anime_white.png"),
         CACHE = tostring(XeroEnv.XERO_BACKGROUND_LIGHT_CACHE or XeroEnv.XERO_BACKGROUND_WHITE_CACHE or
-            "XeroHub/Assets/xero_anime_white_v1.png"),
+            "Ryou/Assets/xero_anime_white_v1.png"),
     },
 }
 
@@ -256,7 +256,7 @@ local function customAssetFunction()
     return type(fn) == "function" and fn or nil
 end
 
--- XeroHub global icon registry ------------------------------------------------
+-- Ryou global icon registry ------------------------------------------------
 -- PNGs live in /icons on GitHub. They are downloaded lazily once, cached locally
 -- and reused by every control/tab that declares Icon = "name".
 local XERO_ICON_BASE_URL = tostring(XeroEnv.XERO_ICON_BASE_URL or
@@ -603,7 +603,7 @@ end
 local function invoke(callback, ...)
     if type(callback) ~= "function" then return end
     local ok, err = pcall(callback, ...)
-    if not ok then warn("[XeroHub] " .. tostring(err)) end
+    if not ok then warn("[Ryou] " .. tostring(err)) end
 end
 local function disconnect(bucket)
     for _,connection in ipairs(bucket) do connection:Disconnect() end
@@ -1464,7 +1464,7 @@ function Nox:CreateWindow(options)
         Title=plain(o.Title or "Ryou"),_brandBaseTitle=plain(o.Title or "Ryou"),Author=o.Author or "by Ryou",UIScale=1,_navOrder=0,
         ThemeName=resolvedTheme,ThemeDef=getThemeDefinition(resolvedTheme),_themeGeneration=0}
     self.Window=w; env.__NOX_UI=w
-    local gui=new("ScreenGui",{Name="XeroHubUI",ResetOnSpawn=false,IgnoreGuiInset=true,
+    local gui=new("ScreenGui",{Name="RyouUI",ResetOnSpawn=false,IgnoreGuiInset=true,
         DisplayOrder=2147483000,ZIndexBehavior=Enum.ZIndexBehavior.Sibling},parent)
     -- El panel usa todo el viewport real. Así puede tocar Y=0 y no queda atrapado
     -- debajo del inset de la barra superior de Roblox.
@@ -1474,7 +1474,7 @@ function Nox:CreateWindow(options)
         gui.SafeAreaCompatibility=Enum.SafeAreaCompatibility.None
     end)
     pcall(function() gui.OnTopOfCoreBlur=true end)
-    local launcherGui=new("ScreenGui",{Name="XeroHubLauncher",ResetOnSpawn=false,IgnoreGuiInset=true,
+    local launcherGui=new("ScreenGui",{Name="RyouLauncher",ResetOnSpawn=false,IgnoreGuiInset=true,
         DisplayOrder=2147483001,ZIndexBehavior=Enum.ZIndexBehavior.Sibling},parent)
     pcall(function()
         launcherGui.ScreenInsets=Enum.ScreenInsets.None
@@ -1840,7 +1840,7 @@ function Nox:CreateWindow(options)
         local clusterWidth=math.max(82,clusterRight-clusterX-4)
         titleCluster.Position=UDim2.fromOffset(clusterX,phone and 10 or 10)
         titleCluster.Size=UDim2.fromOffset(clusterWidth,24)
-        brand.Text=(tiny and "RYOU") or (w._brandBaseTitle or "XeroHub")
+        brand.Text=(tiny and "RYOU") or (w._brandBaseTitle or "Ryou")
         brand.TextSize=phone and 13 or 15
         statusLabel.TextSize=phone and 10 or 11
 
