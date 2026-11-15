@@ -4,14 +4,13 @@ on:
   push:
     branches:
       - main
-    paths:
-      - ".github/workflows/migrate-assets.yml"
 
 permissions:
   contents: write
 
 jobs:
   migrate:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Ryou
