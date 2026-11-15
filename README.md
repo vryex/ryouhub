@@ -22,7 +22,7 @@ getgenv().RYOU_UI_URL = "https://tu-endpoint/ryou-ui.lua"
 
 antes de ejecutar el build.
 
-Mientras este repositorio siga **privado**, no conviene usar su URL RAW como default para `game:HttpGet`, porque una petición sin autenticación recibirá 404. Los builds conservan compatibilidad temporal con la fuente pública anterior y aplican el branding Ryou en runtime.
+Los builds y assets ya apuntan a este repositorio. Para que `game:HttpGet` y los loadstrings RAW funcionen sin autenticación, el repositorio debe estar en visibilidad pública.
 
 ## Desarrollo
 
@@ -32,3 +32,20 @@ Consulta `PROJECT_CONTEXT.md` antes de hacer cambios grandes.
 
 **Creador:** Ryou  
 **TikTok:** @x0brxn
+
+
+## Loadstrings
+
+Duels:
+
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/scripts/duels.lua"))()
+```
+
+MM2:
+
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/scripts/mm2.lua"))()
+```
+
+La UI compartida vive en `ui/compat.lua` y todos los assets runtime están alojados en este mismo repositorio.
