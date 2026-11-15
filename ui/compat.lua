@@ -3,8 +3,8 @@
 -- Internal legacy identifiers are intentionally preserved for compatibility.
 
 --[[
-    Ryou UI / Obsidian 2.9 — polish + compact sliders + open-button ghost
-    Creator: Kev
+    Ryou UI / Crimson Noir — signature interface
+    Creator: Ryou
     Native Roblox interface. No WindUI runtime or icon render loops; remote icons use lazy local cache.
     Compatible with the control API used by Ryou game scripts.
     Usage: local UI = require(module); local Window = UI:CreateWindow({...})
@@ -26,15 +26,15 @@ local function canonicalThemeName(name)
     if key == "blanco" or key == "white" or key == "light" or key == "claro" then
         return "Blanco"
     end
-    return "Xero"
+    return "Xero" -- internal compatibility key for the Ryou dark theme
 end
 
 local THEME_BACKGROUNDS = {
     Xero = {
     URL = tostring(XeroEnv.XERO_BACKGROUND_URL or
-        "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/assets/backgrounds/rei-brush.png"),
+        "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/assets/backgrounds/xero_sakura.png"),
     CACHE = tostring(XeroEnv.XERO_BACKGROUND_CACHE or
-        "Ryou/Assets/rei_brush_v1.png"),
+        "Ryou/Assets/ryou_sakura_v2.png"),
     },
     Blanco = {
         URL = tostring(XeroEnv.XERO_BACKGROUND_LIGHT_URL or XeroEnv.XERO_BACKGROUND_WHITE_URL or
@@ -46,82 +46,82 @@ local THEME_BACKGROUNDS = {
 
 local THEMES = {
     Xero = {
-        Name = "Xero",
+        Name = "Ryou",
         Colors = {
-            Window = Color3.fromRGB(9,9,9), Panel = Color3.fromRGB(14,14,14),
-            Row = Color3.fromRGB(20,20,20), Field = Color3.fromRGB(11,11,11),
-            Hover = Color3.fromRGB(29,29,29), Border = Color3.fromRGB(42,42,42),
-            Text = Color3.fromRGB(242,242,242), Muted = Color3.fromRGB(157,157,157),
-            Faint = Color3.fromRGB(103,103,103), White = Color3.fromRGB(255,255,255),
+            Window = Color3.fromRGB(8,7,10), Panel = Color3.fromRGB(13,11,16),
+            Row = Color3.fromRGB(19,16,22), Field = Color3.fromRGB(10,9,13),
+            Hover = Color3.fromRGB(31,23,31), Border = Color3.fromRGB(55,38,49),
+            Text = Color3.fromRGB(246,241,245), Muted = Color3.fromRGB(177,157,169),
+            Faint = Color3.fromRGB(111,88,102), White = Color3.fromRGB(226,55,94),
         },
         Glass = {
-            Root = 0.04,
-            Sidebar = 0.18,
-            Row = 0.26,
-            Field = 0.30,
-            Button = 0.24,
-            NavIdle = 0.34,
-            NavHover = 0.20,
-            NavActive = 0.12,
-            Popup = 0.12,
+            Root = 0.02,
+            Sidebar = 0.10,
+            Row = 0.18,
+            Field = 0.22,
+            Button = 0.16,
+            NavIdle = 0.26,
+            NavHover = 0.14,
+            NavActive = 0.05,
+            Popup = 0.08,
         },
         Visuals = {
-            RootBase = Color3.fromRGB(7,7,7),
-            RootStroke = Color3.fromRGB(48,48,48),
+            RootBase = Color3.fromRGB(7,6,9),
+            RootStroke = Color3.fromRGB(74,40,55),
             RootGradient = {
-                Color3.fromRGB(5,5,5),
-                Color3.fromRGB(10,10,10),
-                Color3.fromRGB(4,4,4),
+                Color3.fromRGB(6,5,8),
+                Color3.fromRGB(16,10,15),
+                Color3.fromRGB(8,6,10),
             },
-            AnimeImageTransparency = 0.06,
-            AnimeShadeColor = Color3.fromRGB(0,0,0),
-            AnimeShadeTransparency = 0.64,
-            AnimeShadeStops = {0.00, 0.10, 0.30},
-            SidebarBase = Color3.fromRGB(10,10,10),
-            SidebarStroke = Color3.fromRGB(28,28,28),
-            SearchStroke = Color3.fromRGB(32,32,32),
-            OpenStroke = Color3.fromRGB(66,66,66),
-            OpenButtonBase = Color3.fromRGB(9,9,9),
-            BackdropGlowA = Color3.fromRGB(26,26,28),
-            BackdropGlowB = Color3.fromRGB(20,20,24),
-            BackdropWatermarkTransparency = 0.974,
-            GridColor = Color3.fromRGB(255,255,255),
-            GridVTransparency = 0.952,
-            GridHTransparency = 0.962,
-            NavButtonIdle = Color3.fromRGB(10,10,10),
-            NavButtonHover = Color3.fromRGB(18,18,18),
-            ResizeGuideTransparency = 0.32,
-            ControlStroke = Color3.fromRGB(31,31,31),
-            FieldStroke = Color3.fromRGB(30,30,30),
-            ButtonBase = Color3.fromRGB(14,14,14),
-            ButtonStroke = Color3.fromRGB(30,30,30),
-            DropdownStroke = Color3.fromRGB(28,28,28),
-            PopupStroke = Color3.fromRGB(66,66,66),
-            GothicShell = Color3.fromRGB(255,255,255),
-            GothicShellStroke = Color3.fromRGB(72,72,78),
-            GothicGlow = Color3.fromRGB(26,26,32),
-            GothicBar = Color3.fromRGB(64,64,72),
-            GothicCorner = Color3.fromRGB(86,86,92),
-            GothicWatermark = Color3.fromRGB(255,255,255),
-            GothicWatermarkTransparency = 0.952,
-            GothicRow = Color3.fromRGB(11,11,14),
-            GothicStroke = Color3.fromRGB(42,42,48),
-            GothicDesc = Color3.fromRGB(178,178,178),
-            GothicBadgeText = Color3.fromRGB(252,252,252),
-            GothicBadgeBackground = Color3.fromRGB(18,18,18),
-            GothicBadgeStroke = Color3.fromRGB(54,54,58),
-            SliderValueBackground = Color3.fromRGB(11,11,11),
-            SliderValueText = Color3.fromRGB(242,242,242),
-            SliderValueStroke = Color3.fromRGB(42,42,42),
-            SliderRail = Color3.fromRGB(18,18,18),
-            SliderRailStroke = Color3.fromRGB(37,37,40),
-            SliderTrack = Color3.fromRGB(43,43,46),
-            SliderTrackGradient = {Color3.fromRGB(36,36,39),Color3.fromRGB(48,48,51),Color3.fromRGB(36,36,39)},
-            SliderFill = Color3.fromRGB(232,232,232),
-            SliderFillGradient = {Color3.fromRGB(255,255,255),Color3.fromRGB(200,200,204)},
-            SliderHalo = Color3.fromRGB(255,255,255),
-            SliderThumb = Color3.fromRGB(248,248,248),
-            SliderThumbStroke = Color3.fromRGB(72,72,76),
+            AnimeImageTransparency = 0.12,
+            AnimeShadeColor = Color3.fromRGB(8,2,6),
+            AnimeShadeTransparency = 0.54,
+            AnimeShadeStops = {0.00, 0.12, 0.42},
+            SidebarBase = Color3.fromRGB(10,8,12),
+            SidebarStroke = Color3.fromRGB(50,30,41),
+            SearchStroke = Color3.fromRGB(58,34,46),
+            OpenStroke = Color3.fromRGB(104,42,61),
+            OpenButtonBase = Color3.fromRGB(13,9,13),
+            BackdropGlowA = Color3.fromRGB(76,16,38),
+            BackdropGlowB = Color3.fromRGB(37,12,28),
+            BackdropWatermarkTransparency = 0.935,
+            GridColor = Color3.fromRGB(226,55,94),
+            GridVTransparency = 0.965,
+            GridHTransparency = 0.975,
+            NavButtonIdle = Color3.fromRGB(12,10,14),
+            NavButtonHover = Color3.fromRGB(27,18,25),
+            ResizeGuideTransparency = 0.24,
+            ControlStroke = Color3.fromRGB(51,31,42),
+            FieldStroke = Color3.fromRGB(48,29,40),
+            ButtonBase = Color3.fromRGB(16,12,17),
+            ButtonStroke = Color3.fromRGB(57,32,44),
+            DropdownStroke = Color3.fromRGB(52,31,42),
+            PopupStroke = Color3.fromRGB(101,44,63),
+            GothicShell = Color3.fromRGB(226,55,94),
+            GothicShellStroke = Color3.fromRGB(104,42,61),
+            GothicGlow = Color3.fromRGB(74,16,37),
+            GothicBar = Color3.fromRGB(226,55,94),
+            GothicCorner = Color3.fromRGB(150,42,70),
+            GothicWatermark = Color3.fromRGB(226,55,94),
+            GothicWatermarkTransparency = 0.90,
+            GothicRow = Color3.fromRGB(13,10,15),
+            GothicStroke = Color3.fromRGB(62,34,47),
+            GothicDesc = Color3.fromRGB(190,166,178),
+            GothicBadgeText = Color3.fromRGB(255,238,244),
+            GothicBadgeBackground = Color3.fromRGB(39,13,23),
+            GothicBadgeStroke = Color3.fromRGB(112,41,62),
+            SliderValueBackground = Color3.fromRGB(12,9,13),
+            SliderValueText = Color3.fromRGB(246,241,245),
+            SliderValueStroke = Color3.fromRGB(65,35,49),
+            SliderRail = Color3.fromRGB(24,15,21),
+            SliderRailStroke = Color3.fromRGB(62,34,47),
+            SliderTrack = Color3.fromRGB(58,29,42),
+            SliderTrackGradient = {Color3.fromRGB(45,22,33),Color3.fromRGB(79,33,49),Color3.fromRGB(45,22,33)},
+            SliderFill = Color3.fromRGB(226,55,94),
+            SliderFillGradient = {Color3.fromRGB(244,77,112),Color3.fromRGB(180,35,72)},
+            SliderHalo = Color3.fromRGB(226,55,94),
+            SliderThumb = Color3.fromRGB(250,240,245),
+            SliderThumbStroke = Color3.fromRGB(126,45,67),
         },
     },
     Blanco = {
@@ -645,26 +645,47 @@ local function line(parent, x, y, w, h, rotation, color)
         Rotation=rotation or 0, BackgroundColor3=color or C.Muted}, parent)
 end
 local function mark(parent, size, color)
-    -- Marca Xero: una X geométrica limpia. Sin marco, caja ni "reloj de arena".
-    local holder = new("Frame", {Name="XeroMark", BackgroundTransparency=1, Size=UDim2.fromOffset(size,size)}, parent)
-    local tone = color or C.Text
-    local length = math.max(14, math.floor(size * 0.72))
-    local thickness = math.max(2, math.floor(size * 0.105))
+    -- Firma Ryou: monograma R geométrico. El nombre interno anterior ya no se dibuja.
+    local holder = new("Frame", {Name="RyouMark", BackgroundTransparency=1, Size=UDim2.fromOffset(size,size)}, parent)
+    local tone = color or C.White
+    local t = math.max(2, math.floor(size * 0.10))
+    local stemX = math.floor(size * 0.22)
+    local stemY = math.floor(size * 0.17)
+    local stemH = math.floor(size * 0.66)
+    local bowlW = math.floor(size * 0.43)
 
-    local function xBar(rotation)
-        local bar = new("Frame", {
-            AnchorPoint=Vector2.new(.5,.5),
-            Position=UDim2.fromScale(.5,.5),
-            Size=UDim2.fromOffset(length,thickness),
-            Rotation=rotation,
-            BackgroundColor3=tone,
-        }, holder)
-        round(bar, thickness)
-        return bar
-    end
+    local stem = new("Frame", {
+        Position=UDim2.fromOffset(stemX,stemY),
+        Size=UDim2.fromOffset(t,stemH),
+        BackgroundColor3=tone,
+    }, holder)
+    round(stem,t)
 
-    xBar(45)
-    xBar(-45)
+    local topBar = new("Frame", {
+        Position=UDim2.fromOffset(stemX,stemY),
+        Size=UDim2.fromOffset(bowlW,t),
+        BackgroundColor3=tone,
+    }, holder)
+    round(topBar,t)
+
+    local midY = math.floor(size * 0.47)
+    local midBar = new("Frame", {
+        Position=UDim2.fromOffset(stemX,midY),
+        Size=UDim2.fromOffset(math.floor(size * 0.36),t),
+        BackgroundColor3=tone,
+    }, holder)
+    round(midBar,t)
+
+    local rightStem = new("Frame", {
+        Position=UDim2.fromOffset(math.floor(size * 0.60),math.floor(size * 0.23)),
+        Size=UDim2.fromOffset(t,math.floor(size * 0.22)),
+        BackgroundColor3=tone,
+    }, holder)
+    round(rightStem,t)
+
+    local leg = line(holder,math.floor(size * 0.43),math.floor(size * 0.51),
+        math.floor(size * 0.38),t,48,tone)
+    round(leg,t)
 
     return holder
 end
@@ -1487,7 +1508,7 @@ function Nox:CreateWindow(options)
     self.ScreenGui=gui; w.ScreenGui=gui
     -- Full-viewport bounds are shared by popups, dragging and responsive layout.
     local surface=new("Frame",{Name="Surface",BackgroundTransparency=1,Size=UDim2.fromScale(1,1)},gui)
-    local root=new("Frame",{Name="XeroPanel",BackgroundColor3=w.ThemeDef.Visuals.RootBase,BackgroundTransparency=Glass.Root,AnchorPoint=Vector2.new(.5,.5),
+    local root=new("Frame",{Name="RyouPanel",BackgroundColor3=w.ThemeDef.Visuals.RootBase,BackgroundTransparency=Glass.Root,AnchorPoint=Vector2.new(.5,.5),
         Position=UDim2.fromScale(.5,.5),Size=UDim2.fromOffset(680,430),ClipsDescendants=true},surface)
     round(root,20); local rootStroke=stroke(root,w.ThemeDef.Visuals.RootStroke)
     local rootGradient=new("UIGradient",{Rotation=22,Color=ColorSequence.new({
@@ -1522,8 +1543,8 @@ function Nox:CreateWindow(options)
         })
     },animeShade)
 
-    -- Fondo Xero geométrico: sólo se usa como respaldo mientras no haya imagen.
-    local backdrop=new("Frame",{Name="NoxBackdrop",BackgroundTransparency=1,Size=UDim2.fromScale(1,1),ZIndex=1},root)
+    -- Fondo Ryou geométrico: firma visual de respaldo y capa de identidad.
+    local backdrop=new("Frame",{Name="RyouBackdrop",BackgroundTransparency=1,Size=UDim2.fromScale(1,1),ZIndex=1},root)
     local glowA=new("Frame",{Name="SoftGlowA",AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.68,.34),
         Size=UDim2.fromScale(.54,.62),BackgroundColor3=w.ThemeDef.Visuals.BackdropGlowA,BackgroundTransparency=.58,Rotation=-16,ZIndex=1},backdrop)
     round(glowA,72)
@@ -1532,9 +1553,19 @@ function Nox:CreateWindow(options)
         Size=UDim2.fromScale(.46,.38),BackgroundColor3=w.ThemeDef.Visuals.BackdropGlowB,BackgroundTransparency=.64,Rotation=18,ZIndex=1},backdrop)
     round(glowB,64)
     new("UIGradient",{Rotation=205,Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,.2),NumberSequenceKeypoint.new(1,1)})},glowB)
-    local watermark=label(backdrop,"RYOU",80,Color3.fromRGB(255,255,255),{
-        AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.61,.58),Size=UDim2.fromScale(.30,.12),
-        Font=BOLD,TextTransparency=w.ThemeDef.Visuals.BackdropWatermarkTransparency,TextXAlignment=Enum.TextXAlignment.Center,TextYAlignment=Enum.TextYAlignment.Center,Rotation=-10,ZIndex=1})
+    local watermark=label(backdrop,"R",176,C.White,{
+        AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.76,.62),Size=UDim2.fromScale(.28,.44),
+        Font=BOLD,TextTransparency=w.ThemeDef.Visuals.BackdropWatermarkTransparency,TextXAlignment=Enum.TextXAlignment.Center,TextYAlignment=Enum.TextYAlignment.Center,Rotation=-7,ZIndex=1})
+    local signature=label(backdrop,"RYOU / 01",9,C.White,{
+        Name="RyouSignature",AnchorPoint=Vector2.new(1,1),Position=UDim2.fromScale(.955,.91),
+        Size=UDim2.fromOffset(120,18),Font=Enum.Font.Code,TextTransparency=.46,
+        TextXAlignment=Enum.TextXAlignment.Right,ZIndex=1})
+    local signatureLine=line(backdrop,0,0,54,2,0,C.White)
+    signatureLine.Name="RyouSignatureLine"
+    signatureLine.AnchorPoint=Vector2.new(1,.5)
+    signatureLine.Position=UDim2.fromScale(.955,.865)
+    signatureLine.BackgroundTransparency=.22
+    signatureLine.ZIndex=1
     for i=1,6 do
         local v=new("Frame",{Name="GridV",Position=UDim2.new(i/7,0,0,0),Size=UDim2.new(0,1,1,0),
             BackgroundColor3=w.ThemeDef.Visuals.GridColor,BackgroundTransparency=w.ThemeDef.Visuals.GridVTransparency,ZIndex=1},backdrop)
@@ -1580,7 +1611,7 @@ function Nox:CreateWindow(options)
     end
 
     local top=new("Frame",{Name="Topbar",BackgroundTransparency=1,Size=UDim2.new(1,0,0,58),ZIndex=5},root)
-    local logo=mark(top,28); logo.Position=UDim2.fromOffset(16,12)
+    local logo=mark(top,28,C.White); logo.Position=UDim2.fromOffset(16,12)
 
     local titleCluster=new("Frame",{Name="TitleCluster",BackgroundTransparency=1,
         Position=UDim2.fromOffset(50,9),Size=UDim2.fromOffset(290,24)},top)
@@ -1592,7 +1623,7 @@ function Nox:CreateWindow(options)
         Size=UDim2.fromOffset(96,22),Font=BOLD})
     local inferredGameLabel=w._brandBaseTitle:match("|%s*(.-)%s*$")
     local subtitleGame=tostring(o.Subtitle or inferredGameLabel or "RYOU")
-    local subtitle=label(top,"X E R O  /  "..subtitleGame,8,C.Faint,{Position=UDim2.fromOffset(52,37),Size=UDim2.fromOffset(180,14)})
+    local subtitle=label(top,"R Y O U  /  "..subtitleGame,8,C.Faint,{Position=UDim2.fromOffset(52,37),Size=UDim2.fromOffset(180,14)})
     local author=label(top,w.Author,11,C.Muted,{Position=UDim2.new(1,-248,0,27),Size=UDim2.fromOffset(104,20),TextXAlignment=Enum.TextXAlignment.Right})
     local controls=new("Frame",{BackgroundTransparency=1,Position=UDim2.new(1,-76,0,8),Size=UDim2.fromOffset(64,28)},top)
     -- Navegación siempre visible: ya no existe el botón hamburguesa/drawer.
@@ -1607,7 +1638,7 @@ function Nox:CreateWindow(options)
         Size=UDim2.new(0,154,1,-82),ZIndex=12},root); round(sidebar,12); local sidebarStroke=stroke(sidebar,w.ThemeDef.Visuals.SidebarStroke)
     local nav=scroll(sidebar,{Name="Tabs",Position=UDim2.fromOffset(8,10),Size=UDim2.new(1,-16,1,-58),ScrollBarThickness=0})
     vertical(nav,6)
-    local navFooter=label(sidebar,"RYOU  /  OBSIDIAN",8,C.Faint,{Position=UDim2.new(0,12,1,-28),Size=UDim2.new(1,-24,0,16),Font=Enum.Font.Code})
+    local navFooter=label(sidebar,"RYOU  /  CRIMSON",8,C.Faint,{Position=UDim2.new(0,12,1,-28),Size=UDim2.new(1,-24,0,16),Font=Enum.Font.Code})
     local drawerShade=button(root,"",{Name="DrawerBackdrop",BackgroundTransparency=1,
         Position=UDim2.fromOffset(0,70),Size=UDim2.new(1,0,1,-70),Visible=false,Active=false,ZIndex=11})
     local content=new("Frame",{Name="Content",BackgroundTransparency=1,Position=UDim2.fromOffset(182,70),Size=UDim2.new(1,-194,1,-82),ZIndex=4},root)
@@ -1628,7 +1659,10 @@ function Nox:CreateWindow(options)
     local shortcut=label(root,"RSHIFT  /  MOSTRAR U OCULTAR",8,C.Faint,{Position=UDim2.new(.4,0,1,-24),Size=UDim2.new(.6,-18,0,14),TextXAlignment=Enum.TextXAlignment.Right,Font=Enum.Font.Code})
     local openButton=button(launcherSurface,"",{Name="OpenRyou",Position=UDim2.new(.5,-73,0,16),Size=UDim2.fromOffset(146,44),BackgroundColor3=w.ThemeDef.Visuals.OpenButtonBase,BackgroundTransparency=Glass.Button,ZIndex=20})
     round(openButton,12); local openStroke=stroke(openButton,w.ThemeDef.Visuals.OpenStroke)
-    local openIcon=mark(openButton,22); openIcon.Position=UDim2.fromOffset(12,11)
+    local openAccent=new("Frame",{Name="RyouOpenAccent",Position=UDim2.fromOffset(0,7),Size=UDim2.fromOffset(3,30),
+        BackgroundColor3=C.White,BackgroundTransparency=.05,ZIndex=22},openButton)
+    round(openAccent,8)
+    local openIcon=mark(openButton,22,C.White); openIcon.Position=UDim2.fromOffset(12,11)
     local openLabel=label(openButton,"RYOU",11,C.Text,{Position=UDim2.fromOffset(45,5),Size=UDim2.new(1,-55,0,20),Font=MEDIUM})
     local openHint=label(openButton,"ABRIR PANEL",8,C.Muted,{Position=UDim2.fromOffset(45,25),Size=UDim2.new(1,-55,0,12),Font=MEDIUM})
     w.OpenButton=openButton; w._launcherMoved=false; w.UIElements={Main=root,Title=brand,ActiveStatus=statusLabel,SideBar=sidebar,MainBar=content,Pages=pages,Search=searchBox,Topbar=top}
@@ -2323,7 +2357,7 @@ function Nox:CreateWindow(options)
     connect(w,gui.Destroying,function() if not w.Destroyed then w:Destroy() end end)
     if o.OpenButton then w:EditOpenButton(o.OpenButton) end
     if o.Author then w:SetAuthor(o.Author) end
-    footer.Text="RYOU  /  RYOU"
+    footer.Text="RYOU  /  PRIVATE"
     w:SetTheme(resolvedTheme, true)
     task.defer(fit)
     return w
@@ -2350,9 +2384,10 @@ function Nox:GetCurrentTheme()
 end
 function Nox:GetThemes()
     return {
-        Xero = {Name = "Xero"},
-        Nox = {Name = "Xero"},
-        Onyx = {Name = "Xero"},
+        Ryou = {Name = "Ryou"},
+        Xero = {Name = "Ryou"}, -- legacy alias
+        Nox = {Name = "Ryou"},  -- legacy alias
+        Onyx = {Name = "Ryou"}, -- legacy alias
         Blanco = {Name = "Blanco"},
         White = {Name = "Blanco"},
     }
@@ -2362,7 +2397,7 @@ function Nox:Notify(options)
     local w=self.Window; local o=options or {}
     if w.Destroyed then return end
     if w._notice then w._notice:Destroy() end
-    local holder=new("Frame",{Name="XeroNotice",BackgroundColor3=C.Window,AnchorPoint=Vector2.new(1,0),
+    local holder=new("Frame",{Name="RyouNotice",BackgroundColor3=C.Window,AnchorPoint=Vector2.new(1,0),
         Position=UDim2.new(1,384,0,64),Size=UDim2.new(1,-24,0,0),AutomaticSize=Enum.AutomaticSize.Y,ZIndex=100},w.ScreenGui)
     new("UISizeConstraint",{MaxSize=Vector2.new(360,math.huge)},holder)
     round(holder,12); stroke(holder); padding(holder,14,12); vertical(holder,6)
@@ -2384,5 +2419,5 @@ function Nox:Notify(options)
     end)
     return {Close=function() if holder.Parent then holder:Destroy() end end}
 end
-Nox:SetTheme("Xero")
+Nox:SetTheme("Ryou")
 return Nox
