@@ -32,15 +32,15 @@ end
 local THEME_BACKGROUNDS = {
     Xero = {
     URL = tostring(XeroEnv.XERO_BACKGROUND_URL or
-        "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/assets/backgrounds/xero_sakura.png"),
+        "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/assets/backgrounds/ryou-sakura.png"),
     CACHE = tostring(XeroEnv.XERO_BACKGROUND_CACHE or
         "Ryou/Assets/ryou_sakura_v2.png"),
     },
     Blanco = {
         URL = tostring(XeroEnv.XERO_BACKGROUND_LIGHT_URL or XeroEnv.XERO_BACKGROUND_WHITE_URL or
-            "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/assets/backgrounds/xero_anime_white.png"),
+            "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/assets/backgrounds/ryou-light.png"),
         CACHE = tostring(XeroEnv.XERO_BACKGROUND_LIGHT_CACHE or XeroEnv.XERO_BACKGROUND_WHITE_CACHE or
-            "Ryou/Assets/xero_anime_white_v1.png"),
+            "Ryou/Assets/ryou_light_v2.png"),
     },
 }
 
@@ -2370,7 +2370,8 @@ function Nox:PreloadIcon(name, callback) requestIconAsset(name, callback); retur
 function Nox:SetTheme(name)
     local resolved = canonicalThemeName(name)
     applyThemeDefinition(resolved)
-    self.Theme = {Name = resolved, Accent = C.White, Background = C.Window, Text = C.Text}
+    local publicName = resolved == "Xero" and "Ryou" or resolved
+    self.Theme = {Name = publicName, Accent = C.White, Background = C.Window, Text = C.Text}
     if self.Window and not self.Window.Destroyed and self.Window.SetTheme then
         self.Window:SetTheme(resolved, true)
     end
