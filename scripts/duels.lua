@@ -1090,6 +1090,7 @@ local WindUI
 
 local xeroUIEnv = (getgenv and getgenv()) or _G
 local xeroRepoRaw = "https://raw.githubusercontent.com/xero-scripts-repo/xero-scripts/refs/heads/main/"
+local ryouUIOverride = tostring(xeroUIEnv.RYOU_UI_URL or "")
 local function xeroAssetDefault(key, value)
     local current = xeroUIEnv[key]
     if current == nil or (type(current) == "string" and current:find("OnyxDevv/Onyx-web", 1, true)) then
@@ -1102,7 +1103,7 @@ xeroAssetDefault("XERO_BACKGROUND_LIGHT_URL", xeroRepoRaw .. "assets/backgrounds
 xeroAssetDefault("XERO_BACKGROUND_WHITE_URL", xeroRepoRaw .. "assets/backgrounds/xero_anime_white.png")
 xeroAssetDefault("XERO_SKYBOX_BASE_URL", xeroRepoRaw .. "skyboxes")
 xeroAssetDefault("XERO_DEATH_FINAL_ROOT", xeroRepoRaw .. "death_effects_final")
-xeroAssetDefault("NOX_UI_URL", xeroRepoRaw .. "main%20(3).lua")
+xeroAssetDefault("NOX_UI_URL", ryouUIOverride ~= "" and ryouUIOverride or (xeroRepoRaw .. "main%20(3).lua"))
 local NOX_UI_URL = xeroUIEnv.NOX_UI_URL
 local ok, result = pcall(function()
     local source
@@ -1115,6 +1116,14 @@ local ok, result = pcall(function()
     end
 
     if type(source) == "string" then
+        -- Ryou runtime branding patch for the shared compatibility UI.
+        source = source:gsub("XEROHUB  /  KEV", "RYOU  /  RYOU")
+        source = source:gsub("XEROHUB", "RYOU")
+        source = source:gsub("XERO  /  OBSIDIAN", "RYOU  /  OBSIDIAN")
+        source = source:gsub('"XERO"', '"RYOU"')
+        source = source:gsub('Brand = "XeroHub"', 'Brand = "Ryou"')
+        source = source:gsub('Creator = "Kev"', 'Creator = "Ryou"')
+        source = source:gsub('Author=o.Author or "by Kev"', 'Author=o.Author or "by Ryou"')
         source = source:gsub(
             'AutoFarm="06",%["Gráficos"%]="07",Animaciones="08",Apariencia="09",%["Generar Armas"%]="10",%["Configuración"%]="11",%["Créditos"%]="12"',
             'AutoFarm="06",["Gráficos"]="07",FOV="08",Sonidos="09",Animaciones="10",Apariencia="11",["Generar Armas"]="12",["Configuración"]="13",["Créditos"]="14"',
