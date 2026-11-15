@@ -3,7 +3,7 @@
 
 local SoundCatalogCore = {
     TARGET_SOUND_ID = "10209603",
-    CATALOG_URL = "https://api.github.com/repos/xero-scripts-repo/xero-scripts/contents/sounds?ref=main",
+    CATALOG_URL = "https://api.github.com/repos/vryex/ryouhub/contents/sounds?ref=main",
     CACHE_FOLDER = "Ryou/Sounds",
 }
 
@@ -1089,7 +1089,7 @@ end
 local WindUI
 
 local xeroUIEnv = (getgenv and getgenv()) or _G
-local xeroRepoRaw = "https://raw.githubusercontent.com/xero-scripts-repo/xero-scripts/refs/heads/main/"
+local xeroRepoRaw = "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/"
 local ryouUIOverride = tostring(xeroUIEnv.RYOU_UI_URL or "")
 local function xeroAssetDefault(key, value)
     local current = xeroUIEnv[key]
@@ -1103,7 +1103,7 @@ xeroAssetDefault("XERO_BACKGROUND_LIGHT_URL", xeroRepoRaw .. "assets/backgrounds
 xeroAssetDefault("XERO_BACKGROUND_WHITE_URL", xeroRepoRaw .. "assets/backgrounds/xero_anime_white.png")
 xeroAssetDefault("XERO_SKYBOX_BASE_URL", xeroRepoRaw .. "skyboxes")
 xeroAssetDefault("XERO_DEATH_FINAL_ROOT", xeroRepoRaw .. "death_effects_final")
-xeroAssetDefault("NOX_UI_URL", ryouUIOverride ~= "" and ryouUIOverride or (xeroRepoRaw .. "main%20(3).lua"))
+xeroAssetDefault("NOX_UI_URL", ryouUIOverride ~= "" and ryouUIOverride or (xeroRepoRaw .. "ui/compat.lua"))
 local NOX_UI_URL = xeroUIEnv.NOX_UI_URL
 local ok, result = pcall(function()
     local source
@@ -2831,7 +2831,7 @@ local function fallbackCatalog()
             name = "anime-magic-sound-effect (1).mp3",
             type = "file",
             sha = "057d16da9c27ae50223aca105eccc7fc0cf7d362",
-            download_url = "https://raw.githubusercontent.com/xero-scripts-repo/xero-scripts/main/sounds/anime-magic-sound-effect%20(1).mp3",
+            download_url = "https://raw.githubusercontent.com/vryex/ryouhub/main/sounds/anime-magic-sound-effect%20(1).mp3",
         },
     })
 end
@@ -4747,8 +4747,8 @@ local textureAssetLoader = getcustomasset
 local TextureCatalogCore = {
     CACHE_FOLDER = "Ryou/Textures",
     URLS = {
-        knife = "https://api.github.com/repos/xero-scripts-repo/xero-scripts/contents/textures/default/knife?ref=main",
-        gun = "https://api.github.com/repos/xero-scripts-repo/xero-scripts/contents/textures/default/gun?ref=main",
+        knife = "https://api.github.com/repos/vryex/ryouhub/contents/textures/default/knife?ref=main",
+        gun = "https://api.github.com/repos/vryex/ryouhub/contents/textures/default/gun?ref=main",
     },
     OriginalTexture = {
         knife = "121944805",
@@ -19810,7 +19810,7 @@ modes.presets = {
 local skyEnv = (getgenv and getgenv()) or _G
 local SKYBOX_REPO_BASE = tostring(
     skyEnv.XERO_SKYBOX_BASE_URL
-    or "https://raw.githubusercontent.com/xero-scripts-repo/xero-scripts/refs/heads/main/skyboxes"
+    or "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/skyboxes"
 ):gsub("/+$", "")
 
 local customAsset = getcustomasset
