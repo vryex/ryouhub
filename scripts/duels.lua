@@ -1737,7 +1737,7 @@ end
 local Window = WindUI:CreateWindow({
     Title = "Ryou | DUELS",
     Subtitle = "DUELS",
-    Theme = "Xero",
+    Theme = "Ryou",
     Author = "by Ryou",
     Size = UDim2.fromOffset(620, 350),
     MinSize = Vector2.new(330, 270),
@@ -1976,9 +1976,9 @@ local XeroPersonalization = {
     BackgroundURL = "",
     BackgroundActive = false,
     ColorsActive = false,
-    BaseColor = Color3.fromRGB(9, 9, 9),
-    AccentColor = Color3.fromRGB(242, 242, 242),
-    TextColor = Color3.fromRGB(242, 242, 242),
+    BaseColor = Color3.fromRGB(8, 7, 10),
+    AccentColor = Color3.fromRGB(226, 55, 94),
+    TextColor = Color3.fromRGB(246, 241, 245),
     GradientActive = false,
     GradientColorA = Color3.fromRGB(16, 16, 18),
     GradientColorB = Color3.fromRGB(42, 42, 48),
@@ -2292,7 +2292,7 @@ Tabs.Personalizacion:Dropdown({
     Values = {"Oscuro", "Blanco"},
     Value = "Oscuro",
     Callback = function(value)
-        local theme = value == "Blanco" and "Blanco" or "Xero"
+        local theme = value == "Blanco" and "Blanco" or "Ryou"
         if Window.SetTheme then Window:SetTheme(theme, true) end
         runtime.InterfaceTheme = theme
         if Window.ResetCustomBackground then Window:ResetCustomBackground(true) end
@@ -2306,9 +2306,9 @@ Tabs.Personalizacion:Dropdown({
             XeroPersonalization.AccentColor = Color3.fromRGB(20, 20, 24)
             XeroPersonalization.TextColor = Color3.fromRGB(20, 20, 24)
         else
-            XeroPersonalization.BaseColor = Color3.fromRGB(9, 9, 9)
-            XeroPersonalization.AccentColor = Color3.fromRGB(242, 242, 242)
-            XeroPersonalization.TextColor = Color3.fromRGB(242, 242, 242)
+            XeroPersonalization.BaseColor = Color3.fromRGB(8, 7, 10)
+            XeroPersonalization.AccentColor = Color3.fromRGB(226, 55, 94)
+            XeroPersonalization.TextColor = Color3.fromRGB(246, 241, 245)
         end
         pcall(function() xeroBasePicker:Set(XeroPersonalization.BaseColor, true) end)
         pcall(function() xeroAccentPicker:Set(XeroPersonalization.AccentColor, true) end)
@@ -21540,7 +21540,7 @@ Tabs.Config:Paragraph({
     Desc = "Negro, blanco y una interfaz hecha para Ryou.",
 })
 
-local currentInterfaceTheme = (Window and Window.GetTheme and Window:GetTheme()) or "Xero"
+local currentInterfaceTheme = (Window and Window.GetTheme and Window:GetTheme()) or "Ryou"
 runtime.InterfaceTheme = currentInterfaceTheme
 local themeDropdown = Tabs.Config:Dropdown({
     Title = "Tema de Interfaz",
@@ -21548,7 +21548,7 @@ local themeDropdown = Tabs.Config:Dropdown({
     Values = {"Oscuro", "Blanco"},
     Value = currentInterfaceTheme == "Blanco" and "Blanco" or "Oscuro",
     Callback = function(Value)
-        local targetTheme = (Value == "Blanco") and "Blanco" or "Xero"
+        local targetTheme = (Value == "Blanco") and "Blanco" or "Ryou"
         runtime.InterfaceTheme = targetTheme
         if Window and Window.SetTheme then
             Window:SetTheme(targetTheme)
@@ -21812,7 +21812,7 @@ Tabs.Config:Button({ Title = "Guardar Configuración", Callback = function()
             ["Partes AutoShoot"] = runtime.GetTargetSelectionArray("AutoShoot")
         },
         Interfaz = {
-            Tema = runtime.InterfaceTheme or ((Window and Window.GetTheme and Window:GetTheme()) or "Xero")
+            Tema = runtime.InterfaceTheme or ((Window and Window.GetTheme and Window:GetTheme()) or "Ryou")
         },
         Personalizacion = xeroSerializePersonalization(),
         Apariencia = runtime.SerializeAppearanceConfig(),
@@ -21950,7 +21950,7 @@ local function loadConfigByName(configName, loadMode)
                 savedTheme = decoded.Extras["Tema Interfaz"]
             end
             if savedTheme then
-                local normalizedTheme = (tostring(savedTheme) == "Blanco" or tostring(savedTheme) == "White" or tostring(savedTheme) == "Claro") and "Blanco" or "Xero"
+                local normalizedTheme = (tostring(savedTheme) == "Blanco" or tostring(savedTheme) == "White" or tostring(savedTheme) == "Claro") and "Blanco" or "Ryou"
                 runtime.InterfaceTheme = normalizedTheme
                 if Window and Window.SetTheme then
                     Window:SetTheme(normalizedTheme, true)
