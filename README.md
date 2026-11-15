@@ -1,23 +1,34 @@
 # Ryou
 
-Interfaz de cliente en Luau para PC y móvil. La pantalla de entrada presenta la marca Ryou. El panel usa navegación lateral en pantallas amplias e inferior en pantallas compactas.
+Hub en Luau para PC y móvil. **Creador: Ryou.**
 
-Puedes cambiar el color de acento y el tamaño del panel, reducir el movimiento o mostrar un reloj al cerrar la ventana. El botón flotante se puede arrastrar. En PC, Shift derecho abre y cierra el panel.
+Este repositorio contiene la migración del proyecto anterior hacia la identidad Ryou sin romper de golpe la API que usan los builds existentes.
 
-## Montaje
+## Archivos principales
 
-Carga el módulo local desde tu proyecto y pásale el `PlayerGui` del cliente.
+- `main.luau` — shell visual standalone del nuevo diseño Ryou.
+- `ui/compat.lua` — capa visual compatible con la API usada por los builds existentes.
+- `scripts/duels.lua` — Duels migrado a branding Ryou.
+- `scripts/mm2.lua` — MM2 migrado a branding Ryou, con el loader de UI corregido.
+- `PROJECT_CONTEXT.md` — contexto técnico y reglas de migración para continuar el proyecto en cualquier chat/sesión.
+
+## UI remota
+
+Los scripts admiten:
 
 ```lua
-local Ryou = require(script.Parent.Ryou)
-local playerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
-
-local panel = Ryou.mount(playerGui, { openOnMount = false })
-panel:Open()
+getgenv().RYOU_UI_URL = "https://tu-endpoint/ryou-ui.lua"
 ```
 
-`mount` reutiliza el panel si ya está montado en el mismo `PlayerGui`. El controlador expone `Open()`, `Close()` y `Destroy()`. Los ajustes duran mientras el panel siga montado. El módulo también acepta `displayName` para el saludo inicial.
+antes de ejecutar el build.
 
-**Creador** Ryou
+Mientras este repositorio siga **privado**, no conviene usar su URL RAW como default para `game:HttpGet`, porque una petición sin autenticación recibirá 404. Los builds conservan compatibilidad temporal con la fuente pública anterior y aplican el branding Ryou en runtime.
 
-**TikTok** @x0brxn
+## Desarrollo
+
+El objetivo es mantener una sola base de UI para Duels, MM2 y ASD, con diseño oscuro/minimalista, soporte móvil/PC, resize, botón flotante, animaciones y personalización.
+
+Consulta `PROJECT_CONTEXT.md` antes de hacer cambios grandes.
+
+**Creador:** Ryou  
+**TikTok:** @x0brxn
