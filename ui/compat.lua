@@ -164,7 +164,7 @@ local THEMES = {
 
 local CURRENT_THEME_NAME = canonicalThemeName(XeroEnv.XERO_THEME or "Xero")
 local CURRENT_THEME = THEMES[CURRENT_THEME_NAME] or THEMES.Xero
-local Nox = { Version = "6.0.0-concept-c", Brand = "Ryou", SupportsGameLabels = true, Creator = "Ryou", UIScale = 1 }
+local Nox = { Version = "7.0.0-concept-c-polish", Brand = "Ryou", SupportsGameLabels = true, Creator = "Ryou", UIScale = 1 }
 local C, Glass = {}, {}
 
 local function overwriteTable(target, source)
@@ -208,7 +208,7 @@ end
 -- and reused by every control/tab that declares Icon = "name".
 local XERO_ICON_BASE_URL = tostring(XeroEnv.XERO_ICON_BASE_URL or
     "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/icons/")
-local XERO_ICON_CACHE_FOLDER = tostring(XeroEnv.XERO_ICON_CACHE_FOLDER or "Ryou/Icons/v1")
+local XERO_ICON_CACHE_FOLDER = tostring(XeroEnv.XERO_ICON_CACHE_FOLDER or "Ryou/Icons/v2")
 
 local XERO_ICON_FILES = {
     settings = "settings.png",
@@ -239,6 +239,14 @@ local XERO_ICON_FILES = {
     save = "save.png",
     ["badge-info"] = "badge-info.png",
     info = "badge-info.png",
+    footprints = "footprints.png",
+    ["moon-star"] = "moon-star.png",
+    ["layout-grid"] = "layout-grid.png",
+    ["layers"] = "layers.png",
+    ["sliders-horizontal"] = "sliders-horizontal.png",
+    keyboard = "keyboard.png",
+    search = "search.png",
+    ["clock-3"] = "clock-3.png",
 }
 
 local XERO_ICON_ASSET_CACHE = {}
@@ -834,13 +842,19 @@ function Tab:_control(kind, options)
         DarkTitleColor=o.TitleColor,LightTitleColor=o.LightTitleColor,DarkDescColor=o.DescColor,LightDescColor=o.LightDescColor},Control)
     desc.AutomaticSize=Enum.AutomaticSize.None; desc.TextYAlignment=Enum.TextYAlignment.Top
     if kind~="Section" and not controlIcon and not (kind=="Paragraph" and o.Image) then
-        local glyphs={Toggle="◉",Button="↗",Input="⌕",Slider="⋮",Dropdown="⌄",Colorpicker="◆",Paragraph="✧"}
+        local iconKeys={Toggle="circle-dot",Button="zap",Input="keyboard",
+            Slider="sliders-horizontal",Dropdown="folder-open",Colorpicker="palette",Paragraph="badge-info"}
         local chip=new("Frame",{Name="RyouCardIcon",BackgroundColor3=C.Field,BackgroundTransparency=.10,
             Size=UDim2.fromOffset(34,34),Position=UDim2.fromOffset(0,0)},head)
         round(chip,11)
         local chipStroke=stroke(chip,C.Border);chipStroke.Transparency=.38
-        label(chip,glyphs[kind] or "◇",19,C.White,{Font=BOLD,Size=UDim2.fromScale(1,1),
+        local fallback=label(chip,"•",20,C.White,{Font=BOLD,Size=UDim2.fromScale(1,1),
             TextXAlignment=Enum.TextXAlignment.Center})
+        local picture=remoteIcon(chip,iconKeys[kind] or "badge-info",20,C.White,function()
+            if fallback.Parent then fallback.Visible=false end
+        end)
+        picture.AnchorPoint=Vector2.new(.5,.5)
+        picture.Position=UDim2.fromScale(.5,.5)
         control.CopyOffsetX=45
         control.CardIcon=chip
     end
@@ -1006,8 +1020,10 @@ function Tab:Toggle(options)
 end
 local function field(parent, placeholder)
     local box=new("TextBox",{Name="Field",Text="",PlaceholderText=placeholder or "",
-        PlaceholderColor3=C.Faint,BackgroundColor3=C.Field,BackgroundTransparency=Glass.Field,ClearTextOnFocus=false,
-        TextXAlignment=Enum.TextXAlignment.Left,TextSize=11,Size=UDim2.new(1,0,0,28),LayoutOrder=2},parent)
+        PlaceholderColor3=C.Faint,BackgroundColor3=C.Field,BackgroundTransparency=Glass.Field,
+        Active=true,TextEditable=true,ClearTextOnFocus=false,MultiLine=false,Selectable=true,
+        TextXAlignment=Enum.TextXAlignment.Left,TextSize=12,Size=UDim2.new(1,0,0,34),
+        ZIndex=6,LayoutOrder=2},parent)
     round(box,10); stroke(box,C.Border); padding(box,9,0)
     return box
 end
@@ -1575,7 +1591,8 @@ function Nox:CreateWindow(options)
     local searchBox=new("Frame",{Name="SearchBox",BackgroundColor3=C.Field,BackgroundTransparency=Glass.Field,ClipsDescendants=true,
         Position=UDim2.new(1,-312,0,8),Size=UDim2.fromOffset(198,30),ZIndex=6},top)
     round(searchBox,17); local searchStroke=stroke(searchBox,w.ThemeDef.Visuals.SearchStroke)
-    local search=new("TextBox",{Name="Search",BackgroundTransparency=1,ClearTextOnFocus=false,TextSize=12,TextTruncate=Enum.TextTruncate.AtEnd,
+    local search=new("TextBox",{Name="Search",BackgroundTransparency=1,ClearTextOnFocus=false,
+        Active=true,TextEditable=true,Selectable=true,TextSize=12,TextTruncate=Enum.TextTruncate.AtEnd,
         PlaceholderText="Buscar ajuste...",PlaceholderColor3=C.Faint,TextXAlignment=Enum.TextXAlignment.Left,TextYAlignment=Enum.TextYAlignment.Center,
         Position=UDim2.fromOffset(28,0),Size=UDim2.new(1,-54,1,0)},searchBox)
     icon(searchBox,"search").Position=UDim2.new(0,8,.5,-10)
@@ -1923,40 +1940,48 @@ function Nox:CreateWindow(options)
         local mainCard=conceptPanel("SettingsCard")
         local quickCard=conceptPanel("QuickActionsCard")
         local statsCard=conceptPanel("SessionCard")
-        local function cardTitle(card,titleText,caption,symbol)
-            local iconChip=new("Frame",{Name="IconTile",Position=UDim2.fromOffset(17,16),
-                Size=UDim2.fromOffset(45,45),BackgroundColor3=C.Field},card)
+        local cardHeadings={}
+        local function cardTitle(card,titleText,caption,iconKey)
+            local iconChip=new("Frame",{Name="IconTile",Position=UDim2.fromOffset(15,15),
+                Size=UDim2.fromOffset(39,39),BackgroundColor3=C.Field},card)
             round(iconChip,13)
-            local iconEdge=stroke(iconChip,C.White);iconEdge.Transparency=.40
-            label(iconChip,symbol,21,C.White,{Size=UDim2.fromScale(1,1),
+            local iconEdge=stroke(iconChip,C.White);iconEdge.Transparency=.42
+            local fallback=label(iconChip,"•",16,C.White,{Size=UDim2.fromScale(1,1),
                 TextXAlignment=Enum.TextXAlignment.Center,Font=BOLD})
-            label(card,titleText,18,C.Text,{Position=UDim2.fromOffset(73,14),
-                Size=UDim2.new(1,-85,0,28),Font=BOLD,
+            local picture=remoteIcon(iconChip,iconKey,22,C.White,function()
+                if fallback.Parent then fallback.Visible=false end
+            end)
+            picture.AnchorPoint=Vector2.new(.5,.5)
+            picture.Position=UDim2.fromScale(.5,.5)
+            local heading=label(card,titleText,16,C.Text,{Position=UDim2.fromOffset(65,14),
+                Size=UDim2.new(1,-76,0,28),Font=BOLD,
                 TextTruncate=Enum.TextTruncate.AtEnd})
-            label(card,caption,11,C.Muted,{Position=UDim2.fromOffset(73,43),
-                Size=UDim2.new(1,-85,0,24),TextTruncate=Enum.TextTruncate.AtEnd})
-            new("Frame",{Name="CardRule",BackgroundColor3=C.Border,BackgroundTransparency=.36,
-                Position=UDim2.fromOffset(17,82),Size=UDim2.new(1,-34,0,1)},card)
+            local hint=label(card,caption,10,C.Muted,{Position=UDim2.fromOffset(65,40),
+                Size=UDim2.new(1,-76,0,22),TextTruncate=Enum.TextTruncate.AtEnd})
+            local rule=new("Frame",{Name="CardRule",BackgroundColor3=C.Border,BackgroundTransparency=.45,
+                Position=UDim2.fromOffset(15,74),Size=UDim2.new(1,-30,0,1)},card)
+            cardHeadings[#cardHeadings+1]={Card=card,Icon=iconChip,Heading=heading,Hint=hint,Rule=rule}
+            return hint
         end
-        cardTitle(mainCard,title,tab.Desc,"◇")
-        cardTitle(quickCard,"Acciones rápidas","Accede a otras secciones.","ϟ")
-        cardTitle(statsCard,"Sesión actual","Información en tiempo real.","▥")
-        local list=scroll(mainCard,{Name="Options",Position=UDim2.fromOffset(13,92),
-            Size=UDim2.new(1,-26,1,-105),AutomaticCanvasSize=Enum.AutomaticSize.None,
+        local mainCaption=cardTitle(mainCard,title,tab.Desc,opt.Icon or "layout-grid")
+        cardTitle(quickCard,"Acciones rápidas","Abre otra sección.","zap")
+        cardTitle(statsCard,"Sesión actual","Información en tiempo real.","clock-3")
+        local list=scroll(mainCard,{Name="Options",Position=UDim2.fromOffset(13,82),
+            Size=UDim2.new(1,-26,1,-94),AutomaticCanvasSize=Enum.AutomaticSize.None,
             ScrollBarThickness=3,ScrollBarImageColor3=C.White})
         vertical(list,10); padding(list,2,3)
         local empty=label(mainCard,"Sin coincidencias. Prueba otra búsqueda.",12,C.Muted,{
-            Position=UDim2.fromOffset(24,108),Size=UDim2.new(1,-48,0,50),
+            Position=UDim2.fromOffset(24,98),Size=UDim2.new(1,-48,0,50),
             TextWrapped=true,Visible=false,ZIndex=5})
         local quickButtons={}
         for i=1,3 do
             local link=button(quickCard,"",{Name="QuickLink"..i,
-                BackgroundColor3=C.Row,Size=UDim2.new(1,-30,0,48),
-                Position=UDim2.fromOffset(15,96+(i-1)*60)})
+                BackgroundColor3=C.Row,Size=UDim2.new(1,-26,0,44),
+                Position=UDim2.fromOffset(13,86+(i-1)*56)})
             round(link,13)
             local edge=stroke(link,C.Border);edge.Transparency=.28
             label(link,"›",23,C.White,{Position=UDim2.new(1,-36,0,0),
-                Size=UDim2.fromOffset(27,48),TextXAlignment=Enum.TextXAlignment.Center})
+                Size=UDim2.fromOffset(27,44),TextXAlignment=Enum.TextXAlignment.Center})
             local textLink=label(link,"",12,C.Text,{Position=UDim2.fromOffset(15,0),
                 Size=UDim2.new(1,-54,1,0),Font=MEDIUM,
                 TextTruncate=Enum.TextTruncate.AtEnd})
@@ -1969,7 +1994,7 @@ function Nox:CreateWindow(options)
         end
         local statValues={}
         for i,spec in ipairs({{"Tiempo activo","00:00"},{"Jugadores","0"},{"Opciones","0"}}) do
-            local y=96+(i-1)*42
+            local y=92+(i-1)*37
             label(statsCard,spec[1],11,C.Muted,{Position=UDim2.fromOffset(17,y),
                 Size=UDim2.new(.56,-17,0,29)})
             statValues[i]=label(statsCard,spec[2],14,C.White,{Position=UDim2.new(.56,0,0,y),
@@ -1977,13 +2002,13 @@ function Nox:CreateWindow(options)
                 TextXAlignment=Enum.TextXAlignment.Right})
         end
         label(statsCard,"Presets",16,C.Text,{Font=BOLD,
-            Position=UDim2.fromOffset(17,236),Size=UDim2.new(1,-34,0,27)})
+            Position=UDim2.fromOffset(17,210),Size=UDim2.new(1,-34,0,27)})
         label(statsCard,"Carga o guarda tu configuración.",11,C.Muted,{
-            Position=UDim2.fromOffset(17,268),Size=UDim2.new(1,-34,0,32),
+            Position=UDim2.fromOffset(17,241),Size=UDim2.new(1,-34,0,32),
             TextWrapped=true})
         local presetsButton=button(statsCard,"Predeterminado    ▾",{
             BackgroundColor3=C.Field,Size=UDim2.new(1,-34,0,39),
-            Position=UDim2.fromOffset(17,315),TextSize=12,Font=MEDIUM})
+            Position=UDim2.fromOffset(17,287),TextSize=12,Font=MEDIUM})
         round(presetsButton,12)
         local presetStroke=stroke(presetsButton,C.Border)
         presetStroke.Transparency=.28
@@ -2018,10 +2043,10 @@ function Nox:CreateWindow(options)
             local width,height=area.X,area.Y
             if width<1 or height<1 then return end
             local gap,pad=12,3
-            if width>=950 then
+            if width>=770 then
                 local aw=width-2*pad-2*gap
-                local a=math.floor(aw*.49)
-                local b=math.floor(aw*.25)
+                local a=math.floor(aw*.51)
+                local b=math.floor(aw*.23)
                 local c=aw-a-b
                 mainCard.Position=UDim2.fromOffset(pad,pad)
                 mainCard.Size=UDim2.fromOffset(a,height-2*pad)
@@ -2031,7 +2056,7 @@ function Nox:CreateWindow(options)
                 statsCard.Size=UDim2.fromOffset(c,height-2*pad)
                 shell.ScrollingEnabled=false
                 shell.CanvasSize=UDim2.fromOffset(0,height)
-            elseif width>=650 then
+            elseif width>=610 then
                 local aw=width-2*pad-gap
                 local a=math.floor(aw*.62)
                 local b=aw-a
@@ -2057,7 +2082,18 @@ function Nox:CreateWindow(options)
                 shell.ScrollingEnabled=true
                 shell.CanvasSize=UDim2.fromOffset(0,mainHeight+290+367+3*gap+2*pad)
             end
-            list.Size=UDim2.new(1,-26,0,math.max(100,mainCard.Size.Y.Offset-105))
+            list.Size=UDim2.new(1,-26,0,math.max(100,mainCard.Size.Y.Offset-94))
+            for _,head in ipairs(cardHeadings) do
+                local small=head.Card.Size.X.Offset<225
+                head.Icon.Position=UDim2.fromOffset(small and 11 or 15,14)
+                head.Icon.Size=UDim2.fromOffset(small and 32 or 39,small and 32 or 39)
+                head.Heading.Position=UDim2.fromOffset(small and 49 or 65,11)
+                head.Heading.Size=UDim2.new(1,small and -57 or -76,0,28)
+                head.Heading.TextSize=small and 12 or 16
+                head.Hint.Visible=not small
+                head.Hint.Position=UDim2.fromOffset(65,40)
+                head.Rule.Position=UDim2.fromOffset(15,small and 56 or 74)
+            end
         end
         tab._fitConcept=fitConcept
         tab.ConceptShell=shell
