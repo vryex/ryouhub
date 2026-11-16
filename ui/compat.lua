@@ -506,6 +506,13 @@ local function connect(window, signal, callback, bucket)
     table.insert(bucket or window._connections, connection)
     return connection
 end
+local function uiTween(object,goal,duration,easing)
+    if not object or not object.Parent then return nil end
+    local tween=TweenService:Create(object,
+        TweenInfo.new(duration or .17,easing or Enum.EasingStyle.Quad,Enum.EasingDirection.Out),goal)
+    tween:Play()
+    return tween
+end
 local function hover(window, target, baseColor, baseTransparency, hoverColor, hoverTransparency)
     local idleColor = baseColor or C.Row
     local idleTransparency = baseTransparency
@@ -524,12 +531,12 @@ local function hover(window, target, baseColor, baseTransparency, hoverColor, ho
     local hoverRole = themeRoleFromColor(overColor)
 
     connect(window, target.MouseEnter, function()
-        target.BackgroundColor3 = hoverRole and C[hoverRole] or overColor
-        target.BackgroundTransparency = overTransparency
+        uiTween(target,{BackgroundColor3=hoverRole and C[hoverRole] or overColor,
+            BackgroundTransparency=overTransparency},.16)
     end)
     connect(window, target.MouseLeave, function()
-        target.BackgroundColor3 = idleRole and C[idleRole] or idleColor
-        target.BackgroundTransparency = idleTransparency
+        uiTween(target,{BackgroundColor3=idleRole and C[idleRole] or idleColor,
+            BackgroundTransparency=idleTransparency},.20)
     end)
 end
 local function line(parent, x, y, w, h, rotation, color)
@@ -798,7 +805,7 @@ function Tab:_control(kind, options)
         Size=UDim2.new(1,-4,0,0),LayoutOrder=self._order},self.Content)
     local row = new("Frame", {Name=kind,BackgroundColor3=lightTheme and lightColor or darkColor,BackgroundTransparency=Glass.Row,
         Size=UDim2.new(1,0,0,0),LayoutOrder=self._order,ClipsDescendants=true},slot)
-    round(row,10); local rowStroke=stroke(row,lightTheme and lightStrokeColor or darkStrokeColor); rowStroke.Transparency=.18
+    round(row,14); local rowStroke=stroke(row,lightTheme and lightStrokeColor or darkStrokeColor); rowStroke.Transparency=.22
     local head = new("Frame", {Name="Heading",BackgroundTransparency=1,
         Size=UDim2.new(1,0,0,0),LayoutOrder=1},row)
     local copy = new("Frame", {Name="Copy",BackgroundTransparency=1,
@@ -822,6 +829,19 @@ function Tab:_control(kind, options)
         DarkTitleColor=o.TitleColor,LightTitleColor=o.LightTitleColor,DarkDescColor=o.DescColor,LightDescColor=o.LightDescColor},Control)
     desc.AutomaticSize=Enum.AutomaticSize.None; desc.TextYAlignment=Enum.TextYAlignment.Top
     table.insert(self.Elements,control)
+    if kind ~= "Section" then
+        connect(self.Window,row.MouseEnter,function()
+            if control.Destroyed or control.Locked then return end
+            uiTween(row,{BackgroundColor3=C.Hover,BackgroundTransparency=math.max(0,Glass.Row-.05)},.18)
+            if rowStroke and rowStroke.Parent then uiTween(rowStroke,{Transparency=.03},.18) end
+        end)
+        connect(self.Window,row.MouseLeave,function()
+            if control.Destroyed then return end
+            local light=self.Window.ThemeName=="Blanco"
+            uiTween(row,{BackgroundColor3=light and lightColor or darkColor,BackgroundTransparency=Glass.Row},.21)
+            if rowStroke and rowStroke.Parent then uiTween(rowStroke,{Transparency=.22},.21) end
+        end)
+    end
     connect(self.Window,row:GetPropertyChangedSignal("Visible"),function() self:_queueFilter() end)
     connect(self.Window,row:GetPropertyChangedSignal("LayoutOrder"),function() slot.LayoutOrder=row.LayoutOrder; self:_queueFilter() end)
     if o.Locked then control:Lock() end
@@ -949,9 +969,17 @@ function Tab:Toggle(options)
         if self.Destroyed then return self end
         value=value == true
         local changed=self.Value ~= value; self.Value=value
-        hit.BackgroundColor3=value and C.White or C.Border
-        knob.BackgroundColor3=value and C.Window or C.Muted
-        knob.Position=UDim2.fromOffset(value and 26 or 4,4)
+        local trackColor=value and C.White or C.Border
+        local thumbColor=value and C.Window or C.Muted
+        local thumbPosition=UDim2.fromOffset(value and 26 or 4,4)
+        if changed and not silent then
+            uiTween(hit,{BackgroundColor3=trackColor},.23,Enum.EasingStyle.Quart)
+            uiTween(knob,{BackgroundColor3=thumbColor,Position=thumbPosition},.23,Enum.EasingStyle.Quart)
+        else
+            hit.BackgroundColor3=trackColor
+            knob.BackgroundColor3=thumbColor
+            knob.Position=thumbPosition
+        end
         if changed and not silent then invoke(self.Callback,value) end
         return self
     end
@@ -964,7 +992,7 @@ local function field(parent, placeholder)
     local box=new("TextBox",{Name="Field",Text="",PlaceholderText=placeholder or "",
         PlaceholderColor3=C.Faint,BackgroundColor3=C.Field,BackgroundTransparency=Glass.Field,ClearTextOnFocus=false,
         TextXAlignment=Enum.TextXAlignment.Left,TextSize=11,Size=UDim2.new(1,0,0,28),LayoutOrder=2},parent)
-    round(box,8); stroke(box,C.Border); padding(box,9,0)
+    round(box,10); stroke(box,C.Border); padding(box,9,0)
     return box
 end
 function Tab:Input(options)
@@ -1122,7 +1150,7 @@ function Tab:Dropdown(options)
     local o=options or {}; local c=self:_control("Dropdown",o)
     c.Values=uniqueDropdownValues(o.Values); c.Multi=o.Multi==true or o.MultiSelect==true
     local hit=button(c.ElementFrame,"",{Name="Dropdown",BackgroundColor3=C.Field,BackgroundTransparency=Glass.Field,
-        Size=UDim2.new(1,0,0,28),LayoutOrder=2}); round(hit,8); stroke(hit,C.Border)
+        Size=UDim2.new(1,0,0,28),LayoutOrder=2}); round(hit,10); stroke(hit,C.Border)
     local valueLabel=label(hit,"",11,C.Text,{Position=UDim2.fromOffset(8,0),Size=UDim2.new(1,-30,1,0),TextWrapped=true})
     icon(hit,"chevron").Position=UDim2.new(1,-26,.5,-10)
     c.Interactive=hit; c.BodyField=hit; c.ValueLabel=valueLabel
@@ -1178,7 +1206,7 @@ function Tab:Dropdown(options)
                         local choiceHeight=math.max(32,textHeight(tostring(value),12,FONT,math.max(60,panel.AbsoluteSize.X-78))+12)
                         local choice=button(list,"",{Name="Option",Size=UDim2.new(1,-4,0,choiceHeight),LayoutOrder=count,
                             BackgroundColor3=selected and C.Text or C.Row})
-                        round(choice,8)
+                        round(choice,10)
                         label(choice,tostring(value),13,selected and C.Window or C.Text,{Position=UDim2.fromOffset(12,0),
                             Size=UDim2.new(1,-38,1,0),TextWrapped=true})
                         label(choice,selected and "✓" or "",12,C.Window,{Position=UDim2.new(1,-28,0,0),Size=UDim2.new(0,20,1,0)})
@@ -1433,7 +1461,7 @@ function Nox:CreateWindow(options)
     local mount=new("Frame",{Name="WindowMount",BackgroundTransparency=1,Size=UDim2.fromScale(1,1)},surface)
     local root=new("Frame",{Name="RyouPanel",BackgroundColor3=w.ThemeDef.Visuals.RootBase,BackgroundTransparency=Glass.Root,AnchorPoint=Vector2.new(.5,.5),
         Position=UDim2.fromScale(.5,.5),Size=UDim2.fromOffset(680,430),ClipsDescendants=true},mount)
-    round(root,16); local rootStroke=stroke(root,w.ThemeDef.Visuals.RootStroke)
+    round(root,20); local rootStroke=stroke(root,w.ThemeDef.Visuals.RootStroke)
     local rootGradient=new("UIGradient",{Rotation=22,Color=ColorSequence.new({
         ColorSequenceKeypoint.new(0,w.ThemeDef.Visuals.RootGradient[1]),
         ColorSequenceKeypoint.new(.52,w.ThemeDef.Visuals.RootGradient[2]),
@@ -1481,7 +1509,7 @@ function Nox:CreateWindow(options)
     local topRule=line(root,14,57,784,1,0,C.Border); topRule.Size=UDim2.new(1,-28,0,1)
     local sidebar=new("Frame",{Name="Navigation",BackgroundColor3=w.ThemeDef.Visuals.SidebarBase,
         BackgroundTransparency=Glass.Sidebar,ClipsDescendants=true,ZIndex=12},root)
-    round(sidebar,11); local sidebarStroke=stroke(sidebar,w.ThemeDef.Visuals.SidebarStroke)
+    round(sidebar,14); local sidebarStroke=stroke(sidebar,w.ThemeDef.Visuals.SidebarStroke)
     local nav=scroll(sidebar,{Name="Tabs",Position=UDim2.fromOffset(7,0),Size=UDim2.new(1,-14,1,0),
         ScrollingDirection=Enum.ScrollingDirection.X,AutomaticCanvasSize=Enum.AutomaticSize.X,ScrollBarThickness=5})
     local function horizontal(parent,gap)
@@ -1522,7 +1550,7 @@ function Nox:CreateWindow(options)
     w.CountLabel=count
     local searchBox=new("Frame",{Name="SearchBox",BackgroundColor3=C.Field,BackgroundTransparency=Glass.Field,ClipsDescendants=true,
         Position=UDim2.new(1,-312,0,8),Size=UDim2.fromOffset(198,30),ZIndex=6},top)
-    round(searchBox,9); local searchStroke=stroke(searchBox,w.ThemeDef.Visuals.SearchStroke)
+    round(searchBox,12); local searchStroke=stroke(searchBox,w.ThemeDef.Visuals.SearchStroke)
     local search=new("TextBox",{Name="Search",BackgroundTransparency=1,ClearTextOnFocus=false,TextSize=12,TextTruncate=Enum.TextTruncate.AtEnd,
         PlaceholderText="Buscar ajuste...",PlaceholderColor3=C.Faint,TextXAlignment=Enum.TextXAlignment.Left,TextYAlignment=Enum.TextYAlignment.Center,
         Position=UDim2.fromOffset(28,0),Size=UDim2.new(1,-54,1,0)},searchBox)
@@ -1638,7 +1666,7 @@ function Nox:CreateWindow(options)
     function w:_drawer(value)
         -- Mantiene disponible el punto de entrada legacy del navegador.
         self._drawerOpen=false
-        sidebar.Visible=not self._compactNavigation
+        sidebar.Visible=true
     end
     local function clampRoot()
         local bounds=surface.AbsoluteSize; local size=root.AbsoluteSize
@@ -1712,7 +1740,7 @@ function Nox:CreateWindow(options)
         local topHeight=compact and 48 or 58
         local dockHeight=45
         local dockY=topHeight+7
-        local contentY=compact and (topHeight+8) or (dockY+dockHeight+10)
+        local contentY=dockY+dockHeight+9
         local contentEnd=height-30
         w._compactNavigation=compact
 
@@ -1755,7 +1783,7 @@ function Nox:CreateWindow(options)
 
         sidebar.Position=UDim2.fromOffset(inset,dockY)
         sidebar.Size=UDim2.new(1,-2*inset,0,dockHeight)
-        sidebar.Visible=not compact
+        sidebar.Visible=true
 
         content.Position=UDim2.fromOffset(inset,contentY)
         content.Size=UDim2.new(1,-2*inset,0,math.max(0,contentEnd-contentY))
@@ -1767,7 +1795,7 @@ function Nox:CreateWindow(options)
         pageTitle.Size=UDim2.new(1,-searchWidth-9,0,34)
         pageTitle.TextSize=21
         pageTitle.Visible=not compact
-        sectionPicker.Visible=compact
+        sectionPicker.Visible=false
         sectionPicker.Size=UDim2.new(1,-searchWidth-8,0,34)
         pageTitle.TextTruncate=Enum.TextTruncate.AtEnd
         local showDetails=not compact
@@ -1783,8 +1811,8 @@ function Nox:CreateWindow(options)
         openButton.Size=UDim2.fromOffset(bounds.X<380 and 130 or 146,44)
         if not w._launcherMoved then
             local launcherWidth=openButton.Size.X.Offset
-            openButton.Position=UDim2.fromOffset(math.max(0,bounds.X-launcherWidth-14),
-                math.max(0,bounds.Y-openButton.Size.Y.Offset-70))
+            local launchWidth=launcherSurface.AbsoluteSize.X
+            openButton.Position=UDim2.fromOffset(math.max(0,math.floor((launchWidth-launcherWidth)*.5)),16)
         end
 
         clampRoot()
@@ -1806,8 +1834,10 @@ function Nox:CreateWindow(options)
         for _,tab in ipairs(self.Tabs) do
             local selected=tab==target
             tab.Page.Visible=selected
-            tab.NavButton.BackgroundColor3=selected and C.Hover or self.ThemeDef.Visuals.NavButtonIdle
-            tab.NavButton.BackgroundTransparency=selected and Glass.NavActive or Glass.NavIdle
+            uiTween(tab.NavButton,{
+                BackgroundColor3=selected and C.Hover or self.ThemeDef.Visuals.NavButtonIdle,
+                BackgroundTransparency=selected and Glass.NavActive or Glass.NavIdle
+            },.19)
             tab.NavTitle.TextColor3=selected and C.Text or C.Muted
             if tab.Number then tab.Number.TextColor3=selected and C.Text or C.Faint end
             if tab.NavIcon then tab.NavIcon.ImageColor3=selected and C.Text or C.Faint end
@@ -1825,8 +1855,8 @@ function Nox:CreateWindow(options)
             if self._pageTween then self._pageTween:Cancel() end
             if previous then previous.Page.Position=UDim2.fromOffset(0,0) end
             if self.Opened then
-                target.Page.Position=UDim2.fromOffset(0,5)
-                self._pageTween=TweenService:Create(target.Page,TweenInfo.new(.16,Enum.EasingStyle.Quad),
+                target.Page.Position=UDim2.fromOffset(12,0)
+                self._pageTween=TweenService:Create(target.Page,TweenInfo.new(.23,Enum.EasingStyle.Quart),
                     {Position=UDim2.fromOffset(0,0)})
                 self._pageTween:Play()
             end
@@ -1857,7 +1887,7 @@ function Nox:CreateWindow(options)
         self._navOrder+=1
         local navButton=button(holder or nav,"",{Name=title,Size=UDim2.fromOffset(navWidth,37),
             BackgroundColor3=self.ThemeDef.Visuals.NavButtonIdle,BackgroundTransparency=Glass.NavIdle,LayoutOrder=self._navOrder})
-        round(navButton,8)
+        round(navButton,11)
         local selectionBar=new("Frame",{Name="Selected",Position=UDim2.new(0,10,1,-4),Size=UDim2.new(1,-20,0,2),
             BackgroundColor3=C.White,BackgroundTransparency=0,Visible=false,ZIndex=3},navButton); round(selectionBar,2)
         local navIcon
@@ -1900,7 +1930,7 @@ function Nox:CreateWindow(options)
         local headingWidth=math.clamp(math.ceil(TextService:GetTextSize(title,10,BOLD,Vector2.new(180,22)).X)+12,34,110)
         local group=new("Frame",{Name=plain(opt.Title),BackgroundColor3=C.Panel,BackgroundTransparency=.31,
             Size=UDim2.fromOffset(0,40),AutomaticSize=Enum.AutomaticSize.X,LayoutOrder=self._navOrder},nav)
-        round(group,8); horizontal(group,4)
+        round(group,11); horizontal(group,5)
         label(group,title,10,C.Muted,{Size=UDim2.fromOffset(headingWidth,22),Font=BOLD,
             TextXAlignment=Enum.TextXAlignment.Center,TextTruncate=Enum.TextTruncate.AtEnd,LayoutOrder=0})
         local items=new("Frame",{Name="Items",BackgroundTransparency=1,Size=UDim2.fromOffset(0,38),
@@ -2037,12 +2067,12 @@ function Nox:CreateWindow(options)
         end
         root.Interactable=opened
         windowTween=TweenService:Create(mount,
-            TweenInfo.new(opened and .20 or .13,Enum.EasingStyle.Quad,opened and Enum.EasingDirection.Out or Enum.EasingDirection.In),
+            TweenInfo.new(opened and .29 or .19,Enum.EasingStyle.Quart,opened and Enum.EasingDirection.Out or Enum.EasingDirection.In),
             {Position=UDim2.fromOffset(0,opened and 0 or 9)})
         windowTween:Play()
         if not opened then
             local closing=windowTween
-            task.delay(.13,function()
+            task.delay(.19,function()
                 if not w.Destroyed and not w.Opened and windowTween==closing then root.Visible=false end
             end)
         end
@@ -2089,37 +2119,7 @@ function Nox:CreateWindow(options)
         end
         return {Close=function() self:_closePopup() end}
     end
-    connect(w,sectionPicker.Activated,function()
-        local panel=w:_popup("Secciones",380,420,nil)
-        local list=scroll(panel,{Position=UDim2.fromOffset(14,55),Size=UDim2.new(1,-28,1,-69)})
-        vertical(list,5)
-        local groupNames={}
-        for _,group in ipairs(w.Groups) do
-            local items=group.ElementFrame:FindFirstChild("Items")
-            if items then groupNames[items]=group.ElementFrame.Name end
-        end
-        local count=0
-        local lastGroup
-        for _,tab in ipairs(w.Tabs) do
-            local holder=tab.NavButton.Parent
-            if holder and (holder==nav or holder.Visible) and tab.NavButton.Visible then
-                local group=groupNames[holder]
-                if group and group~="" and group~=lastGroup then
-                    count+=1
-                    label(list,group,11,C.Muted,{LayoutOrder=count,Font=BOLD})
-                end
-                lastGroup=group
-                count+=1
-                local selected=tab==w.CurrentTab
-                local choice=button(list,"",{Name="SectionChoice",LayoutOrder=count,
-                    Size=UDim2.new(1,-6,0,41),BackgroundColor3=selected and C.Hover or C.Row})
-                round(choice,8)
-                label(choice,tab.Title,13,C.Text,{Position=UDim2.fromOffset(11,0),Size=UDim2.new(1,-22,1,0),
-                    Font=selected and BOLD or MEDIUM,TextTruncate=Enum.TextTruncate.AtEnd})
-                connect(w,choice.Activated,function() w:SelectTab(tab) end,w._popupConnections)
-            end
-        end
-    end)
+    -- La navegación de secciones vive en el dock, sin selector emergente.
     connect(w,minimize.Activated,function() w:Close() end)
     connect(w,close.Activated,function()
         w:Dialog({Title="Cerrar Ryou",Content="Se cerrará el panel y se limpiará esta sesión. Puedes volver a ejecutar el hub cuando quieras.",
