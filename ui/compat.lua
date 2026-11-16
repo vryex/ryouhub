@@ -805,7 +805,7 @@ function Tab:_control(kind, options)
         Size=UDim2.new(1,-4,0,0),LayoutOrder=self._order},self.Content)
     local row = new("Frame", {Name=kind,BackgroundColor3=lightTheme and lightColor or darkColor,BackgroundTransparency=Glass.Row,
         Size=UDim2.new(1,0,0,0),LayoutOrder=self._order,ClipsDescendants=true},slot)
-    round(row,14); local rowStroke=stroke(row,lightTheme and lightStrokeColor or darkStrokeColor); rowStroke.Transparency=.22
+    round(row,17); local rowStroke=stroke(row,lightTheme and lightStrokeColor or darkStrokeColor); rowStroke.Transparency=.22
     local head = new("Frame", {Name="Heading",BackgroundTransparency=1,
         Size=UDim2.new(1,0,0,0),LayoutOrder=1},row)
     local copy = new("Frame", {Name="Copy",BackgroundTransparency=1,
@@ -1461,7 +1461,7 @@ function Nox:CreateWindow(options)
     local mount=new("Frame",{Name="WindowMount",BackgroundTransparency=1,Size=UDim2.fromScale(1,1)},surface)
     local root=new("Frame",{Name="RyouPanel",BackgroundColor3=w.ThemeDef.Visuals.RootBase,BackgroundTransparency=Glass.Root,AnchorPoint=Vector2.new(.5,.5),
         Position=UDim2.fromScale(.5,.5),Size=UDim2.fromOffset(680,430),ClipsDescendants=true},mount)
-    round(root,20); local rootStroke=stroke(root,w.ThemeDef.Visuals.RootStroke)
+    round(root,24); local rootStroke=stroke(root,w.ThemeDef.Visuals.RootStroke)
     local rootGradient=new("UIGradient",{Rotation=22,Color=ColorSequence.new({
         ColorSequenceKeypoint.new(0,w.ThemeDef.Visuals.RootGradient[1]),
         ColorSequenceKeypoint.new(.52,w.ThemeDef.Visuals.RootGradient[2]),
@@ -1509,7 +1509,7 @@ function Nox:CreateWindow(options)
     local topRule=line(root,14,57,784,1,0,C.Border); topRule.Size=UDim2.new(1,-28,0,1)
     local sidebar=new("Frame",{Name="Navigation",BackgroundColor3=w.ThemeDef.Visuals.SidebarBase,
         BackgroundTransparency=Glass.Sidebar,ClipsDescendants=true,ZIndex=12},root)
-    round(sidebar,14); local sidebarStroke=stroke(sidebar,w.ThemeDef.Visuals.SidebarStroke)
+    round(sidebar,20); local sidebarStroke=stroke(sidebar,w.ThemeDef.Visuals.SidebarStroke)
     local nav=scroll(sidebar,{Name="Tabs",Position=UDim2.fromOffset(7,0),Size=UDim2.new(1,-14,1,0),
         ScrollingDirection=Enum.ScrollingDirection.X,AutomaticCanvasSize=Enum.AutomaticSize.X,ScrollBarThickness=5})
     local function horizontal(parent,gap)
@@ -1517,7 +1517,7 @@ function Nox:CreateWindow(options)
             VerticalAlignment=Enum.VerticalAlignment.Center,SortOrder=Enum.SortOrder.LayoutOrder,
             Padding=UDim.new(0,gap)},parent)
     end
-    local navLayout=horizontal(nav,8)
+    local navLayout=horizontal(nav,9)
     local function scrollTabs(delta)
         local maximum=math.max(0,nav.AbsoluteCanvasSize.X-nav.AbsoluteWindowSize.X)
         nav.CanvasPosition=Vector2.new(math.clamp(nav.CanvasPosition.X+delta,0,maximum),0)
@@ -1532,9 +1532,14 @@ function Nox:CreateWindow(options)
         navArrows[index]=arrow
     end
     local function fitNavigation()
-        local overflow=navLayout.AbsoluteContentSize.X>math.max(0,sidebar.AbsoluteSize.X-14*w.UIScale)
-        nav.Size=UDim2.new(1,overflow and -78 or -14,1,0)
-        for _,arrow in ipairs(navArrows) do arrow.Visible=overflow end
+        local overflow=navLayout.AbsoluteContentSize.X>math.max(0,sidebar.AbsoluteSize.X-86*w.UIScale)
+        nav.Position=UDim2.fromOffset(overflow and 46 or 8,0)
+        nav.Size=UDim2.new(1,overflow and -92 or -16,1,0)
+        for i,arrow in ipairs(navArrows) do
+            arrow.Visible=overflow
+            arrow.AnchorPoint=Vector2.new(0,.5)
+            arrow.Position=i==1 and UDim2.new(0,6,.5,0) or UDim2.new(1,-40,.5,0)
+        end
     end
     connect(w,navLayout:GetPropertyChangedSignal("AbsoluteContentSize"),fitNavigation)
     connect(w,sidebar:GetPropertyChangedSignal("AbsoluteSize"),fitNavigation)
@@ -1550,7 +1555,7 @@ function Nox:CreateWindow(options)
     w.CountLabel=count
     local searchBox=new("Frame",{Name="SearchBox",BackgroundColor3=C.Field,BackgroundTransparency=Glass.Field,ClipsDescendants=true,
         Position=UDim2.new(1,-312,0,8),Size=UDim2.fromOffset(198,30),ZIndex=6},top)
-    round(searchBox,12); local searchStroke=stroke(searchBox,w.ThemeDef.Visuals.SearchStroke)
+    round(searchBox,17); local searchStroke=stroke(searchBox,w.ThemeDef.Visuals.SearchStroke)
     local search=new("TextBox",{Name="Search",BackgroundTransparency=1,ClearTextOnFocus=false,TextSize=12,TextTruncate=Enum.TextTruncate.AtEnd,
         PlaceholderText="Buscar ajuste...",PlaceholderColor3=C.Faint,TextXAlignment=Enum.TextXAlignment.Left,TextYAlignment=Enum.TextYAlignment.Center,
         Position=UDim2.fromOffset(28,0),Size=UDim2.new(1,-54,1,0)},searchBox)
@@ -1737,11 +1742,11 @@ function Nox:CreateWindow(options)
 
         local compact=width<680 or height<390
         local inset=compact and 12 or 17
-        local topHeight=compact and 48 or 58
-        local dockHeight=45
-        local dockY=topHeight+7
-        local contentY=dockY+dockHeight+9
-        local contentEnd=height-30
+        local topHeight=compact and 59 or 66
+        local dockHeight=compact and 44 or 52
+        local dockY=topHeight+5
+        local contentY=dockY+dockHeight+12
+        local contentEnd=height-13
         w._compactNavigation=compact
 
         w.Short=height<435
@@ -1787,26 +1792,19 @@ function Nox:CreateWindow(options)
 
         content.Position=UDim2.fromOffset(inset,contentY)
         content.Size=UDim2.new(1,-2*inset,0,math.max(0,contentEnd-contentY))
-        if searchBox.Parent~=content then searchBox.Parent=content end
-        local searchWidth=compact and math.floor(w.ContentWidth*.47) or 208
-        searchBox.Position=UDim2.new(1,-searchWidth,0,0)
-        searchBox.Size=UDim2.fromOffset(searchWidth,34)
-        pageTitle.Position=UDim2.fromOffset(1,0)
-        pageTitle.Size=UDim2.new(1,-searchWidth-9,0,34)
-        pageTitle.TextSize=21
-        pageTitle.Visible=not compact
+        -- El buscador vive en el encabezado, delante de minimizar/cerrar.
+        if searchBox.Parent~=top then searchBox.Parent=top end
+        local searchWidth=math.clamp(math.floor(width*.29),115,310)
+        local controlGap=inset+76+12
+        searchBox.Position=UDim2.new(1,-searchWidth-controlGap,0,math.floor((topHeight-36)*.5))
+        searchBox.Size=UDim2.fromOffset(searchWidth,36)
+        -- Usar toda la superficie debajo de las pestañas para contenido.
+        pageTitle.Visible=false
         sectionPicker.Visible=false
-        sectionPicker.Size=UDim2.new(1,-searchWidth-8,0,34)
-        pageTitle.TextTruncate=Enum.TextTruncate.AtEnd
-        local showDetails=not compact
-        count.Position=UDim2.new(1,-84,0,38)
-        count.Visible=showDetails
-        pageDesc.Position=UDim2.fromOffset(1,36)
-        pageDesc.Size=UDim2.new(1,-92,0,18)
-        pageDesc.Visible=showDetails
-        local pagesY=showDetails and 58 or 42
-        pages.Position=UDim2.fromOffset(0,pagesY)
-        pages.Size=UDim2.new(1,0,1,-pagesY)
+        count.Visible=false
+        pageDesc.Visible=false
+        pages.Position=UDim2.fromOffset(0,0)
+        pages.Size=UDim2.fromScale(1,1)
 
         openButton.Size=UDim2.fromOffset(bounds.X<380 and 130 or 146,44)
         if not w._launcherMoved then
@@ -1887,7 +1885,7 @@ function Nox:CreateWindow(options)
         self._navOrder+=1
         local navButton=button(holder or nav,"",{Name=title,Size=UDim2.fromOffset(navWidth,37),
             BackgroundColor3=self.ThemeDef.Visuals.NavButtonIdle,BackgroundTransparency=Glass.NavIdle,LayoutOrder=self._navOrder})
-        round(navButton,11)
+        round(navButton,15)
         local selectionBar=new("Frame",{Name="Selected",Position=UDim2.new(0,10,1,-4),Size=UDim2.new(1,-20,0,2),
             BackgroundColor3=C.White,BackgroundTransparency=0,Visible=false,ZIndex=3},navButton); round(selectionBar,2)
         local navIcon
@@ -1925,21 +1923,11 @@ function Nox:CreateWindow(options)
     end
     function w:Tab(options) return self:_tab(options) end
     function w:Section(options)
-        local opt=options or {}; self._navOrder+=1
-        local title=plain(opt.Title or "General")
-        local headingWidth=math.clamp(math.ceil(TextService:GetTextSize(title,10,BOLD,Vector2.new(180,22)).X)+12,34,110)
-        local group=new("Frame",{Name=plain(opt.Title),BackgroundColor3=C.Panel,BackgroundTransparency=.31,
-            Size=UDim2.fromOffset(0,40),AutomaticSize=Enum.AutomaticSize.X,LayoutOrder=self._navOrder},nav)
-        round(group,11); horizontal(group,5)
-        label(group,title,10,C.Muted,{Size=UDim2.fromOffset(headingWidth,22),Font=BOLD,
-            TextXAlignment=Enum.TextXAlignment.Center,TextTruncate=Enum.TextTruncate.AtEnd,LayoutOrder=0})
-        local items=new("Frame",{Name="Items",BackgroundTransparency=1,Size=UDim2.fromOffset(0,38),
-            AutomaticSize=Enum.AutomaticSize.X,LayoutOrder=1},group)
-        horizontal(items,4)
-        local section={Window=self,ElementFrame=group}
-        function section:Tab(config) return self.Window:_tab(config,items) end
-        function section:Open() items.Visible=true; return self end
-        function section:Close() items.Visible=false; return self end
+        -- Grupo lógico para compatibilidad; pestañas sin títulos intermedios.
+        local section={Window=self,ElementFrame=nav,Title=plain((options or {}).Title or "")}
+        function section:Tab(config) return self.Window:_tab(config,nav) end
+        function section:Open() return self end
+        function section:Close() return self end
         table.insert(self.Groups,section)
         return section
     end
