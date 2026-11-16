@@ -1,25 +1,15 @@
--- Ryou compatibility UI
--- Migrated from the previous Xero UI base. Visible branding belongs to Ryou.
--- Internal legacy identifiers are intentionally preserved for compatibility.
-
---[[
-    Ryou UI / Crimson Noir — signature interface
-    Creator: Ryou
-    Native Roblox interface. No WindUI runtime or icon render loops; remote icons use lazy local cache.
-    Compatible with the control API used by Ryou game scripts.
-    Usage: local UI = require(module); local Window = UI:CreateWindow({...})
-    GuiButton input: https://create.roblox.com/docs/reference/engine/classes/GuiButton
-]]
+-- RyouHub · biblioteca visual compartida
+-- Creador: Ryou. Se conservan los alias y campos de la API de compatibilidad.
 
 local Players = game:GetService("Players")
 local Input = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local TextService = game:GetService("TextService")
+local TweenService = game:GetService("TweenService")
 
 -- Ryou themes + backgrounds --------------------------------------------
 local XeroEnv = (getgenv and getgenv()) or _G
-local XERO_BACKGROUND_FOLDER = "Ryou/Assets"
 
 local function canonicalThemeName(name)
     local key = string.lower(tostring(name or ""))
@@ -29,35 +19,20 @@ local function canonicalThemeName(name)
     return "Xero" -- internal compatibility key for the Ryou dark theme
 end
 
-local THEME_BACKGROUNDS = {
-    Xero = {
-    URL = tostring(XeroEnv.XERO_BACKGROUND_URL or
-        "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/assets/backgrounds/ryou-sakura.png"),
-    CACHE = tostring(XeroEnv.XERO_BACKGROUND_CACHE or
-        "Ryou/Assets/ryou_sakura_v2.png"),
-    },
-    Blanco = {
-        URL = tostring(XeroEnv.XERO_BACKGROUND_LIGHT_URL or XeroEnv.XERO_BACKGROUND_WHITE_URL or
-            "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/assets/backgrounds/ryou-light.png"),
-        CACHE = tostring(XeroEnv.XERO_BACKGROUND_LIGHT_CACHE or XeroEnv.XERO_BACKGROUND_WHITE_CACHE or
-            "Ryou/Assets/ryou_light_v2.png"),
-    },
-}
-
 local THEMES = {
     Xero = {
         Name = "Ryou",
         Colors = {
-            Window = Color3.fromRGB(8,7,10), Panel = Color3.fromRGB(13,11,16),
-            Row = Color3.fromRGB(19,16,22), Field = Color3.fromRGB(10,9,13),
-            Hover = Color3.fromRGB(31,23,31), Border = Color3.fromRGB(55,38,49),
-            Text = Color3.fromRGB(246,241,245), Muted = Color3.fromRGB(177,157,169),
-            Faint = Color3.fromRGB(111,88,102), White = Color3.fromRGB(226,55,94),
+            Window = Color3.fromRGB(13,17,21), Panel = Color3.fromRGB(21,27,34),
+            Row = Color3.fromRGB(27,35,43), Field = Color3.fromRGB(14,20,26),
+            Hover = Color3.fromRGB(39,52,62), Border = Color3.fromRGB(60,75,87),
+            Text = Color3.fromRGB(239,246,250), Muted = Color3.fromRGB(174,191,204),
+            Faint = Color3.fromRGB(134,156,172), White = Color3.fromRGB(156,229,206),
         },
         Glass = {
             Root = 0.02,
-            Sidebar = 0.10,
-            Row = 0.18,
+            Sidebar = 0.04,
+            Row = 0.07,
             Field = 0.22,
             Button = 0.16,
             NavIdle = 0.26,
@@ -66,62 +41,53 @@ local THEMES = {
             Popup = 0.08,
         },
         Visuals = {
-            RootBase = Color3.fromRGB(7,6,9),
-            RootStroke = Color3.fromRGB(74,40,55),
+            RootBase = Color3.fromRGB(16,23,29),
+            RootStroke = Color3.fromRGB(70,92,105),
             RootGradient = {
-                Color3.fromRGB(6,5,8),
-                Color3.fromRGB(16,10,15),
-                Color3.fromRGB(8,6,10),
+                Color3.fromRGB(11,17,22),
+                Color3.fromRGB(29,43,50),
+                Color3.fromRGB(15,23,29),
             },
-            AnimeImageTransparency = 0.12,
-            AnimeShadeColor = Color3.fromRGB(8,2,6),
-            AnimeShadeTransparency = 0.54,
-            AnimeShadeStops = {0.00, 0.12, 0.42},
-            SidebarBase = Color3.fromRGB(10,8,12),
-            SidebarStroke = Color3.fromRGB(50,30,41),
-            SearchStroke = Color3.fromRGB(58,34,46),
-            OpenStroke = Color3.fromRGB(104,42,61),
-            OpenButtonBase = Color3.fromRGB(13,9,13),
-            BackdropGlowA = Color3.fromRGB(76,16,38),
-            BackdropGlowB = Color3.fromRGB(37,12,28),
-            BackdropWatermarkTransparency = 0.935,
-            GridColor = Color3.fromRGB(226,55,94),
-            GridVTransparency = 0.965,
-            GridHTransparency = 0.975,
-            NavButtonIdle = Color3.fromRGB(12,10,14),
-            NavButtonHover = Color3.fromRGB(27,18,25),
+            SidebarBase = Color3.fromRGB(16,24,30),
+            SidebarStroke = Color3.fromRGB(55,76,88),
+            SearchStroke = Color3.fromRGB(62,79,91),
+            OpenStroke = Color3.fromRGB(79,125,117),
+            OpenButtonBase = Color3.fromRGB(20,30,36),
+            BackdropGlowA = Color3.fromRGB(45,93,90),
+            NavButtonIdle = Color3.fromRGB(25,34,42),
+            NavButtonHover = Color3.fromRGB(41,57,66),
             ResizeGuideTransparency = 0.24,
-            ControlStroke = Color3.fromRGB(51,31,42),
-            FieldStroke = Color3.fromRGB(48,29,40),
-            ButtonBase = Color3.fromRGB(16,12,17),
-            ButtonStroke = Color3.fromRGB(57,32,44),
-            DropdownStroke = Color3.fromRGB(52,31,42),
-            PopupStroke = Color3.fromRGB(101,44,63),
-            GothicShell = Color3.fromRGB(226,55,94),
-            GothicShellStroke = Color3.fromRGB(104,42,61),
-            GothicGlow = Color3.fromRGB(74,16,37),
-            GothicBar = Color3.fromRGB(226,55,94),
-            GothicCorner = Color3.fromRGB(150,42,70),
-            GothicWatermark = Color3.fromRGB(226,55,94),
+            ControlStroke = Color3.fromRGB(54,70,82),
+            FieldStroke = Color3.fromRGB(50,67,77),
+            ButtonBase = Color3.fromRGB(25,35,43),
+            ButtonStroke = Color3.fromRGB(56,75,88),
+            DropdownStroke = Color3.fromRGB(58,78,87),
+            PopupStroke = Color3.fromRGB(83,126,120),
+            GothicShell = Color3.fromRGB(156,229,206),
+            GothicShellStroke = Color3.fromRGB(79,125,117),
+            GothicGlow = Color3.fromRGB(35,62,62),
+            GothicBar = Color3.fromRGB(156,229,206),
+            GothicCorner = Color3.fromRGB(88,150,139),
+            GothicWatermark = Color3.fromRGB(156,229,206),
             GothicWatermarkTransparency = 0.90,
-            GothicRow = Color3.fromRGB(13,10,15),
-            GothicStroke = Color3.fromRGB(62,34,47),
-            GothicDesc = Color3.fromRGB(190,166,178),
-            GothicBadgeText = Color3.fromRGB(255,238,244),
-            GothicBadgeBackground = Color3.fromRGB(39,13,23),
-            GothicBadgeStroke = Color3.fromRGB(112,41,62),
-            SliderValueBackground = Color3.fromRGB(12,9,13),
-            SliderValueText = Color3.fromRGB(246,241,245),
-            SliderValueStroke = Color3.fromRGB(65,35,49),
-            SliderRail = Color3.fromRGB(24,15,21),
-            SliderRailStroke = Color3.fromRGB(62,34,47),
-            SliderTrack = Color3.fromRGB(58,29,42),
-            SliderTrackGradient = {Color3.fromRGB(45,22,33),Color3.fromRGB(79,33,49),Color3.fromRGB(45,22,33)},
-            SliderFill = Color3.fromRGB(226,55,94),
-            SliderFillGradient = {Color3.fromRGB(244,77,112),Color3.fromRGB(180,35,72)},
-            SliderHalo = Color3.fromRGB(226,55,94),
-            SliderThumb = Color3.fromRGB(250,240,245),
-            SliderThumbStroke = Color3.fromRGB(126,45,67),
+            GothicRow = Color3.fromRGB(25,35,44),
+            GothicStroke = Color3.fromRGB(60,83,94),
+            GothicDesc = Color3.fromRGB(180,200,211),
+            GothicBadgeText = Color3.fromRGB(224,251,243),
+            GothicBadgeBackground = Color3.fromRGB(30,54,55),
+            GothicBadgeStroke = Color3.fromRGB(67,119,111),
+            SliderValueBackground = Color3.fromRGB(18,26,33),
+            SliderValueText = Color3.fromRGB(239,246,250),
+            SliderValueStroke = Color3.fromRGB(59,82,91),
+            SliderRail = Color3.fromRGB(17,25,32),
+            SliderRailStroke = Color3.fromRGB(60,83,94),
+            SliderTrack = Color3.fromRGB(57,80,89),
+            SliderTrackGradient = {Color3.fromRGB(38,56,68),Color3.fromRGB(74,101,111),Color3.fromRGB(38,56,68)},
+            SliderFill = Color3.fromRGB(156,229,206),
+            SliderFillGradient = {Color3.fromRGB(177,245,225),Color3.fromRGB(90,169,162)},
+            SliderHalo = Color3.fromRGB(156,229,206),
+            SliderThumb = Color3.fromRGB(236,252,247),
+            SliderThumbStroke = Color3.fromRGB(77,127,121),
         },
     },
     Blanco = {
@@ -152,21 +118,12 @@ local THEMES = {
                 Color3.fromRGB(245,245,248),
                 Color3.fromRGB(236,236,240),
             },
-            AnimeImageTransparency = 0.02,
-            AnimeShadeColor = Color3.fromRGB(255,255,255),
-            AnimeShadeTransparency = 0.48,
-            AnimeShadeStops = {0.00, 0.08, 0.22},
             SidebarBase = Color3.fromRGB(244,244,247),
             SidebarStroke = Color3.fromRGB(214,214,220),
             SearchStroke = Color3.fromRGB(206,206,212),
             OpenStroke = Color3.fromRGB(190,190,198),
             OpenButtonBase = Color3.fromRGB(247,247,250),
             BackdropGlowA = Color3.fromRGB(225,225,230),
-            BackdropGlowB = Color3.fromRGB(234,234,239),
-            BackdropWatermarkTransparency = 0.94,
-            GridColor = Color3.fromRGB(30,30,35),
-            GridVTransparency = 0.965,
-            GridHTransparency = 0.972,
             NavButtonIdle = Color3.fromRGB(238,238,242),
             NavButtonHover = Color3.fromRGB(229,229,234),
             ResizeGuideTransparency = 0.42,
@@ -230,16 +187,6 @@ local function getThemeDefinition(themeName)
 end
 
 applyThemeDefinition(CURRENT_THEME_NAME)
-
-local function backgroundSource(themeName)
-    return THEME_BACKGROUNDS[canonicalThemeName(themeName)] or THEME_BACKGROUNDS.Xero
-end
-
-local function isPngPayload(data)
-    return type(data) == "string"
-        and #data > 1024
-        and data:sub(1, 8) == "\137PNG\r\n\26\n"
-end
 
 local function ensureFolderTree(path)
     if type(makefolder) ~= "function" then return end
@@ -400,61 +347,6 @@ local function requestIconAsset(name, callback)
         XERO_ICON_PENDING[key] = nil
         for _, fn in ipairs(waiters) do pcall(fn, asset) end
     end)
-end
-
-local function cachedBackgroundAsset(themeName)
-    local assetFn = customAssetFunction()
-    local source = backgroundSource(themeName)
-    if not assetFn or type(isfile) ~= "function" or not isfile(source.CACHE) then
-        return nil
-    end
-
-    if type(readfile) == "function" then
-        local okRead, data = pcall(readfile, source.CACHE)
-        if not okRead or not isPngPayload(data) then return nil end
-    end
-
-    local okAsset, asset = pcall(assetFn, source.CACHE)
-    if okAsset and type(asset) == "string" and asset ~= "" then return asset end
-    return nil
-end
-
-local function downloadBackgroundAsset(themeName)
-    local assetFn = customAssetFunction()
-    local source = backgroundSource(themeName)
-    if not assetFn or type(writefile) ~= "function" then return nil end
-
-    local body
-    local req = (syn and syn.request) or (http and http.request) or http_request or request
-    if type(req) == "function" then
-        local okRequest, response = pcall(req, {
-            Url = source.URL,
-            Method = "GET",
-            Headers = { ["User-Agent"] = "Ryou/3.0" },
-        })
-        if okRequest and response then
-            local status = tonumber(response.StatusCode or response.Status)
-            if status and status >= 200 and status < 300 and isPngPayload(response.Body) then
-                body = response.Body
-            end
-        end
-    end
-
-    if not body then
-        local okHttp, data = pcall(function()
-            return game:HttpGet(source.URL)
-        end)
-        if okHttp and isPngPayload(data) then body = data end
-    end
-
-    if not body then return nil end
-    ensureFolderTree(XERO_BACKGROUND_FOLDER)
-    local okWrite = pcall(writefile, source.CACHE, body)
-    if not okWrite then return nil end
-
-    local okAsset, asset = pcall(assetFn, source.CACHE)
-    if okAsset and type(asset) == "string" and asset ~= "" then return asset end
-    return nil
 end
 
 local function colorEquals(left, right)
@@ -697,6 +589,7 @@ local function icon(parent, kind, numberOverride)
         local circle = new("Frame", {Position=UDim2.fromOffset(3,2),Size=UDim2.fromOffset(10,10),BackgroundTransparency=1},h)
         round(circle,10); stroke(circle,C.Muted,1.4); line(h,12,13,6,1,45)
     elseif kind == "minus" then line(h,4,10,12,1)
+    elseif kind == "chevron" then line(h,4,9,7,1,45); line(h,9,9,7,1,-45)
     else
         local symbols = {Inicio="01",Aimbot="02",["Kill All"]="03",Visuales="04",Movimiento="05",
             AutoFarm="06",["Gráficos"]="07",Animaciones="08",Apariencia="09",["Generar Armas"]="10",["Configuración"]="11",["Créditos"]="12"}
@@ -724,18 +617,18 @@ end
 function Control:_resize(width)
     if self.Destroyed then return end
     local section=self.__type=="Section"
-    local px=section and 2 or 10
-    local py=section and 7 or 8
+    local px=section and 4 or 12
+    local py=section and 8 or 10
     local headWidth=math.max(40,width-px*2)
     local reserve=self.Reserve or 0
-    local copyWidth=math.max(30,headWidth-reserve)
+    local copyOffsetX=self.CopyOffsetX or 0
+    local copyWidth=math.max(30,headWidth-reserve-copyOffsetX)
     local titleHeight=textHeight(self.Title,self.TitleLabel.TextSize,self.TitleLabel.Font,copyWidth)
     local descHeight=textHeight(self.Desc,self.DescLabel.TextSize,self.DescLabel.Font,copyWidth)
     local copyHeight=titleHeight+(descHeight>0 and 4+descHeight or 0)
     local headHeight=math.max(copyHeight,self.HeadMinimum or 0)
     self.Head.Position=UDim2.fromOffset(px,py)
     self.Head.Size=UDim2.new(1,-px*2,0,headHeight)
-    local copyOffsetX=self.CopyOffsetX or 0
     self.Copy.Position=UDim2.fromOffset(copyOffsetX,0)
     self.Copy.Size=UDim2.new(1,-reserve-copyOffsetX,0,copyHeight)
     if self.ControlIcon then
@@ -755,8 +648,8 @@ function Control:_resize(width)
     end
     local y=py+headHeight
     if self.BodyField then
-        local fieldHeight=28
-        if self.ValueLabel then fieldHeight=math.max(28,textHeight(self.ValueLabel.Text,11,FONT,headWidth-36)+12) end
+        local fieldHeight=36
+        if self.ValueLabel then fieldHeight=math.max(36,textHeight(self.ValueLabel.Text,11,FONT,headWidth-36)+12) end
         self.BodyField.Position=UDim2.fromOffset(px,y+6)
         self.BodyField.Size=UDim2.new(1,-px*2,0,fieldHeight)
         y+=6+fieldHeight
@@ -782,13 +675,13 @@ function Tab:_layout()
     for _,c in ipairs(self.Elements) do
         if not c.Destroyed then
             c:_resize(width)
-            if c.Slot.Visible then height+=c.Slot.Size.Y.Offset+5 end
+            if c.Slot.Visible then height+=c.Slot.Size.Y.Offset+8 end
         end
     end
     local bottomPad=22
-    local canvasHeight=math.max(0,height-5+bottomPad)
+    local canvasHeight=math.max(0,height-8+bottomPad)
     self.Content.CanvasSize=UDim2.fromOffset(0,canvasHeight)
-    local viewportHeight=self.Content.AbsoluteSize.Y
+    local viewportHeight=self.Content.AbsoluteWindowSize.Y / self.Window.UIScale
     self.Content.CanvasPosition=Vector2.new(0,math.clamp(self.Content.CanvasPosition.Y,0,math.max(0,canvasHeight-viewportHeight)))
 end
 
@@ -905,12 +798,12 @@ function Tab:_control(kind, options)
         Size=UDim2.new(1,-4,0,0),LayoutOrder=self._order},self.Content)
     local row = new("Frame", {Name=kind,BackgroundColor3=lightTheme and lightColor or darkColor,BackgroundTransparency=Glass.Row,
         Size=UDim2.new(1,0,0,0),LayoutOrder=self._order,ClipsDescendants=true},slot)
-    round(row,11); local rowStroke=stroke(row,lightTheme and lightStrokeColor or darkStrokeColor); rowStroke.Transparency=.18
+    round(row,10); local rowStroke=stroke(row,lightTheme and lightStrokeColor or darkStrokeColor); rowStroke.Transparency=.18
     local head = new("Frame", {Name="Heading",BackgroundTransparency=1,
         Size=UDim2.new(1,0,0,0),LayoutOrder=1},row)
     local copy = new("Frame", {Name="Copy",BackgroundTransparency=1,
         Size=UDim2.new(1,0,0,0)},head)
-    local title = label(copy,plain(o.Title or kind),12,C.Text,{Font=MEDIUM,TextWrapped=true,
+    local title = label(copy,plain(o.Title or kind),13,C.Text,{Font=MEDIUM,TextWrapped=true,
         TextYAlignment=Enum.TextYAlignment.Top,Size=UDim2.new(1,0,0,18),LayoutOrder=1})
     local desc = label(copy,plain(o.Desc),11,C.Muted,{TextWrapped=true,AutomaticSize=Enum.AutomaticSize.Y,
         Size=UDim2.new(1,0,0,0),LayoutOrder=2,Visible=o.Desc ~= nil and o.Desc ~= ""})
@@ -1030,9 +923,9 @@ function Tab:Paragraph(options)
 end
 function Tab:Button(options)
     local c = self:_control("Button",options)
-    c.Reserve=34; c.HeadMinimum=28
+    c.Reserve=47; c.HeadMinimum=36
     local hit = button(c.Head,"→",{Name="Action",BackgroundColor3=C.Panel,BackgroundTransparency=Glass.Button,TextSize=14,
-        Position=UDim2.new(1,-26,0,0),Size=UDim2.fromOffset(26,26)})
+        Position=UDim2.new(1,-37,0,0),Size=UDim2.fromOffset(37,36)})
     round(hit,8); stroke(hit,C.Border); hover(c.Window,hit,C.Field)
     -- The title and description are clickable too; nested field controls are separate.
     local titleHit=button(c.Copy,"",{Name="Activate",BackgroundTransparency=1,Size=UDim2.fromScale(1,1),ZIndex=3})
@@ -1043,15 +936,14 @@ function Tab:Button(options)
 end
 function Tab:Toggle(options)
     local o = options or {}; local c = self:_control("Toggle",o)
-    c.Reserve=46; c.HeadMinimum=28
+    c.Reserve=58; c.HeadMinimum=36
     local target=button(c.Head,"",{Name="ToggleHit",BackgroundTransparency=1,
-        Position=UDim2.new(1,-38,0,0),Size=UDim2.fromOffset(38,26)})
+        Position=UDim2.new(1,-48,0,0),Size=UDim2.fromOffset(48,36)})
     local hit=new("Frame",{Name="Switch",BackgroundColor3=C.Border,
-        Position=UDim2.fromOffset(4,4),Size=UDim2.fromOffset(30,18)},target)
-    round(hit,7)
+        Position=UDim2.fromOffset(2,7),Size=UDim2.fromOffset(44,22)},target)
+    round(hit,11); stroke(hit,C.Border)
     local knob=new("Frame",{Name="Thumb",BackgroundColor3=C.Muted,Position=UDim2.fromOffset(4,4),
-        Size=UDim2.fromOffset(10,10)},hit); round(knob,4)
-    local tick=label(knob,"",11,C.Window,{TextXAlignment=Enum.TextXAlignment.Center,Size=UDim2.fromScale(1,1)})
+        Size=UDim2.fromOffset(14,14)},hit); round(knob,7)
     c.Interactive=target
     function c:Set(value,silent)
         if self.Destroyed then return self end
@@ -1059,8 +951,7 @@ function Tab:Toggle(options)
         local changed=self.Value ~= value; self.Value=value
         hit.BackgroundColor3=value and C.White or C.Border
         knob.BackgroundColor3=value and C.Window or C.Muted
-        knob.Position=UDim2.fromOffset(value and 16 or 4,4)
-        tick.Text=value and "·" or ""; tick.TextColor3=C.White
+        knob.Position=UDim2.fromOffset(value and 26 or 4,4)
         if changed and not silent then invoke(self.Callback,value) end
         return self
     end
@@ -1214,13 +1105,26 @@ function Tab:Slider(options)
     c:ApplyTheme()
     return c
 end
+-- Evita entradas repetidas incluso si un cliente actualiza varias veces
+-- un dropdown mientras carga su catálogo. La unicidad es por etiqueta.
+local function uniqueDropdownValues(values)
+    local unique, seen = {}, {}
+    for _, value in ipairs(type(values)=="table" and values or {}) do
+        local key = normalized(tostring(value))
+        if not seen[key] then
+            seen[key] = true
+            unique[#unique+1] = value
+        end
+    end
+    return unique
+end
 function Tab:Dropdown(options)
     local o=options or {}; local c=self:_control("Dropdown",o)
-    c.Values=table.clone(o.Values or {}); c.Multi=o.Multi==true or o.MultiSelect==true
+    c.Values=uniqueDropdownValues(o.Values); c.Multi=o.Multi==true or o.MultiSelect==true
     local hit=button(c.ElementFrame,"",{Name="Dropdown",BackgroundColor3=C.Field,BackgroundTransparency=Glass.Field,
         Size=UDim2.new(1,0,0,28),LayoutOrder=2}); round(hit,8); stroke(hit,C.Border)
     local valueLabel=label(hit,"",11,C.Text,{Position=UDim2.fromOffset(8,0),Size=UDim2.new(1,-30,1,0),TextWrapped=true})
-    label(hit,"⌄",14,C.Muted,{Position=UDim2.new(1,-24,0,0),Size=UDim2.new(0,16,1,0),TextXAlignment=Enum.TextXAlignment.Center})
+    icon(hit,"chevron").Position=UDim2.new(1,-26,.5,-10)
     c.Interactive=hit; c.BodyField=hit; c.ValueLabel=valueLabel
     function c:Set(value,silent,force)
         if self.Destroyed then return self end
@@ -1238,7 +1142,7 @@ function Tab:Dropdown(options)
         return self
     end
     function c:Refresh(values)
-        self.Values=table.clone(values or {})
+        self.Values=uniqueDropdownValues(values)
         self._revision=(self._revision or 0)+1
         if self.Window._popupOwner==self and self._renderOptions then self._renderOptions() end
         return self
@@ -1253,15 +1157,22 @@ function Tab:Dropdown(options)
         vertical(list,5)
         local hint=label(panel,"",10,C.Faint,{Position=UDim2.new(0,16,1,-29),Size=UDim2.new(1,-32,0,16)})
         local optionConnections={}
+        local rendering=false
         window._popupCleanup=function() disconnect(optionConnections); self._renderOptions=nil end
         local function render()
+            if rendering or not list.Parent or window.Destroyed then return end
+            rendering=true
             disconnect(optionConnections)
             for _,child in ipairs(list:GetChildren()) do if child:IsA("GuiObject") then child:Destroy() end end
             local query=normalized(search.Text); local count, matches=0,0
+            local shown={}
             for _,value in ipairs(self.Values) do
-                if query=="" or string.find(normalized(value),query,1,true) then
-                    matches+=1
-                    if count<120 then
+                local key=normalized(tostring(value))
+                if not shown[key] then
+                    shown[key]=true
+                    if query=="" or string.find(key,query,1,true) then
+                        matches+=1
+                        if count<120 then
                         count+=1
                         local selected=self.Multi and table.find(self.Value,value)~=nil or (not self.Multi and self.Value==value)
                         local choiceHeight=math.max(32,textHeight(tostring(value),12,FONT,math.max(60,panel.AbsoluteSize.X-78))+12)
@@ -1283,10 +1194,12 @@ function Tab:Dropdown(options)
                                 if window._popupOwner==self and revision==(self._revision or 0) then window:_closePopup() end
                             end
                         end,optionConnections)
+                        end
                     end
                 end
             end
             hint.Text=matches==0 and "Sin resultados" or (matches>120 and "120 de "..matches.." · Escribe para filtrar" or matches.." opciones")
+            rendering=false
         end
         self._renderOptions=render
         connect(window,search:GetPropertyChangedSignal("Text"),render,window._popupConnections)
@@ -1316,26 +1229,27 @@ function Tab:Colorpicker(options)
         if self.Locked then return end
         local window=self.Window
         local panel=window:_popup(self.Title,370,410,self)
-        local body=new("Frame",{Name="ColorPaletteBody",Position=UDim2.fromOffset(16,54),
-            Size=UDim2.new(1,-32,1,-70),BackgroundTransparency=1},panel)
+        local body=scroll(panel,{Name="ColorPaletteBody",Position=UDim2.fromOffset(16,54),
+            Size=UDim2.new(1,-32,1,-68),AutomaticCanvasSize=Enum.AutomaticSize.None,CanvasSize=UDim2.fromOffset(0,288)})
+        local sheet=new("Frame",{Name="PaletteControls",BackgroundTransparency=1,Size=UDim2.new(1,-13,0,288)},body)
 
         local h,s,v=self.Value:ToHSV()
         local state={H=h,S=s,V=v,Internal=false}
         if state.S < .001 then state.H=0 end
 
         local current=new("Frame",{Name="Current",Position=UDim2.fromOffset(0,0),Size=UDim2.fromOffset(44,34),
-            BackgroundColor3=self.Value},body)
+            BackgroundColor3=self.Value},sheet)
         round(current,9); stroke(current,C.Border,1)
 
-        local hex=field(body,"#FFFFFF")
+        local hex=field(sheet,"#FFFFFF")
         hex.Position=UDim2.fromOffset(54,0); hex.Size=UDim2.new(1,-54,0,34)
         hex.TextSize=11; hex.Font=MEDIUM
 
-        local hint=label(body,"Paleta RGB · arrastra para elegir tono e intensidad",9,C.Muted,{
+        label(sheet,"Paleta RGB · arrastra para elegir tono e intensidad",9,C.Muted,{
             Position=UDim2.fromOffset(0,39),Size=UDim2.new(1,0,0,16)})
 
-        local palette=button(body,"",{Name="RGBPalette",Position=UDim2.fromOffset(0,58),
-            Size=UDim2.new(1,0,0,220),BackgroundColor3=Color3.fromHSV(state.H,1,1),ClipsDescendants=true})
+        local palette=button(sheet,"",{Name="RGBPalette",Position=UDim2.fromOffset(0,58),
+            Size=UDim2.new(1,0,0,150),BackgroundColor3=Color3.fromHSV(state.H,1,1),ClipsDescendants=true})
         round(palette,11); local paletteStroke=stroke(palette,C.Border,1); paletteStroke.Transparency=.08
 
         -- Izquierda = blanco, derecha = color puro.
@@ -1358,7 +1272,7 @@ function Tab:Colorpicker(options)
         local cursorShadow=new("UIStroke",{Color=Color3.new(0,0,0),Thickness=1,Transparency=.18,
             ApplyStrokeMode=Enum.ApplyStrokeMode.Border},cursor)
 
-        local hueBar=button(body,"",{Name="Hue",Position=UDim2.fromOffset(0,290),Size=UDim2.new(1,0,0,18),
+        local hueBar=button(sheet,"",{Name="Hue",Position=UDim2.fromOffset(0,221),Size=UDim2.new(1,0,0,18),
             BackgroundColor3=Color3.new(1,1,1),ClipsDescendants=false})
         round(hueBar,9); local hueStroke=stroke(hueBar,C.Border,1); hueStroke.Transparency=.1
         new("UIGradient",{Color=ColorSequence.new({
@@ -1375,12 +1289,18 @@ function Tab:Colorpicker(options)
             Size=UDim2.fromOffset(5,26),BackgroundColor3=Color3.fromRGB(250,250,250),ZIndex=6},hueBar)
         round(hueCursor,3); local hueCursorStroke=stroke(hueCursor,Color3.fromRGB(20,20,20),1); hueCursorStroke.Transparency=.1
 
-        local presets=Instance.new("Frame")
-        presets.Name="Presets"; presets.BackgroundTransparency=1
-        presets.Position=UDim2.fromOffset(0,320); presets.Size=UDim2.new(1,0,0,30); presets.Parent=body
-        local presetLayout=Instance.new("UIListLayout")
-        presetLayout.FillDirection=Enum.FillDirection.Horizontal; presetLayout.HorizontalAlignment=Enum.HorizontalAlignment.Center
-        presetLayout.Padding=UDim.new(0,7); presetLayout.Parent=presets
+        local presets=new("Frame",{Name="Presets",BackgroundTransparency=1,
+            Position=UDim2.fromOffset(0,252),Size=UDim2.new(1,0,0,30)},sheet)
+        local function fitPalette()
+            local height=math.clamp(panel.AbsoluteSize.Y-199,85,190)
+            palette.Size=UDim2.new(1,0,0,height)
+            hueBar.Position=UDim2.fromOffset(0,71+height)
+            presets.Position=UDim2.fromOffset(0,102+height)
+            body.CanvasSize=UDim2.fromOffset(0,138+height)
+            sheet.Size=UDim2.new(1,-13,0,138+height)
+        end
+        connect(window,panel:GetPropertyChangedSignal("AbsoluteSize"),fitPalette,window._popupConnections)
+        fitPalette()
         local presetColors={
             Color3.fromRGB(255,255,255),Color3.fromRGB(180,180,180),Color3.fromRGB(30,30,30),
             Color3.fromRGB(255,72,72),Color3.fromRGB(255,170,45),Color3.fromRGB(255,225,55),
@@ -1423,17 +1343,19 @@ function Tab:Colorpicker(options)
 
         connect(window,palette.InputBegan,function(input)
             if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
-                window:_beginDrag(input,updatePalette,nil,self); updatePalette(input.Position)
+                window:_beginDrag(input,updatePalette,body,self); updatePalette(input.Position)
             end
         end,window._popupConnections)
         connect(window,hueBar.InputBegan,function(input)
             if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
-                window:_beginDrag(input,updateHue,nil,self); updateHue(input.Position)
+                window:_beginDrag(input,updateHue,body,self); updateHue(input.Position)
             end
         end,window._popupConnections)
 
         for index,color in ipairs(presetColors) do
-            local swatch=button(presets,"",{Name="Preset"..index,Size=UDim2.fromOffset(24,24),BackgroundColor3=color,LayoutOrder=index})
+            local width=1/#presetColors
+            local swatch=button(presets,"",{Name="Preset"..index,Position=UDim2.fromScale((index-1)*width,0),
+                Size=UDim2.new(width,-4,0,28),BackgroundColor3=color,LayoutOrder=index})
             round(swatch,7); local ss=stroke(swatch,C.Border,1); ss.Transparency=.1
             connect(window,swatch.Activated,function() self:Set(color) end,window._popupConnections)
         end
@@ -1482,8 +1404,8 @@ function Nox:CreateWindow(options)
     local resolvedTheme = canonicalThemeName(o.Theme or CURRENT_THEME_NAME)
     local w={_connections={},_popupConnections={},_onDestroy={},_onOpen={},_onClose={},Tabs={},
         Groups={},Opened=true,Destroyed=false,Compact=false,ToggleKey=o.ToggleKey or Enum.KeyCode.RightShift,
-        Title=plain(o.Title or "Ryou"),_brandBaseTitle=plain(o.Title or "Ryou"),Author=o.Author or "by Ryou",UIScale=1,_navOrder=0,
-        ThemeName=resolvedTheme,ThemeDef=getThemeDefinition(resolvedTheme),_themeGeneration=0}
+        Title=plain(o.Title or "RyouHub"),_brandBaseTitle=plain(o.Title or "RyouHub"),Author=o.Author or "por Ryou",UIScale=1,_navOrder=0,
+        ThemeName=resolvedTheme,ThemeDef=getThemeDefinition(resolvedTheme)}
     self.Window=w; env.__NOX_UI=w
     local gui=new("ScreenGui",{Name="RyouUI",ResetOnSpawn=false,IgnoreGuiInset=true,
         DisplayOrder=2147483000,ZIndexBehavior=Enum.ZIndexBehavior.Sibling},parent)
@@ -1508,9 +1430,10 @@ function Nox:CreateWindow(options)
     self.ScreenGui=gui; w.ScreenGui=gui
     -- Full-viewport bounds are shared by popups, dragging and responsive layout.
     local surface=new("Frame",{Name="Surface",BackgroundTransparency=1,Size=UDim2.fromScale(1,1)},gui)
+    local mount=new("Frame",{Name="WindowMount",BackgroundTransparency=1,Size=UDim2.fromScale(1,1)},surface)
     local root=new("Frame",{Name="RyouPanel",BackgroundColor3=w.ThemeDef.Visuals.RootBase,BackgroundTransparency=Glass.Root,AnchorPoint=Vector2.new(.5,.5),
-        Position=UDim2.fromScale(.5,.5),Size=UDim2.fromOffset(680,430),ClipsDescendants=true},surface)
-    round(root,20); local rootStroke=stroke(root,w.ThemeDef.Visuals.RootStroke)
+        Position=UDim2.fromScale(.5,.5),Size=UDim2.fromOffset(680,430),ClipsDescendants=true},mount)
+    round(root,16); local rootStroke=stroke(root,w.ThemeDef.Visuals.RootStroke)
     local rootGradient=new("UIGradient",{Rotation=22,Color=ColorSequence.new({
         ColorSequenceKeypoint.new(0,w.ThemeDef.Visuals.RootGradient[1]),
         ColorSequenceKeypoint.new(.52,w.ThemeDef.Visuals.RootGradient[2]),
@@ -1518,97 +1441,19 @@ function Nox:CreateWindow(options)
     })},root)
     local scale=new("UIScale",{Scale=1},root); self.UIScaleObj=scale
 
-    -- Fondo anime: usa caché local si ya existe; si no, se baja en segundo plano.
-    -- El fondo geométrico original queda como fallback si el ejecutor no soporta
-    -- archivos/asset local o si GitHub no responde.
-    local animeImage=new("ImageLabel",{
-        Name="AnimeBackground",BackgroundTransparency=1,AnchorPoint=Vector2.new(.5,.5),
-        Position=UDim2.fromScale(.5,.5),Size=UDim2.fromScale(1,1),Image="",
-        ImageTransparency=.06,ScaleType=Enum.ScaleType.Crop,Visible=false,ZIndex=1,
-    },root)
-    round(animeImage,20)
-
-    local animeShade=new("Frame",{
-        Name="AnimeShade",BackgroundColor3=w.ThemeDef.Visuals.AnimeShadeColor,BackgroundTransparency=w.ThemeDef.Visuals.AnimeShadeTransparency,
-        Size=UDim2.fromScale(1,1),Visible=false,ZIndex=2,
-    },root)
-    round(animeShade,20)
-    -- Un poco más oscuro del lado de navegación/contenido y más libre a la derecha.
-    local animeShadeGradient=new("UIGradient",{
-        Rotation=0,
-        Transparency=NumberSequence.new({
-            NumberSequenceKeypoint.new(0,w.ThemeDef.Visuals.AnimeShadeStops[1]),
-            NumberSequenceKeypoint.new(.58,w.ThemeDef.Visuals.AnimeShadeStops[2]),
-            NumberSequenceKeypoint.new(1,w.ThemeDef.Visuals.AnimeShadeStops[3]),
-        })
-    },animeShade)
-
-    -- Fondo Ryou geométrico: firma visual de respaldo y capa de identidad.
-    local backdrop=new("Frame",{Name="RyouBackdrop",BackgroundTransparency=1,Size=UDim2.fromScale(1,1),ZIndex=1},root)
-    local glowA=new("Frame",{Name="SoftGlowA",AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.68,.34),
-        Size=UDim2.fromScale(.54,.62),BackgroundColor3=w.ThemeDef.Visuals.BackdropGlowA,BackgroundTransparency=.58,Rotation=-16,ZIndex=1},backdrop)
-    round(glowA,72)
-    new("UIGradient",{Rotation=35,Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,.12),NumberSequenceKeypoint.new(1,1)})},glowA)
-    local glowB=new("Frame",{Name="SoftGlowB",AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.22,.84),
-        Size=UDim2.fromScale(.46,.38),BackgroundColor3=w.ThemeDef.Visuals.BackdropGlowB,BackgroundTransparency=.64,Rotation=18,ZIndex=1},backdrop)
-    round(glowB,64)
-    new("UIGradient",{Rotation=205,Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,.2),NumberSequenceKeypoint.new(1,1)})},glowB)
-    local watermark=label(backdrop,"R",176,C.White,{
-        AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.76,.62),Size=UDim2.fromScale(.28,.44),
-        Font=BOLD,TextTransparency=w.ThemeDef.Visuals.BackdropWatermarkTransparency,TextXAlignment=Enum.TextXAlignment.Center,TextYAlignment=Enum.TextYAlignment.Center,Rotation=-7,ZIndex=1})
-    local signature=label(backdrop,"RYOU / 01",9,C.White,{
-        Name="RyouSignature",AnchorPoint=Vector2.new(1,1),Position=UDim2.fromScale(.955,.91),
-        Size=UDim2.fromOffset(120,18),Font=Enum.Font.Code,TextTransparency=.46,
-        TextXAlignment=Enum.TextXAlignment.Right,ZIndex=1})
-    local signatureLine=line(backdrop,0,0,54,2,0,C.White)
-    signatureLine.Name="RyouSignatureLine"
-    signatureLine.AnchorPoint=Vector2.new(1,.5)
-    signatureLine.Position=UDim2.fromScale(.955,.865)
-    signatureLine.BackgroundTransparency=.22
-    signatureLine.ZIndex=1
-    for i=1,6 do
-        local v=new("Frame",{Name="GridV",Position=UDim2.new(i/7,0,0,0),Size=UDim2.new(0,1,1,0),
-            BackgroundColor3=w.ThemeDef.Visuals.GridColor,BackgroundTransparency=w.ThemeDef.Visuals.GridVTransparency,ZIndex=1},backdrop)
-    end
-    for i=1,4 do
-        local h=new("Frame",{Name="GridH",Position=UDim2.new(0,0,i/5,0),Size=UDim2.new(1,0,0,1),
-            BackgroundColor3=w.ThemeDef.Visuals.GridColor,BackgroundTransparency=w.ThemeDef.Visuals.GridHTransparency,ZIndex=1},backdrop)
-    end
-
-    local function showBackdropFallback()
-        animeImage.Image = ""
-        animeImage.Visible = false
-        animeShade.Visible = false
-        backdrop.Visible = true
-    end
-
-    local function applyAnimeBackground(asset, themeDef)
-        if not root.Parent or type(asset) ~= "string" or asset == "" then return end
-        animeImage.Image = asset
-        animeImage.ImageTransparency = (themeDef and themeDef.Visuals and themeDef.Visuals.AnimeImageTransparency) or 0.06
-        animeImage.Visible = true
-        animeShade.Visible = true
-        backdrop.Visible = false
-    end
-
-    local function refreshBackgroundForTheme(themeName)
-        local resolved = canonicalThemeName(themeName)
-        local themeDef = getThemeDefinition(resolved)
-        w._themeGeneration += 1
-        local generation = w._themeGeneration
-        local cachedAnimeAsset = cachedBackgroundAsset(resolved)
-        if cachedAnimeAsset then
-            applyAnimeBackground(cachedAnimeAsset, themeDef)
-            return
-        end
-        showBackdropFallback()
-        task.spawn(function()
-            local asset = downloadBackgroundAsset(resolved)
-            if asset and not w.Destroyed and w._themeGeneration == generation then
-                applyAnimeBackground(asset, themeDef)
-            end
-        end)
-    end
+    local backdrop=new("Frame",{Name="RyouBackdrop",BackgroundTransparency=1,Size=UDim2.fromScale(1,1),
+        ClipsDescendants=true,ZIndex=1},root)
+    local glowA=new("Frame",{Name="AccentWash",AnchorPoint=Vector2.new(1,0),Position=UDim2.fromScale(1,0),
+        Size=UDim2.new(.72,0,.62,0),BackgroundColor3=w.ThemeDef.Visuals.BackdropGlowA,BackgroundTransparency=.46},backdrop)
+    new("UIGradient",{Rotation=125,Transparency=NumberSequence.new(0,1)},glowA)
+    label(backdrop,"RyouHub",15,C.Text,{Name="RyouWordmark",Font=BOLD,TextTransparency=.31,
+        TextXAlignment=Enum.TextXAlignment.Right,AnchorPoint=Vector2.new(1,1),
+        Position=UDim2.new(1,-30,1,-8),Size=UDim2.fromOffset(96,19)})
+    new("Frame",{BackgroundColor3=C.White,BackgroundTransparency=.75,AnchorPoint=Vector2.new(1,.5),
+        Position=UDim2.new(1,-108,1,-17),Size=UDim2.new(.16,0,0,1)},backdrop)
+    local stripe=new("Frame",{BackgroundColor3=C.White,BackgroundTransparency=.72,
+        Size=UDim2.new(1,0,0,2)},backdrop)
+    new("UIGradient",{Transparency=NumberSequence.new(1,0)},stripe)
 
     local top=new("Frame",{Name="Topbar",BackgroundTransparency=1,Size=UDim2.new(1,0,0,58),ZIndex=5},root)
     local logo=mark(top,28,C.White); logo.Position=UDim2.fromOffset(16,12)
@@ -1619,30 +1464,59 @@ function Nox:CreateWindow(options)
     -- en cualquier ancho; un UIListLayout con AutomaticSize dejaba huecos raros.
     local brand=label(titleCluster,w._brandBaseTitle,16,C.Text,{Position=UDim2.fromOffset(0,0),
         Size=UDim2.fromOffset(120,22),Font=BOLD})
-    local statusLabel=label(titleCluster,"-- activos",12,C.Muted,{Position=UDim2.fromOffset(126,0),
+    local statusLabel=label(titleCluster,"",12,C.Muted,{Position=UDim2.fromOffset(126,0),
         Size=UDim2.fromOffset(96,22),Font=BOLD})
     local inferredGameLabel=w._brandBaseTitle:match("|%s*(.-)%s*$")
     local subtitleGame=tostring(o.Subtitle or inferredGameLabel or "RYOU")
-    local subtitle=label(top,"R Y O U  /  "..subtitleGame,8,C.Faint,{Position=UDim2.fromOffset(52,37),Size=UDim2.fromOffset(180,14)})
+    local subtitle=label(top,subtitleGame,10,C.Faint,{Position=UDim2.fromOffset(52,37),Size=UDim2.fromOffset(180,14)})
     local author=label(top,w.Author,11,C.Muted,{Position=UDim2.new(1,-248,0,27),Size=UDim2.fromOffset(104,20),TextXAlignment=Enum.TextXAlignment.Right})
-    local controls=new("Frame",{BackgroundTransparency=1,Position=UDim2.new(1,-76,0,8),Size=UDim2.fromOffset(64,28)},top)
-    -- Navegación siempre visible: ya no existe el botón hamburguesa/drawer.
-    local menu=button(controls,"",{Name="Menu",Size=UDim2.fromOffset(1,1),Visible=false,Active=false})
-    local minimize=button(controls,"",{Name="Minimize",Position=UDim2.fromOffset(0,0),Size=UDim2.fromOffset(28,28)}); round(minimize,8)
-    icon(minimize,"minus").Position=UDim2.fromOffset(4,4)
-    local close=button(controls,"",{Name="Close",Position=UDim2.fromOffset(32,0),Size=UDim2.fromOffset(28,28)}); round(close,8)
-    icon(close,"close").Position=UDim2.fromOffset(4,4)
+    local controls=new("Frame",{BackgroundTransparency=1,Position=UDim2.new(1,-89,0,7),Size=UDim2.fromOffset(76,36)},top)
+    local minimize=button(controls,"",{Name="Minimize"}); round(minimize,10)
+    local minimizeIcon=icon(minimize,"minus")
+    minimizeIcon.AnchorPoint=Vector2.new(.5,.5); minimizeIcon.Position=UDim2.fromScale(.5,.5)
+    local close=button(controls,"",{Name="Close"}); round(close,10)
+    local closeIcon=icon(close,"close")
+    closeIcon.AnchorPoint=Vector2.new(.5,.5); closeIcon.Position=UDim2.fromScale(.5,.5)
     hover(w,minimize); hover(w,close)
     local topRule=line(root,14,57,784,1,0,C.Border); topRule.Size=UDim2.new(1,-28,0,1)
-    local sidebar=new("Frame",{Name="Navigation",BackgroundColor3=w.ThemeDef.Visuals.SidebarBase,BackgroundTransparency=Glass.Sidebar,Position=UDim2.fromOffset(12,70),
-        Size=UDim2.new(0,154,1,-82),ZIndex=12},root); round(sidebar,12); local sidebarStroke=stroke(sidebar,w.ThemeDef.Visuals.SidebarStroke)
-    local nav=scroll(sidebar,{Name="Tabs",Position=UDim2.fromOffset(8,10),Size=UDim2.new(1,-16,1,-58),ScrollBarThickness=0})
-    vertical(nav,6)
-    local navFooter=label(sidebar,"RYOU  /  CRIMSON",8,C.Faint,{Position=UDim2.new(0,12,1,-28),Size=UDim2.new(1,-24,0,16),Font=Enum.Font.Code})
-    local drawerShade=button(root,"",{Name="DrawerBackdrop",BackgroundTransparency=1,
-        Position=UDim2.fromOffset(0,70),Size=UDim2.new(1,0,1,-70),Visible=false,Active=false,ZIndex=11})
-    local content=new("Frame",{Name="Content",BackgroundTransparency=1,Position=UDim2.fromOffset(182,70),Size=UDim2.new(1,-194,1,-82),ZIndex=4},root)
+    local sidebar=new("Frame",{Name="Navigation",BackgroundColor3=w.ThemeDef.Visuals.SidebarBase,
+        BackgroundTransparency=Glass.Sidebar,ClipsDescendants=true,ZIndex=12},root)
+    round(sidebar,11); local sidebarStroke=stroke(sidebar,w.ThemeDef.Visuals.SidebarStroke)
+    local nav=scroll(sidebar,{Name="Tabs",Position=UDim2.fromOffset(7,0),Size=UDim2.new(1,-14,1,0),
+        ScrollingDirection=Enum.ScrollingDirection.X,AutomaticCanvasSize=Enum.AutomaticSize.X,ScrollBarThickness=5})
+    local function horizontal(parent,gap)
+        return new("UIListLayout",{FillDirection=Enum.FillDirection.Horizontal,
+            VerticalAlignment=Enum.VerticalAlignment.Center,SortOrder=Enum.SortOrder.LayoutOrder,
+            Padding=UDim.new(0,gap)},parent)
+    end
+    local navLayout=horizontal(nav,8)
+    local function scrollTabs(delta)
+        local maximum=math.max(0,nav.AbsoluteCanvasSize.X-nav.AbsoluteWindowSize.X)
+        nav.CanvasPosition=Vector2.new(math.clamp(nav.CanvasPosition.X+delta,0,maximum),0)
+    end
+    local navArrows={}
+    for index,direction in ipairs({-1,1}) do
+        local arrow=button(sidebar,direction<0 and "‹" or "›",{Name=direction<0 and "PreviousTabs" or "NextTabs",
+            AnchorPoint=Vector2.new(1,.5),Position=UDim2.new(1,index==1 and -37 or -4,.5,0),
+            Size=UDim2.fromOffset(31,34),TextSize=21,Visible=false})
+        round(arrow,8)
+        connect(w,arrow.Activated,function() scrollTabs(direction*nav.AbsoluteWindowSize.X*.75) end)
+        navArrows[index]=arrow
+    end
+    local function fitNavigation()
+        local overflow=navLayout.AbsoluteContentSize.X>math.max(0,sidebar.AbsoluteSize.X-14*w.UIScale)
+        nav.Size=UDim2.new(1,overflow and -78 or -14,1,0)
+        for _,arrow in ipairs(navArrows) do arrow.Visible=overflow end
+    end
+    connect(w,navLayout:GetPropertyChangedSignal("AbsoluteContentSize"),fitNavigation)
+    connect(w,sidebar:GetPropertyChangedSignal("AbsoluteSize"),fitNavigation)
+    local content=new("Frame",{Name="Content",BackgroundTransparency=1,ZIndex=4},root)
     local pageTitle=label(content,"Inicio",20,C.Text,{Size=UDim2.new(1,-90,0,26),Font=BOLD})
+    local sectionPicker=button(content,"",{Name="SectionPicker",BackgroundColor3=C.Panel,ZIndex=7,Visible=false})
+    round(sectionPicker,8); stroke(sectionPicker,C.Border)
+    local sectionName=label(sectionPicker,"Secciones",14,C.Text,{Font=BOLD,TextTruncate=Enum.TextTruncate.AtEnd,
+        Position=UDim2.fromOffset(11,0),Size=UDim2.new(1,-36,1,0)})
+    icon(sectionPicker,"chevron").Position=UDim2.new(1,-24,.5,-10)
     local pageDesc=label(content,DESCRIPTIONS.Inicio,10,C.Muted,{Position=UDim2.fromOffset(0,24),Size=UDim2.new(1,0,0,20),TextWrapped=true,TextYAlignment=Enum.TextYAlignment.Top})
     local count=label(content,"0 opciones",9,C.Faint,{Position=UDim2.new(1,-96,0,5),Size=UDim2.fromOffset(96,16),TextXAlignment=Enum.TextXAlignment.Right,Font=Enum.Font.Code})
     w.CountLabel=count
@@ -1654,16 +1528,14 @@ function Nox:CreateWindow(options)
         Position=UDim2.fromOffset(28,0),Size=UDim2.new(1,-54,1,0)},searchBox)
     icon(searchBox,"search").Position=UDim2.new(0,8,.5,-10)
     local clear=button(searchBox,"×",{Name="Clear",BackgroundTransparency=1,Position=UDim2.new(1,-28,0,0),Size=UDim2.new(0,26,1,0),Visible=false})
-    local pages=new("Frame",{Name="Pages",BackgroundTransparency=1,Position=UDim2.fromOffset(0,34),Size=UDim2.new(1,0,1,-34)},content)
-    local footer=label(root,"RYOU",8,C.Faint,{Position=UDim2.new(0,18,1,-24),Size=UDim2.new(.6,0,0,14),Font=Enum.Font.Code})
-    local shortcut=label(root,"RSHIFT  /  MOSTRAR U OCULTAR",8,C.Faint,{Position=UDim2.new(.4,0,1,-24),Size=UDim2.new(.6,-18,0,14),TextXAlignment=Enum.TextXAlignment.Right,Font=Enum.Font.Code})
+    local pages=new("Frame",{Name="Pages",BackgroundTransparency=1,ClipsDescendants=true},content)
     local openButton=button(launcherSurface,"",{Name="OpenRyou",Position=UDim2.new(.5,-73,0,16),Size=UDim2.fromOffset(146,44),BackgroundColor3=w.ThemeDef.Visuals.OpenButtonBase,BackgroundTransparency=Glass.Button,ZIndex=20})
     round(openButton,12); local openStroke=stroke(openButton,w.ThemeDef.Visuals.OpenStroke)
     local openAccent=new("Frame",{Name="RyouOpenAccent",Position=UDim2.fromOffset(0,7),Size=UDim2.fromOffset(3,30),
         BackgroundColor3=C.White,BackgroundTransparency=.05,ZIndex=22},openButton)
     round(openAccent,8)
     local openIcon=mark(openButton,22,C.White); openIcon.Position=UDim2.fromOffset(12,11)
-    local openLabel=label(openButton,"RYOU",11,C.Text,{Position=UDim2.fromOffset(45,5),Size=UDim2.new(1,-55,0,20),Font=MEDIUM})
+    local openLabel=label(openButton,"RyouHub",11,C.Text,{Position=UDim2.fromOffset(45,5),Size=UDim2.new(1,-55,0,20),Font=MEDIUM})
     local openHint=label(openButton,"ABRIR PANEL",8,C.Muted,{Position=UDim2.fromOffset(45,25),Size=UDim2.new(1,-55,0,12),Font=MEDIUM})
     w.OpenButton=openButton; w._launcherMoved=false; w.UIElements={Main=root,Title=brand,ActiveStatus=statusLabel,SideBar=sidebar,MainBar=content,Pages=pages,Search=searchBox,Topbar=top}
     local desired=o.Size or UDim2.fromOffset(680,430)
@@ -1751,8 +1623,8 @@ function Nox:CreateWindow(options)
         local layer=button(surface,"",{Name="ModalBackdrop",BackgroundColor3=Color3.new(),BackgroundTransparency=.3,Size=UDim2.fromScale(1,1),ZIndex=50})
         launcherGui.Enabled=false
         local panel=button(layer,"",{Name="Modal",BackgroundColor3=C.Panel,BackgroundTransparency=Glass.Popup,AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),Size=UDim2.fromOffset(width,height),ZIndex=2,ClipsDescendants=true})
-        round(panel,16); stroke(panel,C.Border)
-        label(panel,title,14,C.Text,{Position=UDim2.fromOffset(16,17),Size=UDim2.new(1,-62,0,22),Font=BOLD,TextTruncate=Enum.TextTruncate.AtEnd})
+        round(panel,14); stroke(panel,w.ThemeDef.Visuals.PopupStroke)
+        label(panel,title,16,C.Text,{Position=UDim2.fromOffset(16,17),Size=UDim2.new(1,-62,0,22),Font=BOLD,TextTruncate=Enum.TextTruncate.AtEnd})
         local dismiss=button(panel,"×",{Position=UDim2.new(1,-50,0,7),Size=UDim2.fromOffset(40,40),TextSize=18}); round(dismiss,8)
         local function fit()
             panel.Size=UDim2.fromOffset(math.max(100,math.min(width,surface.AbsoluteSize.X-24)),math.max(100,math.min(height,surface.AbsoluteSize.Y-24)))
@@ -1764,11 +1636,9 @@ function Nox:CreateWindow(options)
         return panel
     end
     function w:_drawer(value)
-        -- Conservado por compatibilidad con llamadas antiguas. La navegación
-        -- ahora siempre está visible, incluso en layouts compactos.
+        -- Mantiene disponible el punto de entrada legacy del navegador.
         self._drawerOpen=false
-        sidebar.Visible=true
-        drawerShade.Visible=false
+        sidebar.Visible=not self._compactNavigation
     end
     local function clampRoot()
         local bounds=surface.AbsoluteSize; local size=root.AbsoluteSize
@@ -1793,6 +1663,7 @@ function Nox:CreateWindow(options)
         openButton.Active=shouldShow
         openButton.AutoButtonColor=shouldShow and (not ghosted)
         openButton.BackgroundTransparency=ghosted and 1 or Glass.Button
+        openAccent.BackgroundTransparency=ghosted and 1 or .05
         openLabel.TextTransparency=ghosted and 1 or 0
         openHint.TextTransparency=ghosted and 1 or 0
         if openStroke then openStroke.Transparency=ghosted and 1 or 0 end
@@ -1836,177 +1707,86 @@ function Nox:CreateWindow(options)
         local height=math.clamp(w._desiredHeight,minHeight,maxHeight)
         root.Size=UDim2.fromOffset(width,height)
 
-        local phone=width<520
-        local tiny=width<380
-        local short=height<390
-        local veryShort=height<330
+        local compact=width<680 or height<390
+        local inset=compact and 12 or 17
+        local topHeight=compact and 48 or 58
+        local dockHeight=45
+        local dockY=topHeight+7
+        local contentY=compact and (topHeight+8) or (dockY+dockHeight+10)
+        local contentEnd=height-30
+        w._compactNavigation=compact
+
         w.Short=height<435
         w.Narrow=width<500
         w.Compact=width<650 or w.Short
-
-        local topHeight=(phone or short) and 48 or 52
-        local contentTop=topHeight+8
-        local sidebarWidth
-        if width<340 then sidebarWidth=76
-        elseif width<430 then sidebarWidth=86
-        elseif width<560 then sidebarWidth=100
-        elseif width<700 then sidebarWidth=116
-        else sidebarWidth=136 end
-
-        local left=8+sidebarWidth+10
-        local right=phone and 7 or 10
-        local bottom=veryShort and 4 or (w.Short and 6 or 9)
-        w.ContentWidth=math.max(150,width-left-right)
-
+        w.ContentWidth=width-inset*2
         top.Size=UDim2.new(1,0,0,topHeight)
-        logo.Size=UDim2.fromOffset(phone and 24 or 28,phone and 24 or 28)
-        logo.Position=UDim2.fromOffset(phone and 10 or 14,phone and 11 or 11)
-        logo.Visible=true
+        logo.Position=UDim2.fromOffset(inset,10)
+        controls.Position=UDim2.new(1,-inset-76,0,6)
+        controls.Size=UDim2.fromOffset(76,36)
+        minimize.Position=UDim2.fromOffset(0,0); minimize.Size=UDim2.fromOffset(36,35)
+        close.Position=UDim2.fromOffset(40,0); close.Size=UDim2.fromOffset(36,35)
+        topRule.Position=UDim2.fromOffset(inset,topHeight-1)
+        topRule.Size=UDim2.new(1,-2*inset,0,1)
 
-        controls.Position=UDim2.new(1,-68,0,8)
-        controls.Size=UDim2.fromOffset(60,28)
-        minimize.Position=UDim2.fromOffset(0,0); minimize.Size=UDim2.fromOffset(26,26)
-        close.Position=UDim2.fromOffset(30,0); close.Size=UDim2.fromOffset(26,26)
-
-        -- Marca + activos: siempre juntos y usando sólo el espacio realmente libre.
-        local clusterX=phone and 40 or 48
-        local clusterRight=width-76
-        local clusterWidth=math.max(82,clusterRight-clusterX-4)
-        titleCluster.Position=UDim2.fromOffset(clusterX,phone and 10 or 10)
+        local clusterX=inset+34
+        local clusterWidth=math.max(75,width-clusterX-inset-83)
+        titleCluster.Position=UDim2.fromOffset(clusterX,6)
         titleCluster.Size=UDim2.fromOffset(clusterWidth,24)
-        brand.Text=(tiny and "RYOU") or (w._brandBaseTitle or "Ryou")
-        brand.TextSize=phone and 13 or 15
-        statusLabel.TextSize=phone and 10 or 11
+        local requestedTitle=w._brandBaseTitle
+        local legacyTitle=requestedTitle:lower()
+        brand.Text=(legacyTitle=="ryou" or legacyTitle:match("^ryou%s*|")) and "RyouHub" or requestedTitle
+        brand.TextSize=compact and 16 or 20
+        brand.TextTruncate=Enum.TextTruncate.AtEnd
+        local measuredBrand=math.ceil(TextService:GetTextSize(brand.Text,brand.TextSize,brand.Font,Vector2.new(850,24)).X)
+        local measuredStatus=math.ceil(TextService:GetTextSize(statusLabel.Text,11,statusLabel.Font,Vector2.new(150,24)).X)
+        brand.Size=UDim2.fromOffset(math.min(measuredBrand+2,clusterWidth),24)
+        statusLabel.Position=UDim2.fromOffset(measuredBrand+9,0)
+        statusLabel.Size=UDim2.fromOffset(measuredStatus+4,24)
+        statusLabel.Visible=statusLabel.Text~="" and measuredBrand+measuredStatus+13<=clusterWidth
+        author.Position=UDim2.fromOffset(clusterX,28)
+        author.Size=UDim2.fromOffset(math.min(110,clusterWidth),14)
+        author.TextXAlignment=Enum.TextXAlignment.Left
+        author.TextTruncate=Enum.TextTruncate.AtEnd
+        subtitle.Position=UDim2.fromOffset(clusterX+119,30)
+        subtitle.Size=UDim2.fromOffset(math.max(0,clusterWidth-119),14)
+        subtitle.TextTruncate=Enum.TextTruncate.AtEnd
+        subtitle.Visible=not compact and clusterWidth>=225 and o.Subtitle~=nil and inferredGameLabel~=subtitleGame
 
-        local measuredBrand=math.ceil(TextService:GetTextSize(
-            brand.Text,brand.TextSize,brand.Font,Vector2.new(300,24)
-        ).X)
-        local measuredStatus=math.ceil(TextService:GetTextSize(
-            statusLabel.Text,statusLabel.TextSize,statusLabel.Font,Vector2.new(180,24)
-        ).X)
-        local gap=phone and 6 or 8
-        local canShowStatus=(measuredBrand+gap+measuredStatus)<=clusterWidth
-        if not canShowStatus and brand.Text~="RYOU" then
-            brand.Text="RYOU"
-            measuredBrand=math.ceil(TextService:GetTextSize(
-                brand.Text,brand.TextSize,brand.Font,Vector2.new(180,24)
-            ).X)
-            canShowStatus=(measuredBrand+gap+measuredStatus)<=clusterWidth
-        end
-        brand.Position=UDim2.fromOffset(0,0)
-        brand.Size=UDim2.fromOffset(math.min(measuredBrand,clusterWidth),22)
-        statusLabel.Position=UDim2.fromOffset(measuredBrand+gap,0)
-        statusLabel.Size=UDim2.fromOffset(math.max(0,clusterWidth-measuredBrand-gap),22)
-        statusLabel.Visible=canShowStatus
+        sidebar.Position=UDim2.fromOffset(inset,dockY)
+        sidebar.Size=UDim2.new(1,-2*inset,0,dockHeight)
+        sidebar.Visible=not compact
 
-        subtitle.Visible=false
-        author.Visible=false
-        menu.Visible=false
-
-        topRule.Position=UDim2.fromOffset(12,topHeight-1)
-        topRule.Size=UDim2.new(1,-24,0,1)
-
-        sidebar.Visible=true
-        sidebar.Position=UDim2.fromOffset(8,contentTop)
-        sidebar.Size=UDim2.new(0,sidebarWidth,1,-contentTop-bottom)
-        nav.Position=UDim2.fromOffset(4,6)
-        nav.Size=UDim2.new(1,-8,1,(w.Short or sidebarWidth<110) and -10 or -32)
-        nav.ScrollBarThickness=2
-        navFooter.Visible=not w.Short and sidebarWidth>=116
-        navFooter.Position=UDim2.new(0,8,1,-27)
-        navFooter.Size=UDim2.new(1,-16,0,15)
-        drawerShade.Visible=false
-
-        -- En móvil el buscador baja al encabezado del contenido para no chocar
-        -- con el título, el contador ni los botones de ventana.
-        if phone then
-            if searchBox.Parent~=content then searchBox.Parent=content end
-            searchBox.Position=UDim2.fromOffset(0,28)
-            searchBox.Size=UDim2.new(1,0,0,28)
-            searchBox.Visible=w.ContentWidth>=150
-        else
-            if searchBox.Parent~=top then searchBox.Parent=top end
-            local searchWidth=math.clamp(math.floor(width*0.28),170,236)
-            searchBox.Size=UDim2.fromOffset(searchWidth,28)
-            searchBox.Position=UDim2.new(1,-(searchWidth+76),0,8)
-            searchBox.Visible=true
-        end
-
-        content.Position=UDim2.fromOffset(left,contentTop)
-        content.Size=UDim2.new(1,-left-right,1,-contentTop-bottom)
-        pageTitle.Position=UDim2.fromOffset(0,0)
-        pageTitle.Size=UDim2.new(1,phone and 0 or -76,0,22)
-        pageTitle.TextSize=phone and 16 or 18
+        content.Position=UDim2.fromOffset(inset,contentY)
+        content.Size=UDim2.new(1,-2*inset,0,math.max(0,contentEnd-contentY))
+        if searchBox.Parent~=content then searchBox.Parent=content end
+        local searchWidth=compact and math.floor(w.ContentWidth*.47) or 208
+        searchBox.Position=UDim2.new(1,-searchWidth,0,0)
+        searchBox.Size=UDim2.fromOffset(searchWidth,34)
+        pageTitle.Position=UDim2.fromOffset(1,0)
+        pageTitle.Size=UDim2.new(1,-searchWidth-9,0,34)
+        pageTitle.TextSize=21
+        pageTitle.Visible=not compact
+        sectionPicker.Visible=compact
+        sectionPicker.Size=UDim2.new(1,-searchWidth-8,0,34)
         pageTitle.TextTruncate=Enum.TextTruncate.AtEnd
-
-        count.Position=UDim2.new(1,-84,0,2)
-        count.Visible=(not phone) and (not short) and width>=720
-
-        pageDesc.Position=UDim2.fromOffset(0,21)
-        pageDesc.Size=UDim2.new(1,-6,0,18)
-        pageDesc.Visible=(not phone) and height>=430 and w.ContentWidth>=280
-
-        local pagesY
-        if phone then
-            pagesY=62
-        else
-            pagesY=pageDesc.Visible and 40 or 25
-        end
+        local showDetails=not compact
+        count.Position=UDim2.new(1,-84,0,38)
+        count.Visible=showDetails
+        pageDesc.Position=UDim2.fromOffset(1,36)
+        pageDesc.Size=UDim2.new(1,-92,0,18)
+        pageDesc.Visible=showDetails
+        local pagesY=showDetails and 58 or 42
         pages.Position=UDim2.fromOffset(0,pagesY)
         pages.Size=UDim2.new(1,0,1,-pagesY)
 
-        footer.Visible=(not phone) and (not short)
-        shortcut.Visible=(not phone) and (not short) and width>=660
-
-        -- Compacta sólo la navegación; el contenido conserva tamaños táctiles.
-        for _,tab in ipairs(w.Tabs) do
-            if tab.NavButton then
-                tab.NavButton.Size=UDim2.new(1,0,0,phone and 30 or 28)
-            end
-            if tab.SelectionBar then
-                tab.SelectionBar.Position=UDim2.fromOffset(1,phone and 6 or 5)
-                tab.SelectionBar.Size=UDim2.fromOffset(2,18)
-                tab.SelectionBar.Visible=(w.CurrentTab==tab)
-                tab.SelectionBar.BackgroundTransparency=(w.CurrentTab==tab) and 0 or 1
-            end
-            local glyph=tab.NavButton and tab.NavButton:FindFirstChildOfClass("Frame")
-            if glyph then
-                glyph.Position=UDim2.fromOffset(phone and 4 or 6,phone and 5 or 4)
-                glyph.Visible=sidebarWidth>=76
-            end
-            if tab.NavTitle then
-                tab.NavTitle.Position=UDim2.fromOffset(phone and 31 or 34,0)
-                tab.NavTitle.Size=UDim2.new(1,phone and -35 or -38,1,0)
-                tab.NavTitle.TextSize=phone and 9 or 10
-            end
-        end
-        for _,section in ipairs(w.Groups) do
-            local group=section.ElementFrame
-            if group then
-                local heading=group:FindFirstChildOfClass("TextLabel")
-                if heading then
-                    heading.TextSize=phone and 8 or 9
-                    heading.Size=UDim2.new(1,-6,0,phone and 18 or 20)
-                end
-            end
-        end
-
-        -- Botón flotante también se adapta a pantallas angostas.
-        if bounds.X<380 then
-            openButton.Size=UDim2.fromOffset(math.min(138,math.max(112,bounds.X-20)),44)
-            openLabel.Text="RYOU"
-            openLabel.TextSize=11
-        else
-            openButton.Size=UDim2.fromOffset(146,44)
-            openLabel.Text="RYOU"
-            openLabel.TextSize=11
-        end
+        openButton.Size=UDim2.fromOffset(bounds.X<380 and 130 or 146,44)
         if not w._launcherMoved then
             local launcherWidth=openButton.Size.X.Offset
-            openButton.Position=UDim2.fromOffset(math.max(0,math.floor((bounds.X-launcherWidth)/2)),16)
+            openButton.Position=UDim2.fromOffset(math.max(0,bounds.X-launcherWidth-14),
+                math.max(0,bounds.Y-openButton.Size.Y.Offset-70))
         end
 
-        w:_drawer(false)
         clampRoot()
         clampLauncher()
         if not skipContentLayout then
@@ -2019,25 +1799,47 @@ function Nox:CreateWindow(options)
         local target=type(which)=="number" and self.Tabs[which] or which
         if type(which)=="string" then for _,tab in ipairs(self.Tabs) do if tab.Title==which then target=tab; break end end end
         if type(target)~="table" or target.Window~=self then return end
-        if self.CurrentTab then self.CurrentTab.Query=search.Text end
+        local previous=self.CurrentTab
+        if previous then previous.Query=search.Text end
         self:_closePopup()
         self.CurrentTab=target
         for _,tab in ipairs(self.Tabs) do
             local selected=tab==target
             tab.Page.Visible=selected
-            tab.NavButton.BackgroundColor3=selected and C.Row or self.ThemeDef.Visuals.NavButtonIdle
+            tab.NavButton.BackgroundColor3=selected and C.Hover or self.ThemeDef.Visuals.NavButtonIdle
             tab.NavButton.BackgroundTransparency=selected and Glass.NavActive or Glass.NavIdle
             tab.NavTitle.TextColor3=selected and C.Text or C.Muted
             if tab.Number then tab.Number.TextColor3=selected and C.Text or C.Faint end
             if tab.NavIcon then tab.NavIcon.ImageColor3=selected and C.Text or C.Faint end
             if tab.SelectionBar then
                 tab.SelectionBar.Visible=selected
+                tab.SelectionBar.BackgroundColor3=self.ThemeName=="Blanco" and C.Text or C.White
                 tab.SelectionBar.BackgroundTransparency=selected and 0 or 1
             end
         end
         pageTitle.Text=target.Title; pageDesc.Text=target.Desc
+        sectionName.Text=target.Title
         search.Text=target.Query or ""; clear.Visible=search.Text~=""
         self:_drawer(false); target:_filter()
+        if previous~=target then
+            if self._pageTween then self._pageTween:Cancel() end
+            if previous then previous.Page.Position=UDim2.fromOffset(0,0) end
+            if self.Opened then
+                target.Page.Position=UDim2.fromOffset(0,5)
+                self._pageTween=TweenService:Create(target.Page,TweenInfo.new(.16,Enum.EasingStyle.Quad),
+                    {Position=UDim2.fromOffset(0,0)})
+                self._pageTween:Play()
+            end
+            task.defer(function()
+                if self.Destroyed or self.CurrentTab~=target or not sidebar.Visible or not target.NavButton.Visible then return end
+                local left=nav.AbsolutePosition.X
+                local right=left+nav.AbsoluteWindowSize.X
+                local start=target.NavButton.AbsolutePosition.X
+                local finish=start+target.NavButton.AbsoluteSize.X
+                local delta=start<left and start-left or math.max(0,finish-right)
+                if delta~=0 then scrollTabs(delta) end
+            end)
+        end
         return target
     end
     function w:_tab(options,holder)
@@ -2046,22 +1848,31 @@ function Nox:CreateWindow(options)
         local tab=setmetatable({Window=self,Title=title,Desc=opt.Desc or DESCRIPTIONS[title] or "Personaliza tus opciones.",
             Elements={},_order=0,Query="",Index=index},Tab)
         local page=new("Frame",{Name=title,BackgroundTransparency=1,Size=UDim2.fromScale(1,1),Visible=false},pages)
-        local list=scroll(page,{Name="Options",AutomaticCanvasSize=Enum.AutomaticSize.None}); vertical(list,5); padding(list,2,4)
+        local list=scroll(page,{Name="Options",AutomaticCanvasSize=Enum.AutomaticSize.None}); vertical(list,8); padding(list,2,4)
         local empty=label(page,"Sin coincidencias. Prueba otra búsqueda.",12,C.Muted,{Position=UDim2.fromOffset(12,18),Size=UDim2.new(1,-24,0,50),TextWrapped=true,Visible=false})
-        local navButton=button(holder or nav,"",{Name=title,Size=UDim2.new(1,0,0,28),BackgroundColor3=self.ThemeDef.Visuals.NavButtonIdle,BackgroundTransparency=Glass.NavIdle,LayoutOrder=index})
+        local hasIcon=opt.Icon~=nil and tostring(opt.Icon)~=""
+        local labelX=hasIcon and 34 or 12
+        local titleWidth=math.ceil(TextService:GetTextSize(title,12,MEDIUM,Vector2.new(300,22)).X)
+        local navWidth=math.clamp(titleWidth+labelX+12,76,204)
+        self._navOrder+=1
+        local navButton=button(holder or nav,"",{Name=title,Size=UDim2.fromOffset(navWidth,37),
+            BackgroundColor3=self.ThemeDef.Visuals.NavButtonIdle,BackgroundTransparency=Glass.NavIdle,LayoutOrder=self._navOrder})
         round(navButton,8)
-        local selectionBar=new("Frame",{Name="Selected",Position=UDim2.fromOffset(1,5),Size=UDim2.fromOffset(2,18),
-            BackgroundColor3=C.Text,BackgroundTransparency=0,Visible=false,ZIndex=3},navButton); round(selectionBar,2)
-        local glyph=icon(navButton,title,string.format("%02d",index)); glyph.Position=UDim2.fromOffset(6,4)
-        local numberLabel=glyph:FindFirstChildOfClass("TextLabel")
-        local navIcon=nil
-        if opt.Icon ~= nil and tostring(opt.Icon) ~= "" then
-            navIcon=remoteIcon(glyph,opt.Icon,16,C.Faint,function()
-                if numberLabel and numberLabel.Parent then numberLabel.Visible=false end
+        local selectionBar=new("Frame",{Name="Selected",Position=UDim2.new(0,10,1,-4),Size=UDim2.new(1,-20,0,2),
+            BackgroundColor3=C.White,BackgroundTransparency=0,Visible=false,ZIndex=3},navButton); round(selectionBar,2)
+        local navIcon
+        local numberLabel=label(navButton,string.format("%02d",index),10,C.Faint,{
+            Position=UDim2.fromOffset(9,0),Size=UDim2.new(0,15,1,0),Visible=false})
+        if hasIcon then
+            local placeholder=label(navButton,"·",17,C.Faint,{Position=UDim2.fromOffset(9,0),Size=UDim2.new(0,15,1,0),
+                TextXAlignment=Enum.TextXAlignment.Center})
+            navIcon=remoteIcon(navButton,opt.Icon,16,C.Faint,function()
+                if placeholder.Parent then placeholder.Visible=false end
             end)
-            navIcon.Position=UDim2.fromOffset(2,2)
+            navIcon.Position=UDim2.fromOffset(10,9)
         end
-        local titleLabel=label(navButton,title,10,C.Muted,{Position=UDim2.fromOffset(34,0),Size=UDim2.new(1,-38,1,0),Font=MEDIUM,TextTruncate=Enum.TextTruncate.AtEnd})
+        local titleLabel=label(navButton,title,12,C.Muted,{Position=UDim2.fromOffset(labelX,-1),Size=UDim2.new(1,-labelX-10,1,0),
+            Font=MEDIUM,TextTruncate=Enum.TextTruncate.AtEnd})
         tab.Page,tab.Content,tab.Empty=page,list,empty; tab.NavButton,tab.NavTitle=navButton,titleLabel
         tab.Number=numberLabel; tab.NavIcon=navIcon; tab.SelectionBar=selectionBar
         table.insert(self.Tabs,tab)
@@ -2085,12 +1896,16 @@ function Nox:CreateWindow(options)
     function w:Tab(options) return self:_tab(options) end
     function w:Section(options)
         local opt=options or {}; self._navOrder+=1
-        local group=new("Frame",{Name=plain(opt.Title),BackgroundTransparency=1,Size=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.Y,LayoutOrder=self._navOrder},nav)
-        vertical(group,6)
-        local heading=label(group,string.upper(plain(opt.Title or "GENERAL")),9,C.Faint,{Size=UDim2.new(1,-8,0,20),Font=BOLD,LayoutOrder=0,TextWrapped=true})
-        padding(heading,8,0)
-        local items=new("Frame",{Name="Items",BackgroundTransparency=1,Size=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.Y,LayoutOrder=1},group)
-        vertical(items,3)
+        local title=plain(opt.Title or "General")
+        local headingWidth=math.clamp(math.ceil(TextService:GetTextSize(title,10,BOLD,Vector2.new(180,22)).X)+12,34,110)
+        local group=new("Frame",{Name=plain(opt.Title),BackgroundColor3=C.Panel,BackgroundTransparency=.31,
+            Size=UDim2.fromOffset(0,40),AutomaticSize=Enum.AutomaticSize.X,LayoutOrder=self._navOrder},nav)
+        round(group,8); horizontal(group,4)
+        label(group,title,10,C.Muted,{Size=UDim2.fromOffset(headingWidth,22),Font=BOLD,
+            TextXAlignment=Enum.TextXAlignment.Center,TextTruncate=Enum.TextTruncate.AtEnd,LayoutOrder=0})
+        local items=new("Frame",{Name="Items",BackgroundTransparency=1,Size=UDim2.fromOffset(0,38),
+            AutomaticSize=Enum.AutomaticSize.X,LayoutOrder=1},group)
+        horizontal(items,4)
         local section={Window=self,ElementFrame=group}
         function section:Tab(config) return self.Window:_tab(config,items) end
         function section:Open() items.Visible=true; return self end
@@ -2100,7 +1915,6 @@ function Nox:CreateWindow(options)
     end
     function w:SetTitle(title)
         self.Title=plain(title)
-        footer.Text=self.Title
 
         local active=self.Title:match("(%d+)%s+activos")
         -- Quita primero el contador y después el separador. No metas el punto medio
@@ -2180,25 +1994,7 @@ function Nox:CreateWindow(options)
             ColorSequenceKeypoint.new(.52, themeDef.Visuals.RootGradient[2]),
             ColorSequenceKeypoint.new(1, themeDef.Visuals.RootGradient[3])
         })
-        animeShade.BackgroundColor3 = themeDef.Visuals.AnimeShadeColor
-        animeShade.BackgroundTransparency = themeDef.Visuals.AnimeShadeTransparency
-        animeShadeGradient.Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, themeDef.Visuals.AnimeShadeStops[1]),
-            NumberSequenceKeypoint.new(.58, themeDef.Visuals.AnimeShadeStops[2]),
-            NumberSequenceKeypoint.new(1, themeDef.Visuals.AnimeShadeStops[3])
-        })
         glowA.BackgroundColor3 = themeDef.Visuals.BackdropGlowA
-        glowB.BackgroundColor3 = themeDef.Visuals.BackdropGlowB
-        watermark.TextTransparency = themeDef.Visuals.BackdropWatermarkTransparency
-        for _, child in ipairs(backdrop:GetChildren()) do
-            if child.Name == "GridV" then
-                child.BackgroundColor3 = themeDef.Visuals.GridColor
-                child.BackgroundTransparency = themeDef.Visuals.GridVTransparency
-            elseif child.Name == "GridH" then
-                child.BackgroundColor3 = themeDef.Visuals.GridColor
-                child.BackgroundTransparency = themeDef.Visuals.GridHTransparency
-            end
-        end
         topRule.BackgroundColor3 = C.Border
         sidebar.BackgroundColor3 = themeDef.Visuals.SidebarBase
         sidebar.BackgroundTransparency = Glass.Sidebar
@@ -2214,17 +2010,16 @@ function Nox:CreateWindow(options)
             grip.BackgroundTransparency = themeDef.Visuals.ResizeGuideTransparency
         end
         self:_applyOpenButtonState()
+        applyThemeRolesRecursive(gui)
+        applyThemeRolesRecursive(launcherGui)
         if self.CurrentTab then
             self:SelectTab(self.CurrentTab)
         end
-        applyThemeRolesRecursive(gui)
-        applyThemeRolesRecursive(launcherGui)
         for _, tab in ipairs(self.Tabs) do
             for _, control in ipairs(tab.Elements or {}) do
                 if control.ApplyTheme then control:ApplyTheme() end
             end
         end
-        refreshBackgroundForTheme(resolved)
         if not silent and Nox.Notify and Nox.Window == self then
             Nox:Notify({Title = "Tema", Content = "Interfaz cambiada a " .. (resolved == "Blanco" and "Blanco" or "Oscuro")})
         end
@@ -2233,16 +2028,40 @@ function Nox:CreateWindow(options)
     function w:OnDestroy(callback) table.insert(self._onDestroy,callback); return self end
     function w:OnOpen(callback) table.insert(self._onOpen,callback); return self end
     function w:OnClose(callback) table.insert(self._onClose,callback); return self end
+    local windowTween
+    local function animateWindow(opened)
+        if windowTween then windowTween:Cancel() end
+        if opened then
+            if not root.Visible then mount.Position=UDim2.fromOffset(0,9) end
+            root.Visible=true
+        end
+        root.Interactable=opened
+        windowTween=TweenService:Create(mount,
+            TweenInfo.new(opened and .20 or .13,Enum.EasingStyle.Quad,opened and Enum.EasingDirection.Out or Enum.EasingDirection.In),
+            {Position=UDim2.fromOffset(0,opened and 0 or 9)})
+        windowTween:Play()
+        if not opened then
+            local closing=windowTween
+            task.delay(.13,function()
+                if not w.Destroyed and not w.Opened and windowTween==closing then root.Visible=false end
+            end)
+        end
+    end
     function w:Open()
         if self.Destroyed then return self end
-        local changed=not self.Opened; self.Opened=true; root.Visible=true
+        local changed=not self.Opened
+        self.Opened=true
+        if changed then animateWindow(true) else root.Visible=true end
         self:_applyOpenButtonState()
         if changed then for _,callback in ipairs(self._onOpen) do invoke(callback) end end
         return self
     end
     function w:Close()
         if self.Destroyed then return self end
-        local changed=self.Opened; self.Opened=false; root.Visible=false; self:_closePopup()
+        local changed=self.Opened
+        self.Opened=false
+        self:_closePopup()
+        if changed then animateWindow(false) end
         self:_applyOpenButtonState()
         if changed then for _,callback in ipairs(self._onClose) do invoke(callback) end end
         return self
@@ -2251,6 +2070,8 @@ function Nox:CreateWindow(options)
     function w:Destroy()
         if self.Destroyed then return end
         self.Destroyed=true; self:_closePopup(); disconnect(self._connections)
+        if windowTween then windowTween:Cancel() end
+        if self._pageTween then self._pageTween:Cancel() end
         for _,callback in ipairs(self._onDestroy) do invoke(callback) end
         gui:Destroy(); launcherGui:Destroy()
         if env.__NOX_UI==self then env.__NOX_UI=nil end
@@ -2268,12 +2089,42 @@ function Nox:CreateWindow(options)
         end
         return {Close=function() self:_closePopup() end}
     end
+    connect(w,sectionPicker.Activated,function()
+        local panel=w:_popup("Secciones",380,420,nil)
+        local list=scroll(panel,{Position=UDim2.fromOffset(14,55),Size=UDim2.new(1,-28,1,-69)})
+        vertical(list,5)
+        local groupNames={}
+        for _,group in ipairs(w.Groups) do
+            local items=group.ElementFrame:FindFirstChild("Items")
+            if items then groupNames[items]=group.ElementFrame.Name end
+        end
+        local count=0
+        local lastGroup
+        for _,tab in ipairs(w.Tabs) do
+            local holder=tab.NavButton.Parent
+            if holder and (holder==nav or holder.Visible) and tab.NavButton.Visible then
+                local group=groupNames[holder]
+                if group and group~="" and group~=lastGroup then
+                    count+=1
+                    label(list,group,11,C.Muted,{LayoutOrder=count,Font=BOLD})
+                end
+                lastGroup=group
+                count+=1
+                local selected=tab==w.CurrentTab
+                local choice=button(list,"",{Name="SectionChoice",LayoutOrder=count,
+                    Size=UDim2.new(1,-6,0,41),BackgroundColor3=selected and C.Hover or C.Row})
+                round(choice,8)
+                label(choice,tab.Title,13,C.Text,{Position=UDim2.fromOffset(11,0),Size=UDim2.new(1,-22,1,0),
+                    Font=selected and BOLD or MEDIUM,TextTruncate=Enum.TextTruncate.AtEnd})
+                connect(w,choice.Activated,function() w:SelectTab(tab) end,w._popupConnections)
+            end
+        end
+    end)
     connect(w,minimize.Activated,function() w:Close() end)
     connect(w,close.Activated,function()
         w:Dialog({Title="Cerrar Ryou",Content="Se cerrará el panel y se limpiará esta sesión. Puedes volver a ejecutar el hub cuando quieras.",
             Buttons={{Title="Volver"},{Title="Cerrar",Callback=function() w:Destroy() end}}})
     end)
-    -- Sin drawer: las categorías permanecen visibles todo el tiempo.
     connect(w,clear.Activated,function() search.Text="" end)
     connect(w,search:GetPropertyChangedSignal("Text"),function()
         clear.Visible=search.Text~=""
@@ -2357,9 +2208,14 @@ function Nox:CreateWindow(options)
     connect(w,gui.Destroying,function() if not w.Destroyed then w:Destroy() end end)
     if o.OpenButton then w:EditOpenButton(o.OpenButton) end
     if o.Author then w:SetAuthor(o.Author) end
-    footer.Text="RYOU  /  PRIVATE"
     w:SetTheme(resolvedTheme, true)
-    task.defer(fit)
+    task.defer(function()
+        fit()
+        if not w.Destroyed and w.Opened and not windowTween then
+            mount.Position=UDim2.fromOffset(0,9)
+            animateWindow(true)
+        end
+    end)
     return w
 end
 -- Public icon helpers. Game hubs normally only need Icon="name" in control configs.
@@ -2401,7 +2257,9 @@ function Nox:Notify(options)
     local holder=new("Frame",{Name="RyouNotice",BackgroundColor3=C.Window,AnchorPoint=Vector2.new(1,0),
         Position=UDim2.new(1,384,0,64),Size=UDim2.new(1,-24,0,0),AutomaticSize=Enum.AutomaticSize.Y,ZIndex=100},w.ScreenGui)
     new("UISizeConstraint",{MaxSize=Vector2.new(360,math.huge)},holder)
-    round(holder,12); stroke(holder); padding(holder,14,12); vertical(holder,6)
+    round(holder,12); stroke(holder); padding(holder,16,12); vertical(holder,4)
+    local accent=new("Frame",{Name="NoticeAccent",BackgroundColor3=C.White,Size=UDim2.fromOffset(28,2),LayoutOrder=0},holder)
+    round(accent,2)
     label(holder,plain(o.Title or "Ryou"),13,C.Text,{Font=BOLD,LayoutOrder=1})
     label(holder,plain(o.Content or o.Desc),12,C.Muted,{Size=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.Y,TextWrapped=true,LayoutOrder=2})
     local tweenService=game:GetService("TweenService")
