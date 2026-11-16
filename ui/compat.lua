@@ -1834,8 +1834,9 @@ function Nox:CreateWindow(options)
 
         clampRoot()
         clampLauncher()
-        if not skipContentLayout then
-            for _,tab in ipairs(w.Tabs) do tab:_queueFilter() end
+        for _,tab in ipairs(w.Tabs) do
+            if tab._fitConcept then tab._fitConcept() end
+            if not skipContentLayout then tab:_queueFilter() end
         end
     end
     w._fit=fit
@@ -1867,7 +1868,11 @@ function Nox:CreateWindow(options)
         pageTitle.Text=target.Title; pageDesc.Text=target.Desc
         sectionName.Text=target.Title
         search.Text=target.Query or ""; clear.Visible=search.Text~=""
-        self:_drawer(false); target:_filter()
+        self:_drawer(false)
+        if target._fitConcept then target._fitConcept() end
+        if target._refreshCompanions then target._refreshCompanions() end
+        if target._refreshStats then target._refreshStats() end
+        target:_filter()
         if previous~=target then
             if self._pageTween then self._pageTween:Cancel() end
             if previous then previous.Page.Position=UDim2.fromOffset(0,0) end
@@ -1895,8 +1900,166 @@ function Nox:CreateWindow(options)
         local tab=setmetatable({Window=self,Title=title,Desc=opt.Desc or DESCRIPTIONS[title] or "Personaliza tus opciones.",
             Elements={},_order=0,Query="",Index=index},Tab)
         local page=new("Frame",{Name=title,BackgroundTransparency=1,Size=UDim2.fromScale(1,1),Visible=false},pages)
-        local list=scroll(page,{Name="Options",AutomaticCanvasSize=Enum.AutomaticSize.None}); vertical(list,8); padding(list,2,4)
-        local empty=label(page,"Sin coincidencias. Prueba otra búsqueda.",12,C.Muted,{Position=UDim2.fromOffset(12,18),Size=UDim2.new(1,-24,0,50),TextWrapped=true,Visible=false})
+        -- RyouHub Concept C: exactamente la misma estructura modular para todas las pestañas.
+        -- No existen ventanas emergentes de secciones: el usuario cambia arriba.
+        local shell=scroll(page,{Name="ConceptCShell",ScrollingDirection=Enum.ScrollingDirection.Y,
+            AutomaticCanvasSize=Enum.AutomaticSize.None,ScrollBarThickness=3,
+            ScrollBarImageColor3=C.White})
+        local function conceptPanel(name)
+            local p=new("Frame",{Name=name,BackgroundColor3=C.Panel,BackgroundTransparency=.09,
+                ClipsDescendants=true},shell)
+            round(p,20)
+            local edge=stroke(p,C.Border); edge.Transparency=.16
+            new("UIGradient",{Rotation=102,Color=ColorSequence.new(
+                Color3.fromRGB(22,43,45),Color3.fromRGB(9,19,23))},p)
+            return p
+        end
+        local mainCard=conceptPanel("SettingsCard")
+        local quickCard=conceptPanel("QuickActionsCard")
+        local statsCard=conceptPanel("SessionCard")
+        local function cardTitle(card,titleText,caption,symbol)
+            local iconChip=new("Frame",{Name="IconTile",Position=UDim2.fromOffset(17,16),
+                Size=UDim2.fromOffset(45,45),BackgroundColor3=C.Field},card)
+            round(iconChip,13)
+            local iconEdge=stroke(iconChip,C.White);iconEdge.Transparency=.40
+            label(iconChip,symbol,21,C.White,{Size=UDim2.fromScale(1,1),
+                TextXAlignment=Enum.TextXAlignment.Center,Font=BOLD})
+            label(card,titleText,18,C.Text,{Position=UDim2.fromOffset(73,14),
+                Size=UDim2.new(1,-85,0,28),Font=BOLD,
+                TextTruncate=Enum.TextTruncate.AtEnd})
+            label(card,caption,11,C.Muted,{Position=UDim2.fromOffset(73,43),
+                Size=UDim2.new(1,-85,0,24),TextTruncate=Enum.TextTruncate.AtEnd})
+            new("Frame",{Name="CardRule",BackgroundColor3=C.Border,BackgroundTransparency=.36,
+                Position=UDim2.fromOffset(17,82),Size=UDim2.new(1,-34,0,1)},card)
+        end
+        cardTitle(mainCard,title,tab.Desc,"◇")
+        cardTitle(quickCard,"Acciones rápidas","Accede a otras secciones.","ϟ")
+        cardTitle(statsCard,"Sesión actual","Información en tiempo real.","▥")
+        local list=scroll(mainCard,{Name="Options",Position=UDim2.fromOffset(13,92),
+            Size=UDim2.new(1,-26,1,-105),AutomaticCanvasSize=Enum.AutomaticSize.None,
+            ScrollBarThickness=3,ScrollBarImageColor3=C.White})
+        vertical(list,10); padding(list,2,3)
+        local empty=label(mainCard,"Sin coincidencias. Prueba otra búsqueda.",12,C.Muted,{
+            Position=UDim2.fromOffset(24,108),Size=UDim2.new(1,-48,0,50),
+            TextWrapped=true,Visible=false,ZIndex=5})
+        local quickButtons={}
+        for i=1,3 do
+            local link=button(quickCard,"",{Name="QuickLink"..i,
+                BackgroundColor3=C.Row,Size=UDim2.new(1,-30,0,48),
+                Position=UDim2.fromOffset(15,96+(i-1)*60)})
+            round(link,13)
+            local edge=stroke(link,C.Border);edge.Transparency=.28
+            label(link,"›",23,C.White,{Position=UDim2.new(1,-36,0,0),
+                Size=UDim2.fromOffset(27,48),TextXAlignment=Enum.TextXAlignment.Center})
+            local textLink=label(link,"",12,C.Text,{Position=UDim2.fromOffset(15,0),
+                Size=UDim2.new(1,-54,1,0),Font=MEDIUM,
+                TextTruncate=Enum.TextTruncate.AtEnd})
+            hover(self,link,C.Row,Glass.Row,C.Hover,.02)
+            quickButtons[i]={Button=link,Text=textLink,Target=nil}
+            connect(self,link.Activated,function()
+                local data=quickButtons[i]
+                if data and data.Target then self:SelectTab(data.Target) end
+            end)
+        end
+        local statValues={}
+        for i,spec in ipairs({{"Tiempo activo","00:00"},{"Jugadores","0"},{"Opciones","0"}}) do
+            local y=96+(i-1)*42
+            label(statsCard,spec[1],11,C.Muted,{Position=UDim2.fromOffset(17,y),
+                Size=UDim2.new(.56,-17,0,29)})
+            statValues[i]=label(statsCard,spec[2],14,C.White,{Position=UDim2.new(.56,0,0,y),
+                Size=UDim2.new(.44,-17,0,29),Font=BOLD,
+                TextXAlignment=Enum.TextXAlignment.Right})
+        end
+        label(statsCard,"Presets",16,C.Text,{Font=BOLD,
+            Position=UDim2.fromOffset(17,236),Size=UDim2.new(1,-34,0,27)})
+        label(statsCard,"Carga o guarda tu configuración.",11,C.Muted,{
+            Position=UDim2.fromOffset(17,268),Size=UDim2.new(1,-34,0,32),
+            TextWrapped=true})
+        local presetsButton=button(statsCard,"Predeterminado    ▾",{
+            BackgroundColor3=C.Field,Size=UDim2.new(1,-34,0,39),
+            Position=UDim2.fromOffset(17,315),TextSize=12,Font=MEDIUM})
+        round(presetsButton,12)
+        local presetStroke=stroke(presetsButton,C.Border)
+        presetStroke.Transparency=.28
+        hover(self,presetsButton,C.Field,Glass.Field,C.Hover,.02)
+        connect(self,presetsButton.Activated,function() self:SelectTab("Configuración") end)
+        tab._refreshCompanions=function()
+            local available={}
+            for _,other in ipairs(self.Tabs) do
+                if other~=tab then table.insert(available,other) end
+            end
+            for i,entry in ipairs(quickButtons) do
+                local choice=available[((tab.Index+i-2)%math.max(1,#available))+1]
+                entry.Target=choice
+                entry.Button.Visible=choice~=nil
+                entry.Text.Text=choice and choice.Title or ""
+            end
+        end
+        tab._refreshStats=function()
+            local seconds=math.floor(os.clock()-self._conceptStart)
+            statValues[1].Text=string.format("%02d:%02d",math.floor(seconds/60),seconds%60)
+            statValues[2].Text=tostring(#Players:GetPlayers())
+            local count=0
+            for _,item in ipairs(tab.Elements) do
+                if not item.Destroyed and item.__type~="Section" and item.ElementFrame.Visible then
+                    count+=1
+                end
+            end
+            statValues[3].Text=tostring(count)
+        end
+        local function fitConcept()
+            local area=page.AbsoluteSize
+            local width,height=area.X,area.Y
+            if width<1 or height<1 then return end
+            local gap,pad=12,3
+            if width>=950 then
+                local aw=width-2*pad-2*gap
+                local a=math.floor(aw*.49)
+                local b=math.floor(aw*.25)
+                local c=aw-a-b
+                mainCard.Position=UDim2.fromOffset(pad,pad)
+                mainCard.Size=UDim2.fromOffset(a,height-2*pad)
+                quickCard.Position=UDim2.fromOffset(pad+a+gap,pad)
+                quickCard.Size=UDim2.fromOffset(b,height-2*pad)
+                statsCard.Position=UDim2.fromOffset(pad+a+gap+b+gap,pad)
+                statsCard.Size=UDim2.fromOffset(c,height-2*pad)
+                shell.ScrollingEnabled=false
+                shell.CanvasSize=UDim2.fromOffset(0,height)
+            elseif width>=650 then
+                local aw=width-2*pad-gap
+                local a=math.floor(aw*.62)
+                local b=aw-a
+                local quickHeight=math.max(190,math.floor((height-2*pad-gap)*.49))
+                local statsHeight=math.max(205,height-quickHeight-2*pad-gap)
+                mainCard.Position=UDim2.fromOffset(pad,pad)
+                mainCard.Size=UDim2.fromOffset(a,height-2*pad)
+                quickCard.Position=UDim2.fromOffset(pad+a+gap,pad)
+                quickCard.Size=UDim2.fromOffset(b,quickHeight)
+                statsCard.Position=UDim2.fromOffset(pad+a+gap,quickHeight+pad+gap)
+                statsCard.Size=UDim2.fromOffset(b,statsHeight)
+                shell.ScrollingEnabled=true
+                shell.CanvasSize=UDim2.fromOffset(0,math.max(height,statsCard.Position.Y.Offset+statsHeight+pad))
+            else
+                local a=width-2*pad-5
+                local mainHeight=math.max(310,height-10)
+                mainCard.Position=UDim2.fromOffset(pad,pad)
+                mainCard.Size=UDim2.fromOffset(a,mainHeight)
+                quickCard.Position=UDim2.fromOffset(pad,pad+mainHeight+gap)
+                quickCard.Size=UDim2.fromOffset(a,290)
+                statsCard.Position=UDim2.fromOffset(pad,pad+mainHeight+gap+290+gap)
+                statsCard.Size=UDim2.fromOffset(a,367)
+                shell.ScrollingEnabled=true
+                shell.CanvasSize=UDim2.fromOffset(0,mainHeight+290+367+3*gap+2*pad)
+            end
+            list.Size=UDim2.new(1,-26,0,math.max(100,mainCard.Size.Y.Offset-105))
+        end
+        tab._fitConcept=fitConcept
+        tab.ConceptShell=shell
+        connect(self,page:GetPropertyChangedSignal("AbsoluteSize"),function()
+            fitConcept()
+            tab:_queueFilter()
+        end)
+        task.defer(fitConcept)
         local hasIcon=opt.Icon~=nil and tostring(opt.Icon)~=""
         local labelX=hasIcon and 34 or 12
         local titleWidth=math.ceil(TextService:GetTextSize(title,12,MEDIUM,Vector2.new(300,22)).X)
@@ -1921,6 +2084,7 @@ function Nox:CreateWindow(options)
         local titleLabel=label(navButton,title,12,C.Muted,{Position=UDim2.fromOffset(labelX,-1),Size=UDim2.new(1,-labelX-10,1,0),
             Font=MEDIUM,TextTruncate=Enum.TextTruncate.AtEnd})
         tab.Page,tab.Content,tab.Empty=page,list,empty; tab.NavButton,tab.NavTitle=navButton,titleLabel
+        tab.ConceptCards={mainCard,quickCard,statsCard}
         tab.Number=numberLabel; tab.NavIcon=navIcon; tab.SelectionBar=selectionBar
         table.insert(self.Tabs,tab)
         connect(self,navButton.Activated,function() self:SelectTab(tab) end)
@@ -2205,6 +2369,17 @@ function Nox:CreateWindow(options)
         if d and (input==d.Input or (d.Input.UserInputType==Enum.UserInputType.MouseButton1 and input.UserInputType==Enum.UserInputType.MouseButton1)) then w:_endDrag() end
     end)
     connect(w,Input.WindowFocusReleased,function() w:_endDrag() end)
+    local conceptClock=0
+    connect(w,RunService.Heartbeat,function(delta)
+        if not w.Opened or w.Destroyed then return end
+        conceptClock+=delta
+        if conceptClock>=1 then
+            conceptClock=0
+            if w.CurrentTab and w.CurrentTab._refreshStats then
+                w.CurrentTab._refreshStats()
+            end
+        end
+    end)
     connect(w,Input.InputBegan,function(input,processed)
         if input.KeyCode==Enum.KeyCode.Escape and w._popupLayer then w:_closePopup(); return end
         if processed or Input:GetFocusedTextBox() then return end
