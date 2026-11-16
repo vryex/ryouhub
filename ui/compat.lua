@@ -1105,9 +1105,22 @@ function Tab:Slider(options)
     c:ApplyTheme()
     return c
 end
+-- Evita entradas repetidas incluso si un cliente actualiza varias veces
+-- un dropdown mientras carga su catálogo. La unicidad es por etiqueta.
+local function uniqueDropdownValues(values)
+    local unique, seen = {}, {}
+    for _, value in ipairs(type(values)=="table" and values or {}) do
+        local key = normalized(tostring(value))
+        if not seen[key] then
+            seen[key] = true
+            unique[#unique+1] = value
+        end
+    end
+    return unique
+end
 function Tab:Dropdown(options)
     local o=options or {}; local c=self:_control("Dropdown",o)
-    c.Values=table.clone(o.Values or {}); c.Multi=o.Multi==true or o.MultiSelect==true
+    c.Values=uniqueDropdownValues(o.Values); c.Multi=o.Multi==true or o.MultiSelect==true
     local hit=button(c.ElementFrame,"",{Name="Dropdown",BackgroundColor3=C.Field,BackgroundTransparency=Glass.Field,
         Size=UDim2.new(1,0,0,28),LayoutOrder=2}); round(hit,8); stroke(hit,C.Border)
     local valueLabel=label(hit,"",11,C.Text,{Position=UDim2.fromOffset(8,0),Size=UDim2.new(1,-30,1,0),TextWrapped=true})
@@ -1129,7 +1142,7 @@ function Tab:Dropdown(options)
         return self
     end
     function c:Refresh(values)
-        self.Values=table.clone(values or {})
+        self.Values=uniqueDropdownValues(values)
         self._revision=(self._revision or 0)+1
         if self.Window._popupOwner==self and self._renderOptions then self._renderOptions() end
         return self
@@ -1144,15 +1157,22 @@ function Tab:Dropdown(options)
         vertical(list,5)
         local hint=label(panel,"",10,C.Faint,{Position=UDim2.new(0,16,1,-29),Size=UDim2.new(1,-32,0,16)})
         local optionConnections={}
+        local rendering=false
         window._popupCleanup=function() disconnect(optionConnections); self._renderOptions=nil end
         local function render()
+            if rendering or not list.Parent or window.Destroyed then return end
+            rendering=true
             disconnect(optionConnections)
             for _,child in ipairs(list:GetChildren()) do if child:IsA("GuiObject") then child:Destroy() end end
             local query=normalized(search.Text); local count, matches=0,0
+            local shown={}
             for _,value in ipairs(self.Values) do
-                if query=="" or string.find(normalized(value),query,1,true) then
-                    matches+=1
-                    if count<120 then
+                local key=normalized(tostring(value))
+                if not shown[key] then
+                    shown[key]=true
+                    if query=="" or string.find(key,query,1,true) then
+                        matches+=1
+                        if count<120 then
                         count+=1
                         local selected=self.Multi and table.find(self.Value,value)~=nil or (not self.Multi and self.Value==value)
                         local choiceHeight=math.max(32,textHeight(tostring(value),12,FONT,math.max(60,panel.AbsoluteSize.X-78))+12)
@@ -1174,10 +1194,12 @@ function Tab:Dropdown(options)
                                 if window._popupOwner==self and revision==(self._revision or 0) then window:_closePopup() end
                             end
                         end,optionConnections)
+                        end
                     end
                 end
             end
             hint.Text=matches==0 and "Sin resultados" or (matches>120 and "120 de "..matches.." · Escribe para filtrar" or matches.." opciones")
+            rendering=false
         end
         self._renderOptions=render
         connect(window,search:GetPropertyChangedSignal("Text"),render,window._popupConnections)
