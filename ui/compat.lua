@@ -164,7 +164,7 @@ local THEMES = {
 
 local CURRENT_THEME_NAME = canonicalThemeName(XeroEnv.XERO_THEME or "Xero")
 local CURRENT_THEME = THEMES[CURRENT_THEME_NAME] or THEMES.Xero
-local Nox = { Version = "3.0.0", Brand = "Ryou", SupportsGameLabels = true, Creator = "Ryou", UIScale = 1 }
+local Nox = { Version = "6.0.0-concept-c", Brand = "Ryou", SupportsGameLabels = true, Creator = "Ryou", UIScale = 1 }
 local C, Glass = {}, {}
 
 local function overwriteTable(target, source)
@@ -1675,9 +1675,13 @@ function Nox:CreateWindow(options)
         local layer=button(surface,"",{Name="ModalBackdrop",BackgroundColor3=Color3.new(),BackgroundTransparency=.3,Size=UDim2.fromScale(1,1),ZIndex=50})
         launcherGui.Enabled=false
         local panel=button(layer,"",{Name="Modal",BackgroundColor3=C.Panel,BackgroundTransparency=Glass.Popup,AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),Size=UDim2.fromOffset(width,height),ZIndex=2,ClipsDescendants=true})
-        round(panel,14); stroke(panel,w.ThemeDef.Visuals.PopupStroke)
+        round(panel,20)
+        local modalEdge=stroke(panel,w.ThemeDef.Visuals.PopupStroke)
+        modalEdge.Transparency=.13
+        local modalScale=new("UIScale",{Scale=.96},panel)
+        uiTween(modalScale,{Scale=1},.23,Enum.EasingStyle.Quart)
         label(panel,title,16,C.Text,{Position=UDim2.fromOffset(16,17),Size=UDim2.new(1,-62,0,22),Font=BOLD,TextTruncate=Enum.TextTruncate.AtEnd})
-        local dismiss=button(panel,"×",{Position=UDim2.new(1,-50,0,7),Size=UDim2.fromOffset(40,40),TextSize=18}); round(dismiss,8)
+        local dismiss=button(panel,"×",{Position=UDim2.new(1,-50,0,7),Size=UDim2.fromOffset(40,40),TextSize=18}); round(dismiss,12)
         local function fit()
             panel.Size=UDim2.fromOffset(math.max(100,math.min(width,surface.AbsoluteSize.X-24)),math.max(100,math.min(height,surface.AbsoluteSize.Y-24)))
         end
@@ -1905,13 +1909,15 @@ function Nox:CreateWindow(options)
         local shell=scroll(page,{Name="ConceptCShell",ScrollingDirection=Enum.ScrollingDirection.Y,
             AutomaticCanvasSize=Enum.AutomaticSize.None,ScrollBarThickness=3,
             ScrollBarImageColor3=C.White})
+        local conceptPanelSkins={}
         local function conceptPanel(name)
             local p=new("Frame",{Name=name,BackgroundColor3=C.Panel,BackgroundTransparency=.09,
                 ClipsDescendants=true},shell)
             round(p,20)
             local edge=stroke(p,C.Border); edge.Transparency=.16
-            new("UIGradient",{Rotation=102,Color=ColorSequence.new(
+            local panelGradient=new("UIGradient",{Rotation=102,Color=ColorSequence.new(
                 Color3.fromRGB(22,43,45),Color3.fromRGB(9,19,23))},p)
+            table.insert(conceptPanelSkins,{Panel=p,Edge=edge,Gradient=panelGradient})
             return p
         end
         local mainCard=conceptPanel("SettingsCard")
@@ -2055,6 +2061,19 @@ function Nox:CreateWindow(options)
         end
         tab._fitConcept=fitConcept
         tab.ConceptShell=shell
+        tab._applyConceptTheme=function()
+            local light=self.ThemeName=="Blanco"
+            for _,skin in ipairs(conceptPanelSkins) do
+                if skin.Panel and skin.Panel.Parent then
+                    skin.Panel.BackgroundColor3=light and Color3.fromRGB(241,245,247) or C.Panel
+                    skin.Edge.Color=light and Color3.fromRGB(190,206,209) or C.Border
+                    skin.Gradient.Color=light and ColorSequence.new(
+                        Color3.fromRGB(254,255,255),Color3.fromRGB(229,238,241))
+                        or ColorSequence.new(
+                            Color3.fromRGB(22,43,45),Color3.fromRGB(9,19,23))
+                end
+            end
+        end
         connect(self,page:GetPropertyChangedSignal("AbsoluteSize"),function()
             fitConcept()
             tab:_queueFilter()
@@ -2213,6 +2232,9 @@ function Nox:CreateWindow(options)
         self:_applyOpenButtonState()
         applyThemeRolesRecursive(gui)
         applyThemeRolesRecursive(launcherGui)
+        for _,tab in ipairs(self.Tabs) do
+            if tab._applyConceptTheme then tab._applyConceptTheme() end
+        end
         if self.CurrentTab then
             self:SelectTab(self.CurrentTab)
         end
