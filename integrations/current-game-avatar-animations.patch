@@ -1,0 +1,36 @@
+--- a/ryou_hitbox25_anticontador_restaurado_animado.lua
++++ b/ryou_hitbox25_anticontador_restaurado_animado.lua
+@@ -3569,6 +3569,33 @@
+         Icon = "badge-info",
+     })
+ 
++do
++    local avatarModuleUrl = RYOU_UI_URL:gsub("/ui/compat%.lua$", "/modules/avatar_animations.lua")
++    if avatarModuleUrl ~= RYOU_UI_URL then
++        local ok, avatarAnimations = pcall(function()
++            local module = assert(loadstring(game:HttpGet(avatarModuleUrl)))()
++            assert(type(module) == "table" and type(module.mount) == "function", "Módulo de avatar incompatible")
++            return module
++        end)
++        if ok then
++            local AnimationsTab = PersonalSection:Tab({
++                Title = "Animaciones",
++                Icon = "person-standing",
++            })
++            local mounted, mountError = pcall(
++                avatarAnimations.mount, Window, AnimationsTab, LocalPlayer, function(options)
++                    WindUI:Notify(options)
++                end
++            )
++            if not mounted then
++                warn("[RyouHub] No se pudo montar Animaciones: " .. tostring(mountError))
++            end
++        else
++            warn("[RyouHub] No se pudo cargar Animaciones: " .. tostring(avatarAnimations))
++        end
++    end
++end
++
+ SlashTab:Paragraph({
+     Title = "TP Slash",
+     Desc =

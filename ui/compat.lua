@@ -1355,162 +1355,6 @@ function Tab:Select() self.Window:SelectTab(self); return self end
 function Tab:LockAll() for _,c in ipairs(self.Elements) do c:Lock() end end
 function Tab:UnlockAll() for _,c in ipairs(self.Elements) do c:Unlock() end end
 
-local avatarPacks = {
-    ["Old School"] = { Walk = 10921244891, Run = 10921240218, Jump = 10921242013, Fall = 10921241244, SwimIdle = 10921244018, Swim = 10921243048, Idle = 10921230744, Idle2 = 10921232093, Climb = 10921229866 },
-    ["Adidas Sports"] = { Walk = 18537392113, Run = 18537384940, Jump = 18537380791, Fall = 18537367238, SwimIdle = 18537387180, Swim = 18537389531, Idle = 18537376492, Idle2 = 18537371272, Climb = 18537363391 },
-    ["Adidas Community"] = { Walk = 122150855457006, Run = 82598234841035, Jump = 75290611992385, Fall = 98600215928904, SwimIdle = 109346520324160, Swim = 133308483266208, Idle = 122257458498464, Idle2 = 102357151005774, Climb = 88763136693023 },
-    ["Adidas Aura"] = { Walk = 83842218823011, Run = 118320322718866, Jump = 109996626521204, Fall = 95603166884636, SwimIdle = 94922130551805, Swim = 134530128383903, Idle = 110211186840347, Idle2 = 114191137265065, Climb = 97824616490448 },
-    ["Wicked Popular"] = { Walk = 92072849924640, Run = 72301599441680, Jump = 104325245285198, Fall = 121152442762481, Idle = 118832222982049, Idle2 = 76049494037641, SwimIdle = 113199415118199, Swim = 99384245425157, Climb = 131326830509784 },
-    ["Elder"] = { Walk = 10921111375, Run = 10921104374, Jump = 10921107367, Fall = 10921105765, SwimIdle = 10921110146, Swim = 10921108971, Idle = 10921101664, Idle2 = 10921102574, Climb = 10921100400 },
-    ["Zombie"] = { Walk = 10921355261, Run = 616163682, Jump = 10921351278, Fall = 10921350320, SwimIdle = 10921353442, Swim = 10921352344, Idle = 10921344533, Idle2 = 10921345304, Climb = 10921343576 },
-    ["Mage"] = { Walk = 10921152678, Run = 10921148209, Jump = 10921149743, Fall = 10921148939, SwimIdle = 10921151661, Swim = 10921150788, Idle = 10921144709, Idle2 = 10921145797, Climb = 10921143404 },
-    ["Catwalk Glam"] = { Walk = 109168724482748, Run = 81024476153754, Jump = 116936326516985, Fall = 92294537340807, SwimIdle = 98854111361360, Swim = 134591743181628, Idle = 133806214992291, Idle2 = 94970088341563, Climb = 119377220967554 },
-    ["Astronaut"] = { Walk = 10921046031, Run = 10921039308, Jump = 10921042494, Fall = 10921040576, SwimIdle = 10921045006, Swim = 10921044000, Idle = 10921034824, Idle2 = 10921036806, Climb = 10921032124 },
-    ['Wicked "Dancing Through Life"'] = { Walk = 73718308412641, Run = 135515454877967, Jump = 78508480717326, Fall = 78147885297412, SwimIdle = 129183123083281, Swim = 110657013921774, Idle = 92849173543269, Idle2 = 132238900951109, Climb = 129447497744818 },
-    ["Werewolf"] = { Walk = 10921342074, Run = 10921336997, Fall = 10921337907, SwimIdle = 10921341319, Swim = 10921340419, Idle = 10921330408, Idle2 = 10921333667, Climb = 10921329322 },
-    ["Superhero"] = { Walk = 10921298616, Run = 10921291831, Jump = 10921294559, Fall = 10921293373, SwimIdle = 10921297391, Swim = 10921295495, Idle = 10921288909, Idle2 = 10921290167, Climb = 10921286911 },
-    ["Toy"] = { Walk = 10921312010, Run = 10921306285, Jump = 10921308158, Fall = 10921307241, SwimIdle = 10921310341, Swim = 10921309319, Idle = 10921301576, Climb = 10921300839 },
-    ["No Boundaries"] = { Walk = 18747074203, Run = 18747070484, Jump = 18747069148, Fall = 18747062535, SwimIdle = 18747071682, Swim = 18747073181, Idle = 18747067405, Idle2 = 18747063918, Climb = 18747060903 },
-    ["NFL"] = { Walk = 110358958299415, Run = 117333533048078, Jump = 119846112151352, Fall = 129773241321032, SwimIdle = 79090109939093, Swim = 132697394189921, Idle = 92080889861410, Idle2 = 74451233229259, Climb = 134630013742019 },
-    ["Amazon Unboxed"] = { Walk = 90478085024465, Run = 134824450619865, Jump = 121454505477205, Fall = 94788218468396, SwimIdle = 129126268464847, Swim = 105962919001086, Idle = 98281136301627, Climb = 121145883950231 },
-    ["Vampire"] = { Walk = 10921326949, Run = 10921320299, Jump = 10921322186, Fall = 10921321317, SwimIdle = 10921325443, Swim = 10921324408, Idle = 10921315373, Climb = 10921314188 },
-    ["Ninja"] = { Walk = 656121766, Run = 656118852, Jump = 656117878, Fall = 656115606, SwimIdle = 656121397, Swim = 656119721, Idle = 656117400, Idle2 = 656118341, Climb = 656114359 },
-    ["Robot"] = { Walk = 616095330, Run = 616091570, Jump = 616090535, Fall = 616087089, SwimIdle = 616094091, Swim = 616092998, Idle = 616088211, Idle2 = 616089559, Climb = 616086039 },
-    ["Levitation"] = { Walk = 616013216, Run = 616010382, Jump = 616008936, Fall = 616005863, SwimIdle = 616012453, Swim = 616011509, Idle = 616006778, Idle2 = 616008087, Climb = 616003713 },
-    ["Stylish"] = { Walk = 616146177, Run = 616140816, Jump = 616139451, Fall = 616134815, SwimIdle = 616144772, Swim = 616143378, Idle = 616136790, Idle2 = 616138447, Climb = 616133594 },
-    ["Bubbly"] = { Walk = 910034870, Run = 910025107, Jump = 910016857, Fall = 910001910, SwimIdle = 910030921, Swim = 910028158, Idle = 910004836, Idle2 = 910009958, Climb = 909997997 },
-    ["Cartoon"] = { Walk = 742640026, Run = 742638842, Jump = 742637942, Fall = 742637151, SwimIdle = 742639812, Swim = 742639220, Idle = 742637544, Idle2 = 742638445, Climb = 742636889 }
-}
-
-local AVATAR_ORIGINAL = "Original"
-local avatarSlots = {
-    {"idle","Animation1","Idle","Reposo"}, {"idle","Animation2","Idle2"},
-    {"walk","WalkAnim","Walk","Caminar"}, {"run","RunAnim","Run","Correr"},
-    {"jump","JumpAnim","Jump","Saltar"}, {"fall","FallAnim","Fall","Caer"},
-    {"climb","ClimbAnim","Climb","Escalar"}, {"swim","Swim","Swim","Nadar"},
-    {"swimidle","SwimIdle","SwimIdle","Flotar en el agua"},
-}
-
-local function applyAvatarAnimations(character, animate, originals, overrides)
-    local humanoid=character:FindFirstChildOfClass("Humanoid")
-    if not humanoid or humanoid.RigType~=Enum.HumanoidRigType.R15 then return 0,0 end
-    local changed={}
-    local count,matching=0,0
-    for _,slot in ipairs(avatarSlots) do
-        local folder=animate:FindFirstChild(slot[1])
-        local animation=folder and folder:FindFirstChild(slot[2])
-        if animation and animation:IsA("Animation") then
-            local current=animation.AnimationId
-            local previous=originals[animation]
-            if previous and current~=previous.Applied then previous=nil end
-            local id=overrides[slot[3]]
-            if id then matching+=1 end
-            local nextId=id and ("rbxassetid://"..tostring(id)) or (previous and previous.Original)
-            if nextId then
-                if current~=nextId then
-                    changed[animation]=true
-                    animation.AnimationId=nextId
-                    count+=1
-                end
-                originals[animation]=id and {Original=previous and previous.Original or current,Applied=nextId} or nil
-            else
-                originals[animation]=nil
-            end
-        end
-    end
-    local animator=humanoid:FindFirstChildOfClass("Animator")
-    if animator and next(changed) then
-        for _,track in ipairs(animator:GetPlayingAnimationTracks()) do
-            if track.Animation and changed[track.Animation] then track:Stop(.15) end
-        end
-    end
-    return count,matching
-end
-
-local function mountAvatarControls(window, tab, player)
-    local names={}
-    for name in pairs(avatarPacks) do table.insert(names,name) end
-    table.sort(names)
-    table.insert(names,1,AVATAR_ORIGINAL)
-    local bundle=AVATAR_ORIGINAL
-    local mix={}
-    local overrides={}
-    local originals=setmetatable({},{__mode="k"})
-    local generation=0
-
-    local function applyCurrent(notify)
-        generation+=1
-        local job=generation
-        local character=player.Character
-        if not character then
-            if notify then Nox:Notify({Title="Animaciones",Content="El avatar todavía está cargando."}) end
-            return
-        end
-        task.spawn(function()
-            local animate=character:FindFirstChild("Animate")
-            if not animate and next(overrides) then animate=character:WaitForChild("Animate",5) end
-            if window.Destroyed or generation~=job or player.Character~=character then return end
-            if not animate then
-                if notify then Nox:Notify({Title="Animaciones",Content="No se encontró el controlador Animate del avatar."}) end
-                return
-            end
-            local changed,matching=applyAvatarAnimations(character,animate,originals,overrides)
-            if notify then
-                local message
-                if not next(overrides) then
-                    message=changed>0 and "Se restauraron los movimientos originales." or "No había movimientos personalizados por restaurar."
-                elseif matching==0 then
-                    message="Este avatar requiere un rig R15 con las ranuras estándar de Animate."
-                elseif changed>0 then
-                    message="Se actualizaron las animaciones del avatar."
-                else
-                    message="El avatar ya usa esas animaciones."
-                end
-                Nox:Notify({Title="Animaciones",Content=message})
-            end
-        end)
-    end
-
-    tab:Section({Title="Paquetes de avatar"})
-    tab:Dropdown({Title="Elegir paquete",Values=names,Value=bundle,Callback=function(value) bundle=value end})
-    tab:Button({Title="Aplicar paquete",Callback=function()
-        overrides=avatarPacks[bundle] or {}
-        applyCurrent(true)
-    end})
-    tab:Button({Title="Restaurar original",Callback=function()
-        overrides={}
-        applyCurrent(true)
-    end})
-    tab:Section({Title="Mezclador"})
-    for _,slot in ipairs(avatarSlots) do
-        local key,title=slot[3],slot[4]
-        if title then
-            tab:Dropdown({Title=title,Values=names,Value=AVATAR_ORIGINAL,Callback=function(value) mix[key]=value end})
-        end
-    end
-    tab:Button({Title="Aplicar mezcla",Callback=function()
-        local selected={}
-        for key,option in pairs(mix) do
-            local pack=avatarPacks[option]
-            if pack then
-                selected[key]=pack[key]
-                if key=="Idle" then selected.Idle2=pack.Idle2 or pack.Idle end
-            end
-        end
-        overrides=selected
-        applyCurrent(true)
-    end})
-    connect(window,player.CharacterAdded,function()
-        if next(overrides) then applyCurrent(false) end
-    end)
-    window:OnDestroy(function()
-        generation+=1
-        local character=player.Character
-        local animate=character and character:FindFirstChild("Animate")
-        if animate then applyAvatarAnimations(character,animate,originals,{}) end
-    end)
-end
-
 local DESCRIPTIONS = {
     Inicio="Tu espacio. Todo bajo control.", Aimbot="Organiza tus ajustes de precisión y selección.",
     ["Kill All"]="Controles y ajustes de esta función.", Visuales="Elige qué información quieres ver.",
@@ -1604,16 +1448,14 @@ function Nox:CreateWindow(options)
     local subtitleGame=tostring(o.Subtitle or inferredGameLabel or "RYOU")
     local subtitle=label(top,subtitleGame,10,C.Faint,{Position=UDim2.fromOffset(52,37),Size=UDim2.fromOffset(180,14)})
     local author=label(top,w.Author,11,C.Muted,{Position=UDim2.new(1,-248,0,27),Size=UDim2.fromOffset(104,20),TextXAlignment=Enum.TextXAlignment.Right})
-    local controls=new("Frame",{BackgroundTransparency=1,Position=UDim2.new(1,-150,0,7),Size=UDim2.fromOffset(140,36)},top)
-    local avatarButton=button(controls,"Avatar",{Name="AvatarAnimations",Size=UDim2.fromOffset(57,35),Font=BOLD,TextSize=11})
-    round(avatarButton,8); stroke(avatarButton,C.Border)
+    local controls=new("Frame",{BackgroundTransparency=1,Position=UDim2.new(1,-89,0,7),Size=UDim2.fromOffset(76,36)},top)
     local minimize=button(controls,"",{Name="Minimize"}); round(minimize,10)
     local minimizeIcon=icon(minimize,"minus")
     minimizeIcon.AnchorPoint=Vector2.new(.5,.5); minimizeIcon.Position=UDim2.fromScale(.5,.5)
     local close=button(controls,"",{Name="Close"}); round(close,10)
     local closeIcon=icon(close,"close")
     closeIcon.AnchorPoint=Vector2.new(.5,.5); closeIcon.Position=UDim2.fromScale(.5,.5)
-    hover(w,avatarButton); hover(w,minimize); hover(w,close)
+    hover(w,minimize); hover(w,close)
     local topRule=line(root,14,57,784,1,0,C.Border); topRule.Size=UDim2.new(1,-28,0,1)
     local sidebar=new("Frame",{Name="Navigation",BackgroundColor3=w.ThemeDef.Visuals.SidebarBase,
         BackgroundTransparency=Glass.Sidebar,ClipsDescendants=true,ZIndex=12},root)
@@ -1858,15 +1700,15 @@ function Nox:CreateWindow(options)
         w.ContentWidth=width-inset*2
         top.Size=UDim2.new(1,0,0,topHeight)
         logo.Position=UDim2.fromOffset(inset,10)
-        controls.Position=UDim2.new(1,-inset-137,0,6)
-        controls.Size=UDim2.fromOffset(137,36)
-        minimize.Position=UDim2.fromOffset(61,0); minimize.Size=UDim2.fromOffset(36,35)
-        close.Position=UDim2.fromOffset(101,0); close.Size=UDim2.fromOffset(36,35)
+        controls.Position=UDim2.new(1,-inset-76,0,6)
+        controls.Size=UDim2.fromOffset(76,36)
+        minimize.Position=UDim2.fromOffset(0,0); minimize.Size=UDim2.fromOffset(36,35)
+        close.Position=UDim2.fromOffset(40,0); close.Size=UDim2.fromOffset(36,35)
         topRule.Position=UDim2.fromOffset(inset,topHeight-1)
         topRule.Size=UDim2.new(1,-2*inset,0,1)
 
         local clusterX=inset+34
-        local clusterWidth=math.max(75,width-clusterX-inset-144)
+        local clusterWidth=math.max(75,width-clusterX-inset-83)
         titleCluster.Position=UDim2.fromOffset(clusterX,6)
         titleCluster.Size=UDim2.fromOffset(clusterWidth,24)
         local requestedTitle=w._brandBaseTitle
@@ -2255,32 +2097,6 @@ function Nox:CreateWindow(options)
                 connect(w,choice.Activated,function() w:SelectTab(tab) end,w._popupConnections)
             end
         end
-    end)
-    local avatarTab
-    connect(w,avatarButton.Activated,function()
-        if not avatarTab then
-            local title="Animaciones"
-            for _,tab in ipairs(w.Tabs) do
-                if normalized(tab.Title)=="animaciones" then
-                    local hasPackage,hasMixer=false,false
-                    for _,control in ipairs(tab.Elements) do
-                        local label=normalized(control.Title)
-                        hasPackage=hasPackage or label=="aplicar paquete completo"
-                        hasMixer=hasMixer or label=="combinar y aplicar"
-                    end
-                    if hasPackage and hasMixer then
-                        avatarTab=tab
-                        break
-                    end
-                    title="Animaciones de avatar"
-                end
-            end
-            if not avatarTab then
-                avatarTab=w:Tab({Title=title,Icon="person-standing"})
-                mountAvatarControls(w,avatarTab,player)
-            end
-        end
-        w:SelectTab(avatarTab)
     end)
     connect(w,minimize.Activated,function() w:Close() end)
     connect(w,close.Activated,function()
