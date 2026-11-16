@@ -624,8 +624,8 @@ end
 function Control:_resize(width)
     if self.Destroyed then return end
     local section=self.__type=="Section"
-    local px=section and 4 or 12
-    local py=section and 8 or 10
+    local px=section and 7 or 15
+    local py=section and 8 or 13
     local headWidth=math.max(40,width-px*2)
     local reserve=self.Reserve or 0
     local copyOffsetX=self.CopyOffsetX or 0
@@ -677,7 +677,7 @@ function Control:_resize(width)
 end
 function Tab:_layout()
     if self.Window.Destroyed then return end
-    local width=math.max(80,(self.Window.ContentWidth or 500)-8)
+    local width=math.max(80,(self.Content.AbsoluteSize.X>10 and self.Content.AbsoluteSize.X or (self.Window.ContentWidth or 500))-12)
     local height=4
     for _,c in ipairs(self.Elements) do
         if not c.Destroyed then
@@ -716,6 +716,11 @@ function Control:ApplyTheme()
     end
     if self.ControlIcon and self.ControlIcon.Parent then
         self.ControlIcon.ImageColor3 = light and (self.LightIconColor or C.Muted) or (self.DarkIconColor or C.Muted)
+    end
+    if self.CardIcon and self.CardIcon.Parent then
+        self.CardIcon.BackgroundColor3=C.Field
+        local chipText=self.CardIcon:FindFirstChildOfClass("TextLabel")
+        if chipText then chipText.TextColor3=light and C.Text or C.White end
     end
     if self._applyThemeExtras then self:_applyThemeExtras(light) end
     return self
@@ -828,6 +833,17 @@ function Tab:_control(kind, options)
         DarkColor=darkColor,LightColor=lightColor,DarkStrokeColor=darkStrokeColor,LightStrokeColor=lightStrokeColor,
         DarkTitleColor=o.TitleColor,LightTitleColor=o.LightTitleColor,DarkDescColor=o.DescColor,LightDescColor=o.LightDescColor},Control)
     desc.AutomaticSize=Enum.AutomaticSize.None; desc.TextYAlignment=Enum.TextYAlignment.Top
+    if kind~="Section" and not controlIcon and not (kind=="Paragraph" and o.Image) then
+        local glyphs={Toggle="◉",Button="↗",Input="⌕",Slider="⋮",Dropdown="⌄",Colorpicker="◆",Paragraph="✧"}
+        local chip=new("Frame",{Name="RyouCardIcon",BackgroundColor3=C.Field,BackgroundTransparency=.10,
+            Size=UDim2.fromOffset(34,34),Position=UDim2.fromOffset(0,0)},head)
+        round(chip,11)
+        local chipStroke=stroke(chip,C.Border);chipStroke.Transparency=.38
+        label(chip,glyphs[kind] or "◇",19,C.White,{Font=BOLD,Size=UDim2.fromScale(1,1),
+            TextXAlignment=Enum.TextXAlignment.Center})
+        control.CopyOffsetX=45
+        control.CardIcon=chip
+    end
     table.insert(self.Elements,control)
     if kind ~= "Section" then
         connect(self.Window,row.MouseEnter,function()
@@ -1434,6 +1450,7 @@ function Nox:CreateWindow(options)
         Groups={},Opened=true,Destroyed=false,Compact=false,ToggleKey=o.ToggleKey or Enum.KeyCode.RightShift,
         Title=plain(o.Title or "RyouHub"),_brandBaseTitle=plain(o.Title or "RyouHub"),Author=o.Author or "por Ryou",UIScale=1,_navOrder=0,
         ThemeName=resolvedTheme,ThemeDef=getThemeDefinition(resolvedTheme)}
+    w._conceptStart=os.clock()
     self.Window=w; env.__NOX_UI=w
     local gui=new("ScreenGui",{Name="RyouUI",ResetOnSpawn=false,IgnoreGuiInset=true,
         DisplayOrder=2147483000,ZIndexBehavior=Enum.ZIndexBehavior.Sibling},parent)
@@ -1469,8 +1486,10 @@ function Nox:CreateWindow(options)
     })},root)
     local scale=new("UIScale",{Scale=1},root); self.UIScaleObj=scale
 
-    local backdrop=new("Frame",{Name="RyouBackdrop",BackgroundTransparency=1,Size=UDim2.fromScale(1,1),
+    -- CanvasGroup con UICorner recorta la foto a la forma completa del marco.
+    local backdrop=new("CanvasGroup",{Name="RyouBackdrop",BackgroundTransparency=1,Size=UDim2.fromScale(1,1),
         ClipsDescendants=true,ZIndex=1},root)
+    round(backdrop,24)
     local glowA=new("Frame",{Name="AccentWash",AnchorPoint=Vector2.new(1,0),Position=UDim2.fromScale(1,0),
         Size=UDim2.new(.72,0,.62,0),BackgroundColor3=w.ThemeDef.Visuals.BackdropGlowA,BackgroundTransparency=.46},backdrop)
     new("UIGradient",{Rotation=125,Transparency=NumberSequence.new(0,1)},glowA)
