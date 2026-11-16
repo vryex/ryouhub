@@ -10,7 +10,6 @@ local TweenService = game:GetService("TweenService")
 
 -- Ryou themes + backgrounds --------------------------------------------
 local XeroEnv = (getgenv and getgenv()) or _G
-local XERO_BACKGROUND_FOLDER = "Ryou/Assets"
 
 local function canonicalThemeName(name)
     local key = string.lower(tostring(name or ""))
@@ -19,21 +18,6 @@ local function canonicalThemeName(name)
     end
     return "Xero" -- internal compatibility key for the Ryou dark theme
 end
-
-local THEME_BACKGROUNDS = {
-    Xero = {
-    URL = tostring(XeroEnv.XERO_BACKGROUND_URL or
-        "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/assets/backgrounds/ryou-sakura.png"),
-    CACHE = tostring(XeroEnv.XERO_BACKGROUND_CACHE or
-        "Ryou/Assets/ryou_sakura_v2.png"),
-    },
-    Blanco = {
-        URL = tostring(XeroEnv.XERO_BACKGROUND_LIGHT_URL or XeroEnv.XERO_BACKGROUND_WHITE_URL or
-            "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/assets/backgrounds/ryou-light.png"),
-        CACHE = tostring(XeroEnv.XERO_BACKGROUND_LIGHT_CACHE or XeroEnv.XERO_BACKGROUND_WHITE_CACHE or
-            "Ryou/Assets/ryou_light_v2.png"),
-    },
-}
 
 local THEMES = {
     Xero = {
@@ -64,10 +48,6 @@ local THEMES = {
                 Color3.fromRGB(29,43,50),
                 Color3.fromRGB(15,23,29),
             },
-            AnimeImageTransparency = 0.12,
-            AnimeShadeColor = Color3.fromRGB(12,19,24),
-            AnimeShadeTransparency = 0.30,
-            AnimeShadeStops = {0.00, 0.12, 0.42},
             SidebarBase = Color3.fromRGB(16,24,30),
             SidebarStroke = Color3.fromRGB(55,76,88),
             SearchStroke = Color3.fromRGB(62,79,91),
@@ -138,10 +118,6 @@ local THEMES = {
                 Color3.fromRGB(245,245,248),
                 Color3.fromRGB(236,236,240),
             },
-            AnimeImageTransparency = 0.02,
-            AnimeShadeColor = Color3.fromRGB(255,255,255),
-            AnimeShadeTransparency = 0.48,
-            AnimeShadeStops = {0.00, 0.08, 0.22},
             SidebarBase = Color3.fromRGB(244,244,247),
             SidebarStroke = Color3.fromRGB(214,214,220),
             SearchStroke = Color3.fromRGB(206,206,212),
@@ -211,16 +187,6 @@ local function getThemeDefinition(themeName)
 end
 
 applyThemeDefinition(CURRENT_THEME_NAME)
-
-local function backgroundSource(themeName)
-    return THEME_BACKGROUNDS[canonicalThemeName(themeName)] or THEME_BACKGROUNDS.Xero
-end
-
-local function isPngPayload(data)
-    return type(data) == "string"
-        and #data > 1024
-        and data:sub(1, 8) == "\137PNG\r\n\26\n"
-end
 
 local function ensureFolderTree(path)
     if type(makefolder) ~= "function" then return end
@@ -381,61 +347,6 @@ local function requestIconAsset(name, callback)
         XERO_ICON_PENDING[key] = nil
         for _, fn in ipairs(waiters) do pcall(fn, asset) end
     end)
-end
-
-local function cachedBackgroundAsset(themeName)
-    local assetFn = customAssetFunction()
-    local source = backgroundSource(themeName)
-    if not assetFn or type(isfile) ~= "function" or not isfile(source.CACHE) then
-        return nil
-    end
-
-    if type(readfile) == "function" then
-        local okRead, data = pcall(readfile, source.CACHE)
-        if not okRead or not isPngPayload(data) then return nil end
-    end
-
-    local okAsset, asset = pcall(assetFn, source.CACHE)
-    if okAsset and type(asset) == "string" and asset ~= "" then return asset end
-    return nil
-end
-
-local function downloadBackgroundAsset(themeName)
-    local assetFn = customAssetFunction()
-    local source = backgroundSource(themeName)
-    if not assetFn or type(writefile) ~= "function" then return nil end
-
-    local body
-    local req = (syn and syn.request) or (http and http.request) or http_request or request
-    if type(req) == "function" then
-        local okRequest, response = pcall(req, {
-            Url = source.URL,
-            Method = "GET",
-            Headers = { ["User-Agent"] = "Ryou/3.0" },
-        })
-        if okRequest and response then
-            local status = tonumber(response.StatusCode or response.Status)
-            if status and status >= 200 and status < 300 and isPngPayload(response.Body) then
-                body = response.Body
-            end
-        end
-    end
-
-    if not body then
-        local okHttp, data = pcall(function()
-            return game:HttpGet(source.URL)
-        end)
-        if okHttp and isPngPayload(data) then body = data end
-    end
-
-    if not body then return nil end
-    ensureFolderTree(XERO_BACKGROUND_FOLDER)
-    local okWrite = pcall(writefile, source.CACHE, body)
-    if not okWrite then return nil end
-
-    local okAsset, asset = pcall(assetFn, source.CACHE)
-    if okAsset and type(asset) == "string" and asset ~= "" then return asset end
-    return nil
 end
 
 local function colorEquals(left, right)
@@ -678,6 +589,7 @@ local function icon(parent, kind, numberOverride)
         local circle = new("Frame", {Position=UDim2.fromOffset(3,2),Size=UDim2.fromOffset(10,10),BackgroundTransparency=1},h)
         round(circle,10); stroke(circle,C.Muted,1.4); line(h,12,13,6,1,45)
     elseif kind == "minus" then line(h,4,10,12,1)
+    elseif kind == "chevron" then line(h,4,9,7,1,45); line(h,9,9,7,1,-45)
     else
         local symbols = {Inicio="01",Aimbot="02",["Kill All"]="03",Visuales="04",Movimiento="05",
             AutoFarm="06",["Gráficos"]="07",Animaciones="08",Apariencia="09",["Generar Armas"]="10",["Configuración"]="11",["Créditos"]="12"}
@@ -1199,7 +1111,7 @@ function Tab:Dropdown(options)
     local hit=button(c.ElementFrame,"",{Name="Dropdown",BackgroundColor3=C.Field,BackgroundTransparency=Glass.Field,
         Size=UDim2.new(1,0,0,28),LayoutOrder=2}); round(hit,8); stroke(hit,C.Border)
     local valueLabel=label(hit,"",11,C.Text,{Position=UDim2.fromOffset(8,0),Size=UDim2.new(1,-30,1,0),TextWrapped=true})
-    label(hit,"⌄",14,C.Muted,{Position=UDim2.new(1,-24,0,0),Size=UDim2.new(0,16,1,0),TextXAlignment=Enum.TextXAlignment.Center})
+    icon(hit,"chevron").Position=UDim2.new(1,-26,.5,-10)
     c.Interactive=hit; c.BodyField=hit; c.ValueLabel=valueLabel
     function c:Set(value,silent,force)
         if self.Destroyed then return self end
@@ -1443,6 +1355,162 @@ function Tab:Select() self.Window:SelectTab(self); return self end
 function Tab:LockAll() for _,c in ipairs(self.Elements) do c:Lock() end end
 function Tab:UnlockAll() for _,c in ipairs(self.Elements) do c:Unlock() end end
 
+local avatarPacks = {
+    ["Old School"] = { Walk = 10921244891, Run = 10921240218, Jump = 10921242013, Fall = 10921241244, SwimIdle = 10921244018, Swim = 10921243048, Idle = 10921230744, Idle2 = 10921232093, Climb = 10921229866 },
+    ["Adidas Sports"] = { Walk = 18537392113, Run = 18537384940, Jump = 18537380791, Fall = 18537367238, SwimIdle = 18537387180, Swim = 18537389531, Idle = 18537376492, Idle2 = 18537371272, Climb = 18537363391 },
+    ["Adidas Community"] = { Walk = 122150855457006, Run = 82598234841035, Jump = 75290611992385, Fall = 98600215928904, SwimIdle = 109346520324160, Swim = 133308483266208, Idle = 122257458498464, Idle2 = 102357151005774, Climb = 88763136693023 },
+    ["Adidas Aura"] = { Walk = 83842218823011, Run = 118320322718866, Jump = 109996626521204, Fall = 95603166884636, SwimIdle = 94922130551805, Swim = 134530128383903, Idle = 110211186840347, Idle2 = 114191137265065, Climb = 97824616490448 },
+    ["Wicked Popular"] = { Walk = 92072849924640, Run = 72301599441680, Jump = 104325245285198, Fall = 121152442762481, Idle = 118832222982049, Idle2 = 76049494037641, SwimIdle = 113199415118199, Swim = 99384245425157, Climb = 131326830509784 },
+    ["Elder"] = { Walk = 10921111375, Run = 10921104374, Jump = 10921107367, Fall = 10921105765, SwimIdle = 10921110146, Swim = 10921108971, Idle = 10921101664, Idle2 = 10921102574, Climb = 10921100400 },
+    ["Zombie"] = { Walk = 10921355261, Run = 616163682, Jump = 10921351278, Fall = 10921350320, SwimIdle = 10921353442, Swim = 10921352344, Idle = 10921344533, Idle2 = 10921345304, Climb = 10921343576 },
+    ["Mage"] = { Walk = 10921152678, Run = 10921148209, Jump = 10921149743, Fall = 10921148939, SwimIdle = 10921151661, Swim = 10921150788, Idle = 10921144709, Idle2 = 10921145797, Climb = 10921143404 },
+    ["Catwalk Glam"] = { Walk = 109168724482748, Run = 81024476153754, Jump = 116936326516985, Fall = 92294537340807, SwimIdle = 98854111361360, Swim = 134591743181628, Idle = 133806214992291, Idle2 = 94970088341563, Climb = 119377220967554 },
+    ["Astronaut"] = { Walk = 10921046031, Run = 10921039308, Jump = 10921042494, Fall = 10921040576, SwimIdle = 10921045006, Swim = 10921044000, Idle = 10921034824, Idle2 = 10921036806, Climb = 10921032124 },
+    ['Wicked "Dancing Through Life"'] = { Walk = 73718308412641, Run = 135515454877967, Jump = 78508480717326, Fall = 78147885297412, SwimIdle = 129183123083281, Swim = 110657013921774, Idle = 92849173543269, Idle2 = 132238900951109, Climb = 129447497744818 },
+    ["Werewolf"] = { Walk = 10921342074, Run = 10921336997, Fall = 10921337907, SwimIdle = 10921341319, Swim = 10921340419, Idle = 10921330408, Idle2 = 10921333667, Climb = 10921329322 },
+    ["Superhero"] = { Walk = 10921298616, Run = 10921291831, Jump = 10921294559, Fall = 10921293373, SwimIdle = 10921297391, Swim = 10921295495, Idle = 10921288909, Idle2 = 10921290167, Climb = 10921286911 },
+    ["Toy"] = { Walk = 10921312010, Run = 10921306285, Jump = 10921308158, Fall = 10921307241, SwimIdle = 10921310341, Swim = 10921309319, Idle = 10921301576, Climb = 10921300839 },
+    ["No Boundaries"] = { Walk = 18747074203, Run = 18747070484, Jump = 18747069148, Fall = 18747062535, SwimIdle = 18747071682, Swim = 18747073181, Idle = 18747067405, Idle2 = 18747063918, Climb = 18747060903 },
+    ["NFL"] = { Walk = 110358958299415, Run = 117333533048078, Jump = 119846112151352, Fall = 129773241321032, SwimIdle = 79090109939093, Swim = 132697394189921, Idle = 92080889861410, Idle2 = 74451233229259, Climb = 134630013742019 },
+    ["Amazon Unboxed"] = { Walk = 90478085024465, Run = 134824450619865, Jump = 121454505477205, Fall = 94788218468396, SwimIdle = 129126268464847, Swim = 105962919001086, Idle = 98281136301627, Climb = 121145883950231 },
+    ["Vampire"] = { Walk = 10921326949, Run = 10921320299, Jump = 10921322186, Fall = 10921321317, SwimIdle = 10921325443, Swim = 10921324408, Idle = 10921315373, Climb = 10921314188 },
+    ["Ninja"] = { Walk = 656121766, Run = 656118852, Jump = 656117878, Fall = 656115606, SwimIdle = 656121397, Swim = 656119721, Idle = 656117400, Idle2 = 656118341, Climb = 656114359 },
+    ["Robot"] = { Walk = 616095330, Run = 616091570, Jump = 616090535, Fall = 616087089, SwimIdle = 616094091, Swim = 616092998, Idle = 616088211, Idle2 = 616089559, Climb = 616086039 },
+    ["Levitation"] = { Walk = 616013216, Run = 616010382, Jump = 616008936, Fall = 616005863, SwimIdle = 616012453, Swim = 616011509, Idle = 616006778, Idle2 = 616008087, Climb = 616003713 },
+    ["Stylish"] = { Walk = 616146177, Run = 616140816, Jump = 616139451, Fall = 616134815, SwimIdle = 616144772, Swim = 616143378, Idle = 616136790, Idle2 = 616138447, Climb = 616133594 },
+    ["Bubbly"] = { Walk = 910034870, Run = 910025107, Jump = 910016857, Fall = 910001910, SwimIdle = 910030921, Swim = 910028158, Idle = 910004836, Idle2 = 910009958, Climb = 909997997 },
+    ["Cartoon"] = { Walk = 742640026, Run = 742638842, Jump = 742637942, Fall = 742637151, SwimIdle = 742639812, Swim = 742639220, Idle = 742637544, Idle2 = 742638445, Climb = 742636889 }
+}
+
+local AVATAR_ORIGINAL = "Original"
+local avatarSlots = {
+    {"idle","Animation1","Idle","Reposo"}, {"idle","Animation2","Idle2"},
+    {"walk","WalkAnim","Walk","Caminar"}, {"run","RunAnim","Run","Correr"},
+    {"jump","JumpAnim","Jump","Saltar"}, {"fall","FallAnim","Fall","Caer"},
+    {"climb","ClimbAnim","Climb","Escalar"}, {"swim","Swim","Swim","Nadar"},
+    {"swimidle","SwimIdle","SwimIdle","Flotar en el agua"},
+}
+
+local function applyAvatarAnimations(character, animate, originals, overrides)
+    local humanoid=character:FindFirstChildOfClass("Humanoid")
+    if not humanoid or humanoid.RigType~=Enum.HumanoidRigType.R15 then return 0,0 end
+    local changed={}
+    local count,matching=0,0
+    for _,slot in ipairs(avatarSlots) do
+        local folder=animate:FindFirstChild(slot[1])
+        local animation=folder and folder:FindFirstChild(slot[2])
+        if animation and animation:IsA("Animation") then
+            local current=animation.AnimationId
+            local previous=originals[animation]
+            if previous and current~=previous.Applied then previous=nil end
+            local id=overrides[slot[3]]
+            if id then matching+=1 end
+            local nextId=id and ("rbxassetid://"..tostring(id)) or (previous and previous.Original)
+            if nextId then
+                if current~=nextId then
+                    changed[animation]=true
+                    animation.AnimationId=nextId
+                    count+=1
+                end
+                originals[animation]=id and {Original=previous and previous.Original or current,Applied=nextId} or nil
+            else
+                originals[animation]=nil
+            end
+        end
+    end
+    local animator=humanoid:FindFirstChildOfClass("Animator")
+    if animator and next(changed) then
+        for _,track in ipairs(animator:GetPlayingAnimationTracks()) do
+            if track.Animation and changed[track.Animation] then track:Stop(.15) end
+        end
+    end
+    return count,matching
+end
+
+local function mountAvatarControls(window, tab, player)
+    local names={}
+    for name in pairs(avatarPacks) do table.insert(names,name) end
+    table.sort(names)
+    table.insert(names,1,AVATAR_ORIGINAL)
+    local bundle=AVATAR_ORIGINAL
+    local mix={}
+    local overrides={}
+    local originals=setmetatable({},{__mode="k"})
+    local generation=0
+
+    local function applyCurrent(notify)
+        generation+=1
+        local job=generation
+        local character=player.Character
+        if not character then
+            if notify then Nox:Notify({Title="Animaciones",Content="El avatar todavía está cargando."}) end
+            return
+        end
+        task.spawn(function()
+            local animate=character:FindFirstChild("Animate")
+            if not animate and next(overrides) then animate=character:WaitForChild("Animate",5) end
+            if window.Destroyed or generation~=job or player.Character~=character then return end
+            if not animate then
+                if notify then Nox:Notify({Title="Animaciones",Content="No se encontró el controlador Animate del avatar."}) end
+                return
+            end
+            local changed,matching=applyAvatarAnimations(character,animate,originals,overrides)
+            if notify then
+                local message
+                if not next(overrides) then
+                    message=changed>0 and "Se restauraron los movimientos originales." or "No había movimientos personalizados por restaurar."
+                elseif matching==0 then
+                    message="Este avatar requiere un rig R15 con las ranuras estándar de Animate."
+                elseif changed>0 then
+                    message="Se actualizaron las animaciones del avatar."
+                else
+                    message="El avatar ya usa esas animaciones."
+                end
+                Nox:Notify({Title="Animaciones",Content=message})
+            end
+        end)
+    end
+
+    tab:Section({Title="Paquetes de avatar"})
+    tab:Dropdown({Title="Elegir paquete",Values=names,Value=bundle,Callback=function(value) bundle=value end})
+    tab:Button({Title="Aplicar paquete",Callback=function()
+        overrides=avatarPacks[bundle] or {}
+        applyCurrent(true)
+    end})
+    tab:Button({Title="Restaurar original",Callback=function()
+        overrides={}
+        applyCurrent(true)
+    end})
+    tab:Section({Title="Mezclador"})
+    for _,slot in ipairs(avatarSlots) do
+        local key,title=slot[3],slot[4]
+        if title then
+            tab:Dropdown({Title=title,Values=names,Value=AVATAR_ORIGINAL,Callback=function(value) mix[key]=value end})
+        end
+    end
+    tab:Button({Title="Aplicar mezcla",Callback=function()
+        local selected={}
+        for key,option in pairs(mix) do
+            local pack=avatarPacks[option]
+            if pack then
+                selected[key]=pack[key]
+                if key=="Idle" then selected.Idle2=pack.Idle2 or pack.Idle end
+            end
+        end
+        overrides=selected
+        applyCurrent(true)
+    end})
+    connect(window,player.CharacterAdded,function()
+        if next(overrides) then applyCurrent(false) end
+    end)
+    window:OnDestroy(function()
+        generation+=1
+        local character=player.Character
+        local animate=character and character:FindFirstChild("Animate")
+        if animate then applyAvatarAnimations(character,animate,originals,{}) end
+    end)
+end
+
 local DESCRIPTIONS = {
     Inicio="Tu espacio. Todo bajo control.", Aimbot="Organiza tus ajustes de precisión y selección.",
     ["Kill All"]="Controles y ajustes de esta función.", Visuales="Elige qué información quieres ver.",
@@ -1471,7 +1539,7 @@ function Nox:CreateWindow(options)
     local w={_connections={},_popupConnections={},_onDestroy={},_onOpen={},_onClose={},Tabs={},
         Groups={},Opened=true,Destroyed=false,Compact=false,ToggleKey=o.ToggleKey or Enum.KeyCode.RightShift,
         Title=plain(o.Title or "RyouHub"),_brandBaseTitle=plain(o.Title or "RyouHub"),Author=o.Author or "por Ryou",UIScale=1,_navOrder=0,
-        ThemeName=resolvedTheme,ThemeDef=getThemeDefinition(resolvedTheme),_themeGeneration=0}
+        ThemeName=resolvedTheme,ThemeDef=getThemeDefinition(resolvedTheme)}
     self.Window=w; env.__NOX_UI=w
     local gui=new("ScreenGui",{Name="RyouUI",ResetOnSpawn=false,IgnoreGuiInset=true,
         DisplayOrder=2147483000,ZIndexBehavior=Enum.ZIndexBehavior.Sibling},parent)
@@ -1507,70 +1575,19 @@ function Nox:CreateWindow(options)
     })},root)
     local scale=new("UIScale",{Scale=1},root); self.UIScaleObj=scale
 
-    -- Fondo anime: usa caché local si ya existe; si no, se baja en segundo plano.
-    -- El fondo geométrico original queda como fallback si el ejecutor no soporta
-    -- archivos/asset local o si GitHub no responde.
-    local animeImage=new("ImageLabel",{
-        Name="AnimeBackground",BackgroundTransparency=1,AnchorPoint=Vector2.new(.5,.5),
-        Position=UDim2.fromScale(.5,.5),Size=UDim2.fromScale(1,1),Image="",
-        ImageTransparency=.06,ScaleType=Enum.ScaleType.Crop,Visible=false,ZIndex=1,
-    },root)
-    round(animeImage,16)
-
-    local animeShade=new("Frame",{
-        Name="AnimeShade",BackgroundColor3=w.ThemeDef.Visuals.AnimeShadeColor,BackgroundTransparency=w.ThemeDef.Visuals.AnimeShadeTransparency,
-        Size=UDim2.fromScale(1,1),Visible=false,ZIndex=2,
-    },root)
-    round(animeShade,16)
-    -- Un poco más oscuro del lado de navegación/contenido y más libre a la derecha.
-    local animeShadeGradient=new("UIGradient",{
-        Rotation=0,
-        Transparency=NumberSequence.new({
-            NumberSequenceKeypoint.new(0,w.ThemeDef.Visuals.AnimeShadeStops[1]),
-            NumberSequenceKeypoint.new(.58,w.ThemeDef.Visuals.AnimeShadeStops[2]),
-            NumberSequenceKeypoint.new(1,w.ThemeDef.Visuals.AnimeShadeStops[3]),
-        })
-    },animeShade)
-
-    local backdrop=new("Frame",{Name="RyouBackdrop",BackgroundTransparency=1,Size=UDim2.fromScale(1,1),ClipsDescendants=true,ZIndex=1},root)
+    local backdrop=new("Frame",{Name="RyouBackdrop",BackgroundTransparency=1,Size=UDim2.fromScale(1,1),
+        ClipsDescendants=true,ZIndex=1},root)
     local glowA=new("Frame",{Name="AccentWash",AnchorPoint=Vector2.new(1,0),Position=UDim2.fromScale(1,0),
-        Size=UDim2.new(.64,0,0,160),BackgroundColor3=w.ThemeDef.Visuals.BackdropGlowA,BackgroundTransparency=.42},backdrop)
-    new("UIGradient",{Rotation=145,Transparency=NumberSequence.new(0,1)},glowA)
-
-    local function showBackdropFallback()
-        animeImage.Image = ""
-        animeImage.Visible = false
-        animeShade.Visible = false
-        backdrop.Visible = true
-    end
-
-    local function applyAnimeBackground(asset, themeDef)
-        if not root.Parent or type(asset) ~= "string" or asset == "" then return end
-        animeImage.Image = asset
-        animeImage.ImageTransparency = (themeDef and themeDef.Visuals and themeDef.Visuals.AnimeImageTransparency) or 0.06
-        animeImage.Visible = true
-        animeShade.Visible = true
-        backdrop.Visible = false
-    end
-
-    local function refreshBackgroundForTheme(themeName)
-        local resolved = canonicalThemeName(themeName)
-        local themeDef = getThemeDefinition(resolved)
-        w._themeGeneration += 1
-        local generation = w._themeGeneration
-        local cachedAnimeAsset = cachedBackgroundAsset(resolved)
-        if cachedAnimeAsset then
-            applyAnimeBackground(cachedAnimeAsset, themeDef)
-            return
-        end
-        showBackdropFallback()
-        task.spawn(function()
-            local asset = downloadBackgroundAsset(resolved)
-            if asset and not w.Destroyed and w._themeGeneration == generation then
-                applyAnimeBackground(asset, themeDef)
-            end
-        end)
-    end
+        Size=UDim2.new(.72,0,.62,0),BackgroundColor3=w.ThemeDef.Visuals.BackdropGlowA,BackgroundTransparency=.46},backdrop)
+    new("UIGradient",{Rotation=125,Transparency=NumberSequence.new(0,1)},glowA)
+    label(backdrop,"RyouHub",15,C.Text,{Name="RyouWordmark",Font=BOLD,TextTransparency=.31,
+        TextXAlignment=Enum.TextXAlignment.Right,AnchorPoint=Vector2.new(1,1),
+        Position=UDim2.new(1,-30,1,-8),Size=UDim2.fromOffset(96,19)})
+    new("Frame",{BackgroundColor3=C.White,BackgroundTransparency=.75,AnchorPoint=Vector2.new(1,.5),
+        Position=UDim2.new(1,-108,1,-17),Size=UDim2.new(.16,0,0,1)},backdrop)
+    local stripe=new("Frame",{BackgroundColor3=C.White,BackgroundTransparency=.72,
+        Size=UDim2.new(1,0,0,2)},backdrop)
+    new("UIGradient",{Transparency=NumberSequence.new(1,0)},stripe)
 
     local top=new("Frame",{Name="Topbar",BackgroundTransparency=1,Size=UDim2.new(1,0,0,58),ZIndex=5},root)
     local logo=mark(top,28,C.White); logo.Position=UDim2.fromOffset(16,12)
@@ -1587,14 +1604,16 @@ function Nox:CreateWindow(options)
     local subtitleGame=tostring(o.Subtitle or inferredGameLabel or "RYOU")
     local subtitle=label(top,subtitleGame,10,C.Faint,{Position=UDim2.fromOffset(52,37),Size=UDim2.fromOffset(180,14)})
     local author=label(top,w.Author,11,C.Muted,{Position=UDim2.new(1,-248,0,27),Size=UDim2.fromOffset(104,20),TextXAlignment=Enum.TextXAlignment.Right})
-    local controls=new("Frame",{BackgroundTransparency=1,Position=UDim2.new(1,-76,0,8),Size=UDim2.fromOffset(64,28)},top)
+    local controls=new("Frame",{BackgroundTransparency=1,Position=UDim2.new(1,-150,0,7),Size=UDim2.fromOffset(140,36)},top)
+    local avatarButton=button(controls,"Avatar",{Name="AvatarAnimations",Size=UDim2.fromOffset(57,35),Font=BOLD,TextSize=11})
+    round(avatarButton,8); stroke(avatarButton,C.Border)
     local minimize=button(controls,"",{Name="Minimize"}); round(minimize,10)
     local minimizeIcon=icon(minimize,"minus")
     minimizeIcon.AnchorPoint=Vector2.new(.5,.5); minimizeIcon.Position=UDim2.fromScale(.5,.5)
     local close=button(controls,"",{Name="Close"}); round(close,10)
     local closeIcon=icon(close,"close")
     closeIcon.AnchorPoint=Vector2.new(.5,.5); closeIcon.Position=UDim2.fromScale(.5,.5)
-    hover(w,minimize); hover(w,close)
+    hover(w,avatarButton); hover(w,minimize); hover(w,close)
     local topRule=line(root,14,57,784,1,0,C.Border); topRule.Size=UDim2.new(1,-28,0,1)
     local sidebar=new("Frame",{Name="Navigation",BackgroundColor3=w.ThemeDef.Visuals.SidebarBase,
         BackgroundTransparency=Glass.Sidebar,ClipsDescendants=true,ZIndex=12},root)
@@ -1629,6 +1648,11 @@ function Nox:CreateWindow(options)
     connect(w,sidebar:GetPropertyChangedSignal("AbsoluteSize"),fitNavigation)
     local content=new("Frame",{Name="Content",BackgroundTransparency=1,ZIndex=4},root)
     local pageTitle=label(content,"Inicio",20,C.Text,{Size=UDim2.new(1,-90,0,26),Font=BOLD})
+    local sectionPicker=button(content,"",{Name="SectionPicker",BackgroundColor3=C.Panel,ZIndex=7,Visible=false})
+    round(sectionPicker,8); stroke(sectionPicker,C.Border)
+    local sectionName=label(sectionPicker,"Secciones",14,C.Text,{Font=BOLD,TextTruncate=Enum.TextTruncate.AtEnd,
+        Position=UDim2.fromOffset(11,0),Size=UDim2.new(1,-36,1,0)})
+    icon(sectionPicker,"chevron").Position=UDim2.new(1,-24,.5,-10)
     local pageDesc=label(content,DESCRIPTIONS.Inicio,10,C.Muted,{Position=UDim2.fromOffset(0,24),Size=UDim2.new(1,0,0,20),TextWrapped=true,TextYAlignment=Enum.TextYAlignment.Top})
     local count=label(content,"0 opciones",9,C.Faint,{Position=UDim2.new(1,-96,0,5),Size=UDim2.fromOffset(96,16),TextXAlignment=Enum.TextXAlignment.Right,Font=Enum.Font.Code})
     w.CountLabel=count
@@ -1750,7 +1774,7 @@ function Nox:CreateWindow(options)
     function w:_drawer(value)
         -- Mantiene disponible el punto de entrada legacy del navegador.
         self._drawerOpen=false
-        sidebar.Visible=true
+        sidebar.Visible=not self._compactNavigation
     end
     local function clampRoot()
         local bounds=surface.AbsoluteSize; local size=root.AbsoluteSize
@@ -1819,15 +1843,14 @@ function Nox:CreateWindow(options)
         local height=math.clamp(w._desiredHeight,minHeight,maxHeight)
         root.Size=UDim2.fromOffset(width,height)
 
-        local phone=width<560
-        local short=height<390
-        local inset=phone and 10 or 16
-        local topHeight=phone and 52 or 58
-        local dockHeight=48
-        -- El dock queda por encima de los hitboxes inferiores de resize.
-        local dockY=phone and (height-dockHeight-29) or (topHeight+8)
-        local contentY=phone and (topHeight+8) or (dockY+dockHeight+10)
-        local contentEnd=phone and (dockY-8) or (height-10)
+        local compact=width<680 or height<390
+        local inset=compact and 12 or 17
+        local topHeight=compact and 48 or 58
+        local dockHeight=45
+        local dockY=topHeight+7
+        local contentY=compact and (topHeight+8) or (dockY+dockHeight+10)
+        local contentEnd=height-30
+        w._compactNavigation=compact
 
         w.Short=height<435
         w.Narrow=width<500
@@ -1835,19 +1858,21 @@ function Nox:CreateWindow(options)
         w.ContentWidth=width-inset*2
         top.Size=UDim2.new(1,0,0,topHeight)
         logo.Position=UDim2.fromOffset(inset,10)
-        controls.Position=UDim2.new(1,-inset-82,0,7)
-        controls.Size=UDim2.fromOffset(82,40)
-        minimize.Position=UDim2.fromOffset(0,0); minimize.Size=UDim2.fromOffset(39,38)
-        close.Position=UDim2.fromOffset(43,0); close.Size=UDim2.fromOffset(39,38)
+        controls.Position=UDim2.new(1,-inset-137,0,6)
+        controls.Size=UDim2.fromOffset(137,36)
+        minimize.Position=UDim2.fromOffset(61,0); minimize.Size=UDim2.fromOffset(36,35)
+        close.Position=UDim2.fromOffset(101,0); close.Size=UDim2.fromOffset(36,35)
         topRule.Position=UDim2.fromOffset(inset,topHeight-1)
         topRule.Size=UDim2.new(1,-2*inset,0,1)
 
         local clusterX=inset+34
-        local clusterWidth=math.max(75,width-clusterX-inset*2-82)
+        local clusterWidth=math.max(75,width-clusterX-inset-144)
         titleCluster.Position=UDim2.fromOffset(clusterX,6)
         titleCluster.Size=UDim2.fromOffset(clusterWidth,24)
-        brand.Text=w._brandBaseTitle
-        brand.TextSize=phone and 15 or 18
+        local requestedTitle=w._brandBaseTitle
+        local legacyTitle=requestedTitle:lower()
+        brand.Text=(legacyTitle=="ryou" or legacyTitle:match("^ryou%s*|")) and "RyouHub" or requestedTitle
+        brand.TextSize=compact and 16 or 20
         brand.TextTruncate=Enum.TextTruncate.AtEnd
         local measuredBrand=math.ceil(TextService:GetTextSize(brand.Text,brand.TextSize,brand.Font,Vector2.new(850,24)).X)
         local measuredStatus=math.ceil(TextService:GetTextSize(statusLabel.Text,11,statusLabel.Font,Vector2.new(150,24)).X)
@@ -1855,29 +1880,33 @@ function Nox:CreateWindow(options)
         statusLabel.Position=UDim2.fromOffset(measuredBrand+9,0)
         statusLabel.Size=UDim2.fromOffset(measuredStatus+4,24)
         statusLabel.Visible=statusLabel.Text~="" and measuredBrand+measuredStatus+13<=clusterWidth
-        author.Position=UDim2.fromOffset(clusterX,30)
+        author.Position=UDim2.fromOffset(clusterX,28)
         author.Size=UDim2.fromOffset(math.min(110,clusterWidth),14)
         author.TextXAlignment=Enum.TextXAlignment.Left
         author.TextTruncate=Enum.TextTruncate.AtEnd
         subtitle.Position=UDim2.fromOffset(clusterX+119,30)
         subtitle.Size=UDim2.fromOffset(math.max(0,clusterWidth-119),14)
         subtitle.TextTruncate=Enum.TextTruncate.AtEnd
-        subtitle.Visible=clusterWidth>=225 and inferredGameLabel~=subtitleGame
+        subtitle.Visible=not compact and clusterWidth>=225 and o.Subtitle~=nil and inferredGameLabel~=subtitleGame
 
         sidebar.Position=UDim2.fromOffset(inset,dockY)
         sidebar.Size=UDim2.new(1,-2*inset,0,dockHeight)
+        sidebar.Visible=not compact
 
         content.Position=UDim2.fromOffset(inset,contentY)
         content.Size=UDim2.new(1,-2*inset,0,math.max(0,contentEnd-contentY))
         if searchBox.Parent~=content then searchBox.Parent=content end
-        local searchWidth=phone and math.floor(w.ContentWidth*.48) or 224
+        local searchWidth=compact and math.floor(w.ContentWidth*.47) or 208
         searchBox.Position=UDim2.new(1,-searchWidth,0,0)
         searchBox.Size=UDim2.fromOffset(searchWidth,34)
         pageTitle.Position=UDim2.fromOffset(1,0)
         pageTitle.Size=UDim2.new(1,-searchWidth-9,0,34)
-        pageTitle.TextSize=phone and 17 or 22
+        pageTitle.TextSize=21
+        pageTitle.Visible=not compact
+        sectionPicker.Visible=compact
+        sectionPicker.Size=UDim2.new(1,-searchWidth-8,0,34)
         pageTitle.TextTruncate=Enum.TextTruncate.AtEnd
-        local showDetails=not phone and not short
+        local showDetails=not compact
         count.Position=UDim2.new(1,-84,0,38)
         count.Visible=showDetails
         pageDesc.Position=UDim2.fromOffset(1,36)
@@ -1925,6 +1954,7 @@ function Nox:CreateWindow(options)
             end
         end
         pageTitle.Text=target.Title; pageDesc.Text=target.Desc
+        sectionName.Text=target.Title
         search.Text=target.Query or ""; clear.Visible=search.Text~=""
         self:_drawer(false); target:_filter()
         if previous~=target then
@@ -1937,7 +1967,7 @@ function Nox:CreateWindow(options)
                 self._pageTween:Play()
             end
             task.defer(function()
-                if self.Destroyed or self.CurrentTab~=target or not target.NavButton.Visible then return end
+                if self.Destroyed or self.CurrentTab~=target or not sidebar.Visible or not target.NavButton.Visible then return end
                 local left=nav.AbsolutePosition.X
                 local right=left+nav.AbsoluteWindowSize.X
                 local start=target.NavButton.AbsolutePosition.X
@@ -2100,13 +2130,6 @@ function Nox:CreateWindow(options)
             ColorSequenceKeypoint.new(.52, themeDef.Visuals.RootGradient[2]),
             ColorSequenceKeypoint.new(1, themeDef.Visuals.RootGradient[3])
         })
-        animeShade.BackgroundColor3 = themeDef.Visuals.AnimeShadeColor
-        animeShade.BackgroundTransparency = themeDef.Visuals.AnimeShadeTransparency
-        animeShadeGradient.Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, themeDef.Visuals.AnimeShadeStops[1]),
-            NumberSequenceKeypoint.new(.58, themeDef.Visuals.AnimeShadeStops[2]),
-            NumberSequenceKeypoint.new(1, themeDef.Visuals.AnimeShadeStops[3])
-        })
         glowA.BackgroundColor3 = themeDef.Visuals.BackdropGlowA
         topRule.BackgroundColor3 = C.Border
         sidebar.BackgroundColor3 = themeDef.Visuals.SidebarBase
@@ -2133,7 +2156,6 @@ function Nox:CreateWindow(options)
                 if control.ApplyTheme then control:ApplyTheme() end
             end
         end
-        refreshBackgroundForTheme(resolved)
         if not silent and Nox.Notify and Nox.Window == self then
             Nox:Notify({Title = "Tema", Content = "Interfaz cambiada a " .. (resolved == "Blanco" and "Blanco" or "Oscuro")})
         end
@@ -2203,6 +2225,63 @@ function Nox:CreateWindow(options)
         end
         return {Close=function() self:_closePopup() end}
     end
+    connect(w,sectionPicker.Activated,function()
+        local panel=w:_popup("Secciones",380,420,nil)
+        local list=scroll(panel,{Position=UDim2.fromOffset(14,55),Size=UDim2.new(1,-28,1,-69)})
+        vertical(list,5)
+        local groupNames={}
+        for _,group in ipairs(w.Groups) do
+            local items=group.ElementFrame:FindFirstChild("Items")
+            if items then groupNames[items]=group.ElementFrame.Name end
+        end
+        local count=0
+        local lastGroup
+        for _,tab in ipairs(w.Tabs) do
+            local holder=tab.NavButton.Parent
+            if holder and (holder==nav or holder.Visible) and tab.NavButton.Visible then
+                local group=groupNames[holder]
+                if group and group~="" and group~=lastGroup then
+                    count+=1
+                    label(list,group,11,C.Muted,{LayoutOrder=count,Font=BOLD})
+                end
+                lastGroup=group
+                count+=1
+                local selected=tab==w.CurrentTab
+                local choice=button(list,"",{Name="SectionChoice",LayoutOrder=count,
+                    Size=UDim2.new(1,-6,0,41),BackgroundColor3=selected and C.Hover or C.Row})
+                round(choice,8)
+                label(choice,tab.Title,13,C.Text,{Position=UDim2.fromOffset(11,0),Size=UDim2.new(1,-22,1,0),
+                    Font=selected and BOLD or MEDIUM,TextTruncate=Enum.TextTruncate.AtEnd})
+                connect(w,choice.Activated,function() w:SelectTab(tab) end,w._popupConnections)
+            end
+        end
+    end)
+    local avatarTab
+    connect(w,avatarButton.Activated,function()
+        if not avatarTab then
+            local title="Animaciones"
+            for _,tab in ipairs(w.Tabs) do
+                if normalized(tab.Title)=="animaciones" then
+                    local hasPackage,hasMixer=false,false
+                    for _,control in ipairs(tab.Elements) do
+                        local label=normalized(control.Title)
+                        hasPackage=hasPackage or label=="aplicar paquete completo"
+                        hasMixer=hasMixer or label=="combinar y aplicar"
+                    end
+                    if hasPackage and hasMixer then
+                        avatarTab=tab
+                        break
+                    end
+                    title="Animaciones de avatar"
+                end
+            end
+            if not avatarTab then
+                avatarTab=w:Tab({Title=title,Icon="person-standing"})
+                mountAvatarControls(w,avatarTab,player)
+            end
+        end
+        w:SelectTab(avatarTab)
+    end)
     connect(w,minimize.Activated,function() w:Close() end)
     connect(w,close.Activated,function()
         w:Dialog({Title="Cerrar Ryou",Content="Se cerrará el panel y se limpiará esta sesión. Puedes volver a ejecutar el hub cuando quieras.",
