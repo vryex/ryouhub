@@ -1574,7 +1574,7 @@ function Nox:CreateWindow(options)
             VerticalAlignment=Enum.VerticalAlignment.Center,SortOrder=Enum.SortOrder.LayoutOrder,
             Padding=UDim.new(0,gap)},parent)
     end
-    local navLayout=horizontal(nav,9)
+    local navLayout=horizontal(nav,6)
     local function scrollTabs(delta)
         local maximum=math.max(0,nav.AbsoluteCanvasSize.X-nav.AbsoluteWindowSize.X)
         nav.CanvasPosition=Vector2.new(math.clamp(nav.CanvasPosition.X+delta,0,maximum),0)
@@ -1804,11 +1804,11 @@ function Nox:CreateWindow(options)
 
         local compact=width<680 or height<390
         local inset=compact and 12 or 17
-        local topHeight=compact and 59 or 66
-        local dockHeight=compact and 44 or 52
-        local dockY=topHeight+5
-        local contentY=dockY+dockHeight+12
-        local contentEnd=height-13
+        local topHeight=compact and 50 or 57
+        local dockHeight=compact and 39 or 43
+        local dockY=topHeight+4
+        local contentY=dockY+dockHeight+8
+        local contentEnd=height-10
         w._compactNavigation=compact
 
         w.Short=height<435
@@ -2158,13 +2158,13 @@ function Nox:CreateWindow(options)
         end)
         task.defer(fitConcept)
         local hasIcon=opt.Icon~=nil and tostring(opt.Icon)~=""
-        local labelX=hasIcon and 34 or 12
-        local titleWidth=math.ceil(TextService:GetTextSize(title,12,MEDIUM,Vector2.new(300,22)).X)
-        local navWidth=math.clamp(titleWidth+labelX+12,76,204)
+        local labelX=hasIcon and 29 or 10
+        local titleWidth=math.ceil(TextService:GetTextSize(title,11,MEDIUM,Vector2.new(300,22)).X)
+        local navWidth=math.clamp(titleWidth+labelX+8,65,155)
         self._navOrder+=1
-        local navButton=button(holder or nav,"",{Name=title,Size=UDim2.fromOffset(navWidth,37),
+        local navButton=button(holder or nav,"",{Name=title,Size=UDim2.fromOffset(navWidth,33),
             BackgroundColor3=self.ThemeDef.Visuals.NavButtonIdle,BackgroundTransparency=Glass.NavIdle,LayoutOrder=self._navOrder})
-        round(navButton,15)
+        round(navButton,13)
         local selectionBar=new("Frame",{Name="Selected",Position=UDim2.new(0,10,1,-4),Size=UDim2.new(1,-20,0,2),
             BackgroundColor3=C.White,BackgroundTransparency=0,Visible=false,ZIndex=3},navButton); round(selectionBar,2)
         local navIcon
@@ -2173,12 +2173,12 @@ function Nox:CreateWindow(options)
         if hasIcon then
             local placeholder=label(navButton,"·",17,C.Faint,{Position=UDim2.fromOffset(9,0),Size=UDim2.new(0,15,1,0),
                 TextXAlignment=Enum.TextXAlignment.Center})
-            navIcon=remoteIcon(navButton,opt.Icon,16,C.Faint,function()
+            navIcon=remoteIcon(navButton,opt.Icon,15,C.Faint,function()
                 if placeholder.Parent then placeholder.Visible=false end
             end)
-            navIcon.Position=UDim2.fromOffset(10,9)
+            navIcon.Position=UDim2.fromOffset(9,9)
         end
-        local titleLabel=label(navButton,title,12,C.Muted,{Position=UDim2.fromOffset(labelX,-1),Size=UDim2.new(1,-labelX-10,1,0),
+        local titleLabel=label(navButton,title,11,C.Muted,{Position=UDim2.fromOffset(labelX,-1),Size=UDim2.new(1,-labelX-6,1,0),
             Font=MEDIUM,TextTruncate=Enum.TextTruncate.AtEnd})
         tab.Page,tab.Content,tab.Empty=page,list,empty; tab.NavButton,tab.NavTitle=navButton,titleLabel
         tab.ConceptCards={mainCard,quickCard,statsCard}
