@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 630 240" role="img" aria-labelledby="title">
+  <title id="title">Iconos de Ryou UI</title>
+  <rect width="630" height="240" rx="15" fill="#111215"/>
+  <g transform="translate(51 32)" fill="none" stroke="#96eac9" stroke-width="1.8">
+    <polyline points="3,11 12,3 21,11"/>
+    <polyline points="6,10 6,20 18,20 18,10"/>
+  </g>
+  <text x="63" y="75" text-anchor="middle" fill="#f2f4f5" font-family="sans-serif" font-size="13">home</text>
+  <g transform="translate(177 32)" fill="none" stroke="#96eac9" stroke-width="1.8">
+    <polyline points="4,7 20,7"/>
+    <polyline points="4,17 20,17"/>
+    <polyline points="8,4 8,10"/>
+    <polyline points="15,14 15,20"/>
+  </g>
+  <text x="189" y="75" text-anchor="middle" fill="#f2f4f5" font-family="sans-serif" font-size="13">sliders</text>
+  <g transform="translate(303 32)" fill="none" stroke="#96eac9" stroke-width="1.8">
+    <polyline points="3,9 12,4 21,9 12,14 3,9"/>
+    <polyline points="3,14 12,19 21,14"/>
+  </g>
+  <text x="315" y="75" text-anchor="middle" fill="#f2f4f5" font-family="sans-serif" font-size="13">layers</text>
+  <g transform="translate(429 32)" fill="none" stroke="#96eac9" stroke-width="1.8">
+    <polyline points="4,18 4,6 9,3 19,3 21,11 15,14 15,20 7,20 4,18"/>
+    <polyline points="8,8 11,8"/>
+    <polyline points="15,7 17,7"/>
+    <polyline points="8,13 11,13"/>
+  </g>
+  <text x="441" y="75" text-anchor="middle" fill="#f2f4f5" font-family="sans-serif" font-size="13">palette</text>
+  <g transform="translate(555 32)" fill="none" stroke="#96eac9" stroke-width="1.8">
+    <polyline points="4,17 7,14 7,8 12,4 17,8 17,14 20,17 4,17"/>
+    <polyline points="10,21 14,21"/>
+  </g>
+  <text x="567" y="75" text-anchor="middle" fill="#f2f4f5" font-family="sans-serif" font-size="13">bell</text>
+  <g transform="translate(51 105)" fill="none" stroke="#96eac9" stroke-width="1.8">
+    <polyline points="9,5 15,5 15,11 9,11 9,5"/>
+    <polyline points="4,20 4,17 8,14 16,14 20,17 20,20"/>
+  </g>
+  <text x="63" y="148" text-anchor="middle" fill="#f2f4f5" font-family="sans-serif" font-size="13">user</text>
+  <g transform="translate(177 105)" fill="none" stroke="#96eac9" stroke-width="1.8">
+    <polyline points="4,4 20,4 20,20 4,20 4,4"/>
+    <polyline points="4,12 20,12"/>
+    <polyline points="12,4 12,20"/>
+  </g>
+  <text x="189" y="148" text-anchor="middle" fill="#f2f4f5" font-family="sans-serif" font-size="13">grid</text>
+  <g transform="translate(303 105)" fill="none" stroke="#96eac9" stroke-width="1.8">
+    <polyline points="5,12 10,17 19,7"/>
+  </g>
+  <text x="315" y="148" text-anchor="middle" fill="#f2f4f5" font-family="sans-serif" font-size="13">check</text>
+  <g transform="translate(429 105)" fill="none" stroke="#96eac9" stroke-width="1.8">
+    <polyline points="12,5 12,8"/>
+    <polyline points="12,11 12,19"/>
+  </g>
+  <text x="441" y="148" text-anchor="middle" fill="#f2f4f5" font-family="sans-serif" font-size="13">info</text>
+  <g transform="translate(555 105)" fill="none" stroke="#96eac9" stroke-width="1.8">
+    <polyline points="12,4 21,20 3,20 12,4"/>
+    <polyline points="12,9 12,14"/>
+    <polyline points="12,16 12,18"/>
+  </g>
+  <text x="567" y="148" text-anchor="middle" fill="#f2f4f5" font-family="sans-serif" font-size="13">warning</text>
+  <g transform="translate(51 178)" fill="none" stroke="#96eac9" stroke-width="1.8">
+    <polyline points="5,5 19,19"/>
+    <polyline points="19,5 5,19"/>
+  </g>
+  <text x="63" y="221" text-anchor="middle" fill="#f2f4f5" font-family="sans-serif" font-size="13">close</text>
+  <g transform="translate(177 178)" fill="none" stroke="#96eac9" stroke-width="1.8">
+    <polyline points="5,12 19,12"/>
+  </g>
+  <text x="189" y="221" text-anchor="middle" fill="#f2f4f5" font-family="sans-serif" font-size="13">minus</text>
+  <g transform="translate(303 178)" fill="none" stroke="#96eac9" stroke-width="1.8">
+    <polyline points="12,4 5,4 4,11 7,15 13,15 16,9 12,4"/>
+    <polyline points="14,14 20,20"/>
+  </g>
+  <text x="315" y="221" text-anchor="middle" fill="#f2f4f5" font-family="sans-serif" font-size="13">search</text>
+</svg>

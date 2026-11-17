@@ -1,51 +1,53 @@
-# Ryou
+<img src="branding/ryou-avatar.png" alt="Símbolo de Ryou" width="92">
 
-Hub en Luau para PC y móvil. **Creador: Ryou.**
+# Ryou UI
 
-Este repositorio contiene la migración del proyecto anterior hacia la identidad Ryou sin romper de golpe la API que usan los builds existentes.
+Biblioteca de interfaz para Roblox Studio. **V14.0.0 · Created by Ryou**
 
-## Archivos principales
+Ryou UI ofrece una ventana redimensionable, navegación lateral, controles táctiles y de mouse, temas y notificaciones. El símbolo y los iconos incluidos se dibujan con elementos de Roblox. La biblioteca funciona como `ModuleScript` de cliente.
 
-- `main.luau` — shell visual standalone del nuevo diseño Ryou.
-- `ui/compat.lua` — capa visual compatible con la API usada por los builds existentes.
-- `scripts/duels.lua` — Duels migrado a branding Ryou.
-- `scripts/mm2.lua` — MM2 migrado a branding Ryou, con el loader de UI corregido.
-- `PROJECT_CONTEXT.md` — contexto técnico y reglas de migración para continuar el proyecto en cualquier chat/sesión.
+## Inicio rápido
 
-## UI remota
-
-Los scripts admiten:
+1. Crea un `ModuleScript` llamado `RyouUI` en `ReplicatedStorage` y coloca ahí el contenido de [ui/RyouUI.lua](ui/RyouUI.lua).
+2. En `StarterPlayer > StarterPlayerScripts`, crea un `LocalScript` con este ejemplo.
+3. Pulsa **Play** en Studio. Pulsa **Shift derecho** para abrir o cerrar la ventana.
 
 ```lua
-getgenv().RYOU_UI_URL = "https://tu-endpoint/ryou-ui.lua"
+local storage = game:GetService("ReplicatedStorage")
+local UI = require(storage:WaitForChild("RyouUI"))
+local window = UI:CreateWindow({Title = "Ryou UI", Subtitle = "Demostración"})
+local home = window:Tab({Title = "Inicio", Icon = "home"})
+home:Button({
+    Title = "Mostrar aviso",
+    Callback = function()
+        window:Notify({Type = "success", Title = "Todo listo"})
+    end,
+})
 ```
 
-antes de ejecutar el build.
+El [proyecto Rojo](default.project.json) monta el mismo módulo con el ejemplo completo. La [guía de instalación](docs/getting-started.md) incluye ambas rutas.
 
-Los builds y assets ya apuntan a este repositorio. Para que `game:HttpGet` y los loadstrings RAW funcionen sin autenticación, el repositorio debe estar en visibilidad pública.
+## Controles y personalización
 
-## Desarrollo
+| Interfaz | Cómo empezar |
+| --- | --- |
+| Ventana, launcher arrastrable, grupos de pestañas | [Ventanas](docs/windows.md) · [Pestañas](docs/tabs.md) |
+| Botón, interruptor, slider, texto y selector de color | [Componentes](docs/components.md) |
+| Dropdown inline individual o múltiple | [Dropdowns](docs/dropdowns.md) |
+| Iconos nativos e imágenes de Roblox | [Catálogo visual](branding/icons.svg) · [Iconos](docs/icons.md) |
+| Temas oscuros y claros, acento y espaciado | [Temas](docs/themes.md) · [Personalización](docs/customization.md) |
+| Entrada escalonada, movimiento reducido y avisos | [Movimiento](docs/animations.md) · [Notificaciones](docs/notifications.md) |
 
-El objetivo es mantener una sola base de UI para Duels, MM2 y ASD, con diseño oscuro/minimalista, soporte móvil/PC, resize, botón flotante, animaciones y personalización.
+[API de referencia](docs/api-reference.md) · [Migración](docs/migration.md) · [Solución de problemas](docs/troubleshooting.md) · [English quickstart](docs/getting-started-en.md)
 
-Consulta `PROJECT_CONTEXT.md` antes de hacer cambios grandes.
+## Ejemplos y verificación
 
-**Creador:** Ryou  
-**TikTok:** @x0brxn
+[Ventana mínima](examples/Minimal.client.lua) · [Interfaz completa](examples/Complete.client.lua) · [Iconos](examples/Icons.client.lua) · [Temas](examples/Themes.client.lua) · [Movimiento](examples/Motion.client.lua) · [Responsive](examples/Responsive.client.lua) · [Notificaciones](examples/Notifications.client.lua) · [Integración](examples/Integration.client.lua) · [Galería de outfits](examples/Outfits.client.lua)
 
+La interfaz está diseñada para cliente de Roblox con mouse o pantalla táctil. La revisión de V14 incluye compilación con Luau y una [prueba de humo para Studio](tests/Smoke.client.lua). La validación de interacción y las capturas de producto se registran siguiendo el [plan de pruebas](docs/testing.md).
 
-## Loadstrings
+## Proyecto
 
-Duels:
+[Historial de cambios](CHANGELOG.md) · [Contribuir](CONTRIBUTING.md)
 
-```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/scripts/duels.lua"))()
-```
-
-MM2:
-
-```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/scripts/mm2.lua"))()
-```
-
-La UI compartida vive en `ui/compat.lua` y todos los assets runtime están alojados en este mismo repositorio.
+El punto de entrada de V14 es `ui/RyouUI.lua`. El historial de compatibilidad y los builds anteriores siguen en sus rutas de origen. La licencia para redistribuir V14 está pendiente de aprobación y revisión de procedencia. Consulta [alcance y atribución](docs/provenance.md).
