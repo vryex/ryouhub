@@ -2,7 +2,7 @@
   <img src="assets/neo/R_FACETADA_VECTOR_512.png" width="104" alt="Símbolo Ryou">
   <h1>Ryou UI</h1>
   <p>Biblioteca visual en un archivo para scripts Luau de cliente Roblox.</p>
-  <p><strong>14.0.0 · Neo Sidebar V4</strong> · Rama de revisión · Created by Ryou</p>
+  <p><strong>14.0.0 · Neo Sidebar V5</strong> · Rama de revisión · Created by Ryou</p>
 </div>
 
 ![Master Neo Sidebar · mockup conceptual](assets/neo-master-mockup.jpg)
@@ -28,12 +28,12 @@ home:Button({ Title = "Estado", Callback = function()
 end })
 ```
 
-## Showcase Neo Sidebar V4
+## Showcase Neo Sidebar V5
 
-Ejecuta este bloque en el cliente compatible. Abre el showcase con las superficies, los controles compactos y el arte de Neo Sidebar V4.
+Ejecuta este bloque en el cliente compatible. Ejecuta el bloque y toca el launcher circular para abrir Neo Sidebar V5. En Ajustes → Apariencia de interfaz puedes cambiar tema, neón, animaciones, escala e intensidad.
 
 ```lua
-local base = "https://raw.githubusercontent.com/vryex/ryouhub/1d83ea02929281d67caf0aecd301376811656ea2/ryou-ui-v14/"
+local base = "https://raw.githubusercontent.com/vryex/ryouhub/cb3128135342793577c2651ca947f67a584084d5/ryou-ui-v14/"
 local UI = assert(loadstring(game:HttpGet(base .. "RyouUI.lua")))()
 local mount = assert(loadstring(game:HttpGet(base .. "examples/NeoShowcase.lua")))()
 mount(UI, { Motion = "Full" })
@@ -59,7 +59,7 @@ En Studio y en clientes sin esas API, abre la misma interfaz con una R tipográf
 
 ## Compatibilidad y pruebas
 
-La biblioteca requiere servicios del cliente Roblox y acceso a `PlayerGui`. Luau CLI sirve para compilación y simulación de estado. La [prueba para Roblox](tests/Smoke.client.lua) se incluye para ejecutarla en **Play**. La revisión V4 parte de tres capturas reales de V3 en Android. En Luau CLI se probaron visibilidad del monograma, tamaños, caché y callbacks. La matriz de QA recoge lo observado en las capturas y las comprobaciones pendientes con V4 en Android.
+La biblioteca requiere servicios del cliente Roblox y acceso a `PlayerGui`. Luau CLI sirve para compilación y simulación de estado. La [prueba para Roblox](tests/Smoke.client.lua) se incluye para ejecutarla en **Play**. La revisión V5 parte de las capturas reales de V4 en Roblox Android, tema claro y oscuro. Se verificaron la identidad del PNG, el contraste nominal de la paleta y las transiciones y gestos simulados. Consulta la [matriz V5](docs/neo-qa.md#validación-v5-en-roblox-android) para reproducir las pruebas en el cliente.
 
 Consulta [cómo contribuir](CONTRIBUTING.md) y la [revisión de procedencia](docs/provenance.md) antes de enviar recursos nuevos. El código original de la biblioteca, los ejemplos y las pruebas se distribuye bajo [MIT](LICENSE).
 

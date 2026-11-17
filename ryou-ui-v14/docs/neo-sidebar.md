@@ -60,3 +60,10 @@ outfits:Gallery({
 ```
 
 **Created by Ryou**
+
+
+## V5 en Android
+
+La cabecera usa `R_FACETADA_VECTOR_512.png`. A un umbral alfa de 35 sobre 255, el símbolo ocupa 391 × 289 de 512. La nueva caja con ajuste proporcional lo muestra a unos 44 px de ancho lógico frente a 54 px en V4. El arte del hero y el launcher conserva su encuadre propio.
+
+La zona táctil transparente cubre la cabecera bajo los botones de ventana y utilidades. Título, logo y decoración permanecen debajo de la zona táctil. El arrastre mantiene el puntero que inició el gesto y aplica su delta a la posición inicial en el área segura, sin interpolar el movimiento.

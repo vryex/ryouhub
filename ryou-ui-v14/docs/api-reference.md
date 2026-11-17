@@ -47,6 +47,10 @@ Para `Banner`, `Columns`, `Stats`, `Gallery`, `Catalog` y las opciones de Neo Si
 | `w:SelectTab(which)` | Objeto, título, ID o índice desde 1. | `Tab?`. `w:SelectTab("Inicio")` |
 | `w:Open()`, `w:Close()`, `w:Toggle()` | Cambia el estado de la ventana. | `Window`. `w:Close():Open()` |
 | `w:Minimize()` | Oculta el panel con transición hacia el launcher si está habilitado. Conserva el estado. | `Window`. |
+| `w:SetNeon(enabled)`, `w:GetNeon()` | Controla la decoración neón. `Neon` al crear vale `true` por defecto. | `Window` o booleano. |
+| `w:SetScale(value)`, `w:GetScale()` | Escala el panel. Rango `0.85–1.20`. `Scale` al crear vale `1`. | `Window` o número. |
+| `w:SetDecorationIntensity(value)`, `w:GetDecorationIntensity()` | Ajusta la intensidad decorativa de `0` a `1`. `DecorationIntensity` al crear vale `1`. | `Window` o número. |
+| `w:GetMotion()` | Devuelve `Full`, `Reduced` u `Off`. | Cadena. |
 | `w:SetTitle(text)` | Nuevo título; `nil` limpia el texto. | `Window`. `w:SetTitle("Archivo 2")` |
 | `w:SetAuthor(text)`, `w:SetSubtitle(text)` | Nuevo subtítulo; `nil` limpia el texto. | `Window`. `w:SetSubtitle("Preferencias")` |
 | `w:SetTheme(config)`, `w:GetTheme()` | Nombre o tabla de [tema](themes.md). El getter devuelve el nombre canónico. | `Window` / string. `w:SetTheme("Light"):GetTheme()` |

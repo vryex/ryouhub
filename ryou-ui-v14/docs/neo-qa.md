@@ -18,7 +18,7 @@
 python3 ryou-ui-v14/tests/run-cli.py /ruta/a/luau /ruta/a/luau-compile
 ```
 
-## Capturas Android de V3 y revisión V4
+## Historial de capturas Android de V3 y revisión V4
 
 Las tres capturas de Roblox Android adjuntas al encargo son de 1536 × 709. Son evidencia anterior al cambio. Contrastar V4 con el master 01 y las pantallas 02 a 07 al tomar las siguientes capturas.
 
@@ -50,3 +50,24 @@ Pendientes el render de V4, la medición con Gotham real, las zonas seguras del 
 | 05–06 Skybox | Modal con sombra exterior, cabecera y lista diferenciadas; Vista previa y Aplicar en el pie. | Comparar selección y contraste; probar scroll, teclado y cierre. |
 
 La comparación lado a lado disponible usa las referencias del ZIP y las capturas reales de V3. La igualdad de luminosidad, el rasterizado de transparencias y los estados táctiles de V4 requieren captura del cliente.
+
+## Validación V5 en Roblox Android
+
+Las capturas de V4 a 1536 × 709 se revisaron como evidencia previa. En claro, varios textos, iconos y fondos de estadísticas perdían contraste. El logo de cabecera dominaba el título en ambos temas. En el código anterior, el gesto podía acceder a una referencia inexistente al ocultarse las utilidades. La paleta nominal de V5 alcanza aproximadamente 12.7:1 para texto principal en tarjeta, 5.8:1 para texto secundario en rail y 8.1:1 para texto sobre el CTA en su extremo más oscuro. Son cálculos sobre colores, con el gradiente aplicado al fondo, previos a la composición de Roblox.
+
+| Prueba automatizada | Evidencia |
+| --- | --- |
+| Recursos | PNG de cabecera igual byte por byte al del ZIP, máscara alfa medida y visibilidad exclusiva del PNG luego del fallback. |
+| Gestos | Delta del primer dedo, segundo dedo ignorado, límites de pantalla, mouse, arrastre posterior a resize y slider de escala sin cancelar el gesto. |
+| Preferencias | Tema claro y oscuro con neón OFF/ON, intensidad 0–100 %, transparencia restaurada, límites 85–120 % y limpieza tras destruir. |
+| Movimiento | Apertura por el launcher, interrupciones abrir–minimizar–reabrir–cerrar, finalización al cambiar de modo, visibilidad e interacción. |
+| Regresiones | Navegación, dropdown, HSV, catálogo, galería, caché, acceso por RAW y API V14. |
+
+### Pruebas pendientes en el cliente
+
+1. Ejecuta el bloque fijado en el README y toca el launcher. En Android horizontal repite con el panel centrado y con el launcher movido hacia otra esquina. Graba la primera apertura y la secuencia abrir → minimizar → reabrir → cerrar → abrir.
+2. Arrastra desde el logo, título, centro y huecos junto a los controles. Prueba despacio, rápido y con dos dedos. Confirma que minimizar, cerrar y utilidades responden a su acción. Repite después de un resize y prueba mouse en PC.
+3. En Ajustes activa Claro, cambia neón dos veces, usa intensidad 0 y 100 y escala 85 y 120. Captura Inicio, Ajustes, estadísticas y dropdown abierto en ambos temas. Comprueba scroll de página, búsqueda y teclado en el modal, slider, HSV y galería.
+4. Comprueba que el PNG quede nítido y sin duplicación en cabecera, hero y launcher. Compara la cabecera contra el master original. Repite con tamaño lógico cercano a 853 × 394 y con los modos Reducidas y Desactivadas.
+
+Quedan pendientes el render de V5, las capturas comparativas y la sensación del arrastre con el dedo en hardware Android. Las pruebas de estado ejercitan eventos simulados en Luau CLI.

@@ -1,5 +1,14 @@
 # Cambios
 
+## 14.0.0 · Neo Sidebar V5
+
+- Monograma de cabecera aproximadamente 19 % más pequeño. El PNG aprobado conserva su proporción y el placeholder se oculta al asignar el recurso.
+- Tema claro con superficies perla, texto carbón, CTA menta con texto oscuro y gradientes más suaves. Las asociaciones de tema se conservan hasta destruir el elemento.
+- La cabecera mueve la ventana usando el desplazamiento del primer puntero. Los controles tienen sus propias zonas de toque y el movimiento queda dentro del área segura.
+- La apertura inicial desde el launcher relaciona posición, escala e identidad del panel. Minimizar anima el regreso al launcher y reabrir usa una transición de 210 ms en modo completo.
+- Ajustes en vivo de tema, neón, animaciones, escala de 85–120 % e intensidad de decoración. El showcase inicia en el launcher.
+- Las pruebas cubren la selección de arte, el cambio de tema y neón, el segundo dedo, redimensionamiento a escala y transiciones interrumpidas. La validación física sigue en la matriz de QA.
+
 ## 14.0.0 · Neo Sidebar V4, acabados
 
 - Superficies con iluminación diferenciada, contornos de opacidad variable, sombras escalonadas y reflejo en el CTA. La selección usa una base carbón con luz localizada.
