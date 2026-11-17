@@ -164,7 +164,7 @@ local THEMES = {
 
 local CURRENT_THEME_NAME = canonicalThemeName(XeroEnv.XERO_THEME or "Xero")
 local CURRENT_THEME = THEMES[CURRENT_THEME_NAME] or THEMES.Xero
-local Nox = { Version = "8.0.0-concept-c-compact", Brand = "Ryou", SupportsGameLabels = true, Creator = "Ryou", UIScale = 1 }
+local Nox = { Version = "9.1.0-xero-native-input", Brand = "Ryou", SupportsGameLabels = true, Creator = "Ryou", UIScale = 1 }
 local C, Glass = {}, {}
 
 local function overwriteTable(target, source)
@@ -207,7 +207,7 @@ end
 -- PNGs live in /icons on GitHub. They are downloaded lazily once, cached locally
 -- and reused by every control/tab that declares Icon = "name".
 local XERO_ICON_BASE_URL = tostring(XeroEnv.XERO_ICON_BASE_URL or
-    "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/ryou-ui-v8-compact-home/icons/")
+    "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/ryou-ui-v9-xero-native-input/icons/")
 local XERO_ICON_CACHE_FOLDER = tostring(XeroEnv.XERO_ICON_CACHE_FOLDER or "Ryou/Icons/v2")
 
 local XERO_ICON_FILES = {
@@ -1018,40 +1018,20 @@ function Tab:Toggle(options)
     connect(c.Window,target.Activated,function() if not c.Locked then c:Set(not c.Value) end end)
     return c
 end
+-- Mismo esquema de Xero Duels: entrada directa del propio TextBox,
+-- sin TextButton superpuesto ni modales ni Focus forzado.
 local function field(parent, placeholder)
-    local box=new("TextBox",{Name="Field",Text="",PlaceholderText=placeholder or "",
-        PlaceholderColor3=C.Faint,BackgroundColor3=C.Field,BackgroundTransparency=Glass.Field,
-        Active=true,TextEditable=true,ClearTextOnFocus=false,MultiLine=false,Selectable=true,
-        TextXAlignment=Enum.TextXAlignment.Left,TextSize=12,Size=UDim2.new(1,0,0,34),
-        ZIndex=6,LayoutOrder=2},parent)
-    round(box,10); stroke(box,C.Border); padding(box,9,0)
-    -- Forzar foco táctil: algunos clientes no activan el teclado dentro
-    -- de un ScrollingFrame anidado sin CaptureFocus explícito.
-    box.InputBegan:Connect(function(input)
-        if input.UserInputType==Enum.UserInputType.Touch
-            or input.UserInputType==Enum.UserInputType.MouseButton1 then
-            task.defer(function()
-                if box.Parent and box.Visible and box.TextEditable
-                    and Input:GetFocusedTextBox()~=box then
-                    pcall(function() box:CaptureFocus() end)
-                end
-            end)
-        end
-    end)
-    -- Área táctil explícita: un TextBox dentro de ScrollingFrame puede
-    -- recibir el toque sin que el teclado virtual aparezca.
-    local focusHit=button(box,"",{Name="TextFocusHit",BackgroundTransparency=1,
-        Size=UDim2.fromScale(1,1),ZIndex=box.ZIndex+1})
-    focusHit.AutoButtonColor=false
-    focusHit.Activated:Connect(function()
-        task.defer(function()
-            if box.Parent and box.TextEditable then
-                pcall(function() box:CaptureFocus() end)
-            end
-        end)
-    end)
-    box.Focused:Connect(function() focusHit.Visible=false end)
-    box.FocusLost:Connect(function() focusHit.Visible=true end)
+    local box=new("TextBox",{
+        Name="Field",Text="",PlaceholderText=placeholder or "",
+        PlaceholderColor3=C.Faint,BackgroundColor3=C.Field,
+        BackgroundTransparency=Glass.Field,BorderSizePixel=0,
+        ClearTextOnFocus=false,TextColor3=C.Text,Font=MEDIUM,
+        TextSize=12,TextXAlignment=Enum.TextXAlignment.Left,
+        TextYAlignment=Enum.TextYAlignment.Center,
+        Active=true,TextEditable=true,Selectable=true,MultiLine=false,
+        Size=UDim2.new(1,0,0,34),ZIndex=20,LayoutOrder=2
+    },parent)
+    round(box,10);stroke(box,C.Border);padding(box,10,0)
     return box
 end
 function Tab:Input(options)
@@ -1065,14 +1045,7 @@ function Tab:Input(options)
         return self
     end
     c:Set(o.Value or o.Default or "",true)
-    local wasScrollable=true
-    connect(c.Window,box.Focused,function()
-        if c.Window._endDrag then c.Window:_endDrag() end
-        wasScrollable=c.Tab.Content.ScrollingEnabled
-        c.Tab.Content.ScrollingEnabled=false
-    end)
     connect(c.Window,box.FocusLost,function()
-        c.Tab.Content.ScrollingEnabled=wasScrollable
         if c.Locked then box.Text=c.Value else c:Set(box.Text) end
     end)
     if o.Live then connect(c.Window,box:GetPropertyChangedSignal("Text"),function()
@@ -1626,7 +1599,8 @@ function Nox:CreateWindow(options)
         Position=UDim2.new(1,-312,0,8),Size=UDim2.fromOffset(198,30),ZIndex=6},top)
     round(searchBox,17); local searchStroke=stroke(searchBox,w.ThemeDef.Visuals.SearchStroke)
     local search=new("TextBox",{Name="Search",BackgroundTransparency=1,ClearTextOnFocus=false,
-        Active=true,TextEditable=true,Selectable=true,TextSize=12,TextTruncate=Enum.TextTruncate.AtEnd,
+        Active=true,TextEditable=true,Selectable=true,Font=MEDIUM,TextColor3=C.Text,
+        TextSize=12,TextTruncate=Enum.TextTruncate.AtEnd,ZIndex=20,
         PlaceholderText="Buscar ajuste...",PlaceholderColor3=C.Faint,TextXAlignment=Enum.TextXAlignment.Left,TextYAlignment=Enum.TextYAlignment.Center,
         Position=UDim2.fromOffset(28,0),Size=UDim2.new(1,-54,1,0)},searchBox)
     icon(searchBox,"search").Position=UDim2.new(0,8,.5,-10)
