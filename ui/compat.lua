@@ -1488,7 +1488,10 @@ local DESCRIPTIONS = {
     Movimiento="Personaliza el movimiento y sus controles.", AutoFarm="Configura tus acciones automáticas.",
     ["Gráficos"]="Ajusta el ambiente, la iluminación y los efectos.",
     Animaciones="Combina paquetes y movimientos a tu gusto.", Apariencia="Tu avatar, a tu manera.",
-    ["Configuración"]="Tu interfaz y tus configuraciones guardadas.", ["Generar Armas"]="Organiza tus opciones de inventario.", ["Créditos"]="Conoce al creador y los datos del proyecto.",
+    ["Configuración"]="Guardado, perfiles y preferencias.", ["Generar Armas"]="Organiza tus opciones de inventario.", ["Créditos"]="Conoce al creador y los datos del proyecto.",
+    ["TP Slash"]="Ataque de ronda y ajustes de objetivo.", ["Auto Shoot"]="Disparo automático y respuesta.",
+    ["Fondo"]="Imagen, transparencia y apariencia del panel.", ["Skybox"]="Colección de cielos y ambiente.",
+    ["Información"]="Datos y versión de RyouHub.",
 }
 function Nox:CreateWindow(options)
     local o=options or {}
@@ -1983,7 +1986,7 @@ function Nox:CreateWindow(options)
     function w:_tab(options,holder)
         local opt=options or {}; local title=plain(opt.Title or "Pestaña")
         local index=#self.Tabs+1
-        local tab=setmetatable({Window=self,Title=title,Desc=opt.Desc or DESCRIPTIONS[title] or "Personaliza tus opciones.",
+        local tab=setmetatable({Window=self,Title=title,Desc=opt.Desc or DESCRIPTIONS[title] or ("Ajustes de "..title.."."),
             Elements={},_order=0,Query="",Index=index},Tab)
         local page=new("Frame",{Name=title,BackgroundTransparency=1,Size=UDim2.fromScale(1,1),Visible=false},pages)
         -- RyouHub Concept C: exactamente la misma estructura modular para todas las pestañas.
