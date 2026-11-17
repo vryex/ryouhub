@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="850" viewBox="0 0 440 850"><defs>
+  <linearGradient id="facet" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#b9ffe7"/><stop offset=".22" stop-color="#76ffd0"/>
+    <stop offset=".55" stop-color="#35e7ac"/><stop offset="1" stop-color="#087d6e"/>
+  </linearGradient>
+  <linearGradient id="facetSide" x1="0" y1="0" x2=".7" y2="1"><stop offset="0" stop-color="#1ab68f"/><stop offset=".55" stop-color="#16725f"/><stop offset="1" stop-color="#022d30"/></linearGradient>
+  <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f564c"/><stop offset=".38" stop-color="#a1ffdd"/><stop offset=".65" stop-color="#33d6ad"/><stop offset="1" stop-color="#09372f"/></linearGradient>
+  <radialGradient id="disc" cx=".36" cy=".2" r=".86"><stop offset="0" stop-color="#173d37"/><stop offset=".36" stop-color="#0b1d20"/><stop offset="1" stop-color="#030d11"/></radialGradient>
+  <linearGradient id="ribbon" x1="0" y1="0" x2="1" y2=".6"><stop offset="0" stop-color="#d2ffef" stop-opacity="0"/><stop offset=".36" stop-color="#63ffc9" stop-opacity=".88"/><stop offset=".6" stop-color="#00976c" stop-opacity=".55"/><stop offset="1" stop-color="#001f1a" stop-opacity="0"/></linearGradient>
+</defs>
+<path d="M0 460 C125 570 170 685 440 770 L440 850 L0 850 Z" fill="url(#ribbon)" opacity=".64"/>
+<path d="M-10 495 C115 600 170 740 448 779" fill="none" stroke="#39d8a3" opacity=".35" stroke-width="3"/>
+</svg>
