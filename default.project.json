@@ -1,0 +1,17 @@
+{
+  "name": "Ryou UI",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "RyouUI": { "$path": "ui/RyouUI.lua" }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "RyouDemo": { "$path": "examples/Complete.client.lua" }
+      }
+    }
+  }
+}
