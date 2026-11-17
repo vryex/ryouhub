@@ -1279,15 +1279,20 @@ function Tab:Dropdown(options)
     return c
 end
 function Tab:Colorpicker(options)
-    local o=options or {}; local c=self:_control("Colorpicker",o)
-    c.Reserve=62; c.HeadMinimum=44
-    local hit=button(c.Head,"",{Name="Color",Position=UDim2.new(1,-46,0,0),Size=UDim2.fromOffset(46,44)})
-    round(hit,9); local hitStroke=stroke(hit,C.Border,1); hitStroke.Transparency=.08
+    local o=options or {};local c=self:_control("Colorpicker",o)
+    c.Reserve=52;c.HeadMinimum=34
+    local hit=button(c.Head,"",{Name="ColorChip",Position=UDim2.new(1,-42,0,1),
+        Size=UDim2.fromOffset(41,32),BackgroundColor3=C.White})
+    round(hit,10)
+    local hitStroke=stroke(hit,C.Border,1)
+    hitStroke.Transparency=.14
     c.Interactive=hit
 
     function c:Set(value,silent)
         if typeof(value)~="Color3" then return self end
-        local changed=self.Value~=value; self.Value=value; hit.BackgroundColor3=value
+        local changed=self.Value~=value
+        self.Value=value
+        hit.BackgroundColor3=value
         if self._updateColor then self._updateColor() end
         if changed and not silent then invoke(self.Callback,value) end
         return self
@@ -1296,147 +1301,179 @@ function Tab:Colorpicker(options)
     function c:Open()
         if self.Locked then return end
         local window=self.Window
-        local panel=window:_popup(self.Title,370,410,self)
-        local body=scroll(panel,{Name="ColorPaletteBody",Position=UDim2.fromOffset(16,54),
-            Size=UDim2.new(1,-32,1,-68),AutomaticCanvasSize=Enum.AutomaticSize.None,CanvasSize=UDim2.fromOffset(0,288)})
-        local sheet=new("Frame",{Name="PaletteControls",BackgroundTransparency=1,Size=UDim2.new(1,-13,0,288)},body)
-
+        -- Panel de precisión: compacto, no un cuadro gigante de arcoíris.
+        local panel=window:_popup(self.Title,328,348,self)
+        local body=new("Frame",{Name="ColorWorkbench",BackgroundTransparency=1,
+            Position=UDim2.fromOffset(15,55),Size=UDim2.new(1,-30,1,-68)},panel)
         local h,s,v=self.Value:ToHSV()
         local state={H=h,S=s,V=v,Internal=false}
-        if state.S < .001 then state.H=0 end
+        if state.S<.001 then state.H=0 end
+        local initial=self.Value
+        local swatch=new("Frame",{Name="ColorPreview",Position=UDim2.fromOffset(0,0),
+            Size=UDim2.fromOffset(37,36),BackgroundColor3=self.Value},body)
+        round(swatch,11)
+        local swatchEdge=stroke(swatch,C.Border,1);swatchEdge.Transparency=.10
+        label(body,"HEX",9,C.Muted,{Position=UDim2.fromOffset(48,0),
+            Size=UDim2.fromOffset(40,13),Font=BOLD})
+        local hex=field(body,"#FFFFFF")
+        hex.Position=UDim2.fromOffset(48,13)
+        hex.Size=UDim2.new(1,-137,0,28)
+        hex.TextSize=12
+        hex.Font=Enum.Font.Code
+        local original=button(body,"Original",{Name="RestoreColor",
+            Position=UDim2.new(1,-83,0,3),Size=UDim2.fromOffset(83,33),TextSize=10})
+        round(original,10)
+        stroke(original,C.Border,1).Transparency=.31
+        connect(window,original.Activated,function() self:Set(initial) end,window._popupConnections)
+        local lineRule=new("Frame",{BackgroundColor3=C.Border,BackgroundTransparency=.56,
+            Position=UDim2.fromOffset(0,48),Size=UDim2.new(1,0,0,1)},body)
 
-        local current=new("Frame",{Name="Current",Position=UDim2.fromOffset(0,0),Size=UDim2.fromOffset(44,34),
-            BackgroundColor3=self.Value},sheet)
-        round(current,9); stroke(current,C.Border,1)
-
-        local hex=field(sheet,"#FFFFFF")
-        hex.Position=UDim2.fromOffset(54,0); hex.Size=UDim2.new(1,-54,0,34)
-        hex.TextSize=11; hex.Font=MEDIUM
-
-        label(sheet,"Paleta RGB · arrastra para elegir tono e intensidad",9,C.Muted,{
-            Position=UDim2.fromOffset(0,39),Size=UDim2.new(1,0,0,16)})
-
-        local palette=button(sheet,"",{Name="RGBPalette",Position=UDim2.fromOffset(0,58),
-            Size=UDim2.new(1,0,0,150),BackgroundColor3=Color3.fromHSV(state.H,1,1),ClipsDescendants=true})
-        round(palette,11); local paletteStroke=stroke(palette,C.Border,1); paletteStroke.Transparency=.08
-
-        -- Izquierda = blanco, derecha = color puro.
-        local whiteLayer=new("Frame",{Name="WhiteBlend",Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(1,1,1),
-            BorderSizePixel=0,ZIndex=2},palette)
+        local palette=button(body,"",{Name="SVPlane",BackgroundColor3=Color3.fromHSV(state.H,1,1),
+            Position=UDim2.fromOffset(0,58),Size=UDim2.new(1,0,0,117),
+            ClipsDescendants=true})
+        round(palette,12)
+        stroke(palette,C.Border,1).Transparency=.14
+        local white=new("Frame",{Size=UDim2.fromScale(1,1),BorderSizePixel=0,
+            BackgroundColor3=Color3.new(1,1,1),ZIndex=2},palette)
         new("UIGradient",{Transparency=NumberSequence.new({
             NumberSequenceKeypoint.new(0,0),NumberSequenceKeypoint.new(1,1)
-        })},whiteLayer)
-
-        -- Arriba = luminoso, abajo = negro.
-        local blackLayer=new("Frame",{Name="BlackBlend",Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.new(0,0,0),
-            BorderSizePixel=0,ZIndex=3},palette)
+        })},white)
+        local shade=new("Frame",{Size=UDim2.fromScale(1,1),BorderSizePixel=0,
+            BackgroundColor3=Color3.new(0,0,0),ZIndex=3},palette)
         new("UIGradient",{Rotation=90,Transparency=NumberSequence.new({
             NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(1,0)
-        })},blackLayer)
+        })},shade)
+        local pointer=new("Frame",{Name="PickerPosition",AnchorPoint=Vector2.new(.5,.5),
+            Size=UDim2.fromOffset(16,16),BackgroundTransparency=1,ZIndex=6},palette)
+        round(pointer,8)
+        local pointerStroke=stroke(pointer,Color3.new(1,1,1),2)
+        pointerStroke.Transparency=0
+        new("UIStroke",{Color=Color3.new(0,0,0),Transparency=.24,Thickness=1},pointer)
 
-        local cursor=new("Frame",{Name="PaletteCursor",AnchorPoint=Vector2.new(.5,.5),Size=UDim2.fromOffset(18,18),
-            BackgroundTransparency=1,ZIndex=6},palette)
-        round(cursor,9); local cursorStroke=stroke(cursor,Color3.new(1,1,1),2); cursorStroke.Transparency=0
-        local cursorShadow=new("UIStroke",{Color=Color3.new(0,0,0),Thickness=1,Transparency=.18,
-            ApplyStrokeMode=Enum.ApplyStrokeMode.Border},cursor)
-
-        local hueBar=button(sheet,"",{Name="Hue",Position=UDim2.fromOffset(0,221),Size=UDim2.new(1,0,0,18),
-            BackgroundColor3=Color3.new(1,1,1),ClipsDescendants=false})
-        round(hueBar,9); local hueStroke=stroke(hueBar,C.Border,1); hueStroke.Transparency=.1
+        local tone=label(body,"TONO",9,C.Muted,{Font=BOLD,
+            Position=UDim2.fromOffset(0,186),Size=UDim2.fromOffset(70,15)})
+        local stats=label(body,"H 0°  ·  S 0%  ·  B 0%",9,C.Muted,{
+            Position=UDim2.new(1,-192,0,186),Size=UDim2.fromOffset(192,15),
+            Font=Enum.Font.Code,TextXAlignment=Enum.TextXAlignment.Right})
+        local hue=button(body,"",{Name="HueStrip",Position=UDim2.fromOffset(0,206),
+            Size=UDim2.new(1,0,0,12),BackgroundColor3=Color3.new(1,1,1)})
+        round(hue,6)
         new("UIGradient",{Color=ColorSequence.new({
-            ColorSequenceKeypoint.new(0.00,Color3.fromRGB(255,0,0)),
-            ColorSequenceKeypoint.new(0.17,Color3.fromRGB(255,255,0)),
-            ColorSequenceKeypoint.new(0.33,Color3.fromRGB(0,255,0)),
-            ColorSequenceKeypoint.new(0.50,Color3.fromRGB(0,255,255)),
-            ColorSequenceKeypoint.new(0.67,Color3.fromRGB(0,0,255)),
-            ColorSequenceKeypoint.new(0.83,Color3.fromRGB(255,0,255)),
-            ColorSequenceKeypoint.new(1.00,Color3.fromRGB(255,0,0))
-        })},hueBar)
+            ColorSequenceKeypoint.new(0,Color3.fromRGB(255,48,58)),
+            ColorSequenceKeypoint.new(.16,Color3.fromRGB(255,200,48)),
+            ColorSequenceKeypoint.new(.33,Color3.fromRGB(70,235,90)),
+            ColorSequenceKeypoint.new(.5,Color3.fromRGB(52,226,233)),
+            ColorSequenceKeypoint.new(.67,Color3.fromRGB(66,90,245)),
+            ColorSequenceKeypoint.new(.84,Color3.fromRGB(223,75,218)),
+            ColorSequenceKeypoint.new(1,Color3.fromRGB(255,48,58))
+        })},hue)
+        local handle=new("Frame",{Name="HueHandle",AnchorPoint=Vector2.new(.5,.5),
+            Position=UDim2.fromScale(state.H,.5),Size=UDim2.fromOffset(7,19),
+            BackgroundColor3=Color3.fromRGB(249,250,250),ZIndex=5},hue)
+        round(handle,4)
+        stroke(handle,Color3.fromRGB(25,32,35),1)
 
-        local hueCursor=new("Frame",{Name="HueCursor",AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(state.H,.5),
-            Size=UDim2.fromOffset(5,26),BackgroundColor3=Color3.fromRGB(250,250,250),ZIndex=6},hueBar)
-        round(hueCursor,3); local hueCursorStroke=stroke(hueCursor,Color3.fromRGB(20,20,20),1); hueCursorStroke.Transparency=.1
-
-        local presets=new("Frame",{Name="Presets",BackgroundTransparency=1,
-            Position=UDim2.fromOffset(0,252),Size=UDim2.new(1,0,0,30)},sheet)
-        local function fitPalette()
-            local height=math.clamp(panel.AbsoluteSize.Y-199,85,190)
-            palette.Size=UDim2.new(1,0,0,height)
-            hueBar.Position=UDim2.fromOffset(0,71+height)
-            presets.Position=UDim2.fromOffset(0,102+height)
-            body.CanvasSize=UDim2.fromOffset(0,138+height)
-            sheet.Size=UDim2.new(1,-13,0,138+height)
-        end
-        connect(window,panel:GetPropertyChangedSignal("AbsoluteSize"),fitPalette,window._popupConnections)
-        fitPalette()
-        local presetColors={
-            Color3.fromRGB(255,255,255),Color3.fromRGB(180,180,180),Color3.fromRGB(30,30,30),
-            Color3.fromRGB(255,72,72),Color3.fromRGB(255,170,45),Color3.fromRGB(255,225,55),
-            Color3.fromRGB(70,220,110),Color3.fromRGB(65,195,255),Color3.fromRGB(120,100,255),Color3.fromRGB(235,85,220)
+        label(body,"COLORES RÁPIDOS",9,C.Muted,{Font=BOLD,
+            Position=UDim2.fromOffset(0,231),Size=UDim2.new(1,0,0,15)})
+        local colors={
+            Color3.fromRGB(240,244,244),Color3.fromRGB(34,40,45),
+            Color3.fromRGB(149,240,211),Color3.fromRGB(67,169,215),
+            Color3.fromRGB(114,96,218),Color3.fromRGB(225,88,153),
+            Color3.fromRGB(232,83,79),Color3.fromRGB(237,179,69)
         }
+        local buttons={}
+        for i,color in ipairs(colors) do
+            local tile=button(body,"",{Name="QuickColor"..i,Position=UDim2.new((i-1)/#colors,2,0,252),
+                Size=UDim2.new(1/#colors,-5,0,25),BackgroundColor3=color})
+            round(tile,8)
+            local edge=stroke(tile,C.Border,1);edge.Transparency=.30
+            buttons[#buttons+1]={Color=color,Stroke=edge,Tile=tile}
+            connect(window,tile.Activated,function() self:Set(color) end,window._popupConnections)
+        end
 
-        local function applyHSV()
+        local function draw()
+            if not state.Internal then
+                local nh,ns,nv=self.Value:ToHSV()
+                if ns>.001 then state.H=nh end
+                state.S=ns;state.V=nv
+            end
+            swatch.BackgroundColor3=self.Value
+            hex.Text="#"..self.Value:ToHex():upper()
+            palette.BackgroundColor3=Color3.fromHSV(state.H,1,1)
+            pointer.Position=UDim2.new(state.S,0,1-state.V,0)
+            handle.Position=UDim2.new(state.H,0,.5,0)
+            stats.Text=string.format("H %d°  ·  S %d%%  ·  B %d%%",
+                math.floor(state.H*360+.5),
+                math.floor(state.S*100+.5),math.floor(state.V*100+.5))
+            for _,entry in ipairs(buttons) do
+                entry.Stroke.Color=(entry.Color==self.Value) and C.White or C.Border
+                entry.Stroke.Transparency=(entry.Color==self.Value) and .01 or .38
+            end
+        end
+        self._updateColor=draw
+
+        local function apply()
             state.Internal=true
             self:Set(Color3.fromHSV(state.H,state.S,state.V))
             state.Internal=false
         end
-
-        local function syncFromValue()
-            if not state.Internal then
-                local nh,ns,nv=self.Value:ToHSV()
-                if ns>.001 then state.H=nh end
-                state.S=ns; state.V=nv
-            end
-            current.BackgroundColor3=self.Value
-            hex.Text="#"..self.Value:ToHex():upper()
-            palette.BackgroundColor3=Color3.fromHSV(state.H,1,1)
-            cursor.Position=UDim2.new(state.S,0,1-state.V,0)
-            hueCursor.Position=UDim2.new(state.H,0,.5,0)
-        end
-        self._updateColor=syncFromValue
-
-        local function updatePalette(position)
+        local function updatePalette(pos)
             local size=palette.AbsoluteSize
             if size.X<=1 or size.Y<=1 then return end
-            state.S=math.clamp((position.X-palette.AbsolutePosition.X)/size.X,0,1)
-            state.V=1-math.clamp((position.Y-palette.AbsolutePosition.Y)/size.Y,0,1)
-            applyHSV()
+            state.S=math.clamp((pos.X-palette.AbsolutePosition.X)/size.X,0,1)
+            state.V=1-math.clamp((pos.Y-palette.AbsolutePosition.Y)/size.Y,0,1)
+            apply()
         end
-        local function updateHue(position)
-            local width=hueBar.AbsoluteSize.X
-            if width<=1 then return end
-            state.H=math.clamp((position.X-hueBar.AbsolutePosition.X)/width,0,1)
-            applyHSV()
+        local function updateHue(pos)
+            local w=hue.AbsoluteSize.X
+            if w<=1 then return end
+            state.H=math.clamp((pos.X-hue.AbsolutePosition.X)/w,0,1)
+            apply()
         end
-
         connect(window,palette.InputBegan,function(input)
-            if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
-                window:_beginDrag(input,updatePalette,body,self); updatePalette(input.Position)
+            if input.UserInputType==Enum.UserInputType.MouseButton1
+                or input.UserInputType==Enum.UserInputType.Touch then
+                window:_beginDrag(input,updatePalette,nil,self)
+                updatePalette(input.Position)
             end
         end,window._popupConnections)
-        connect(window,hueBar.InputBegan,function(input)
-            if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
-                window:_beginDrag(input,updateHue,body,self); updateHue(input.Position)
+        connect(window,hue.InputBegan,function(input)
+            if input.UserInputType==Enum.UserInputType.MouseButton1
+                or input.UserInputType==Enum.UserInputType.Touch then
+                window:_beginDrag(input,updateHue,nil,self)
+                updateHue(input.Position)
             end
         end,window._popupConnections)
-
-        for index,color in ipairs(presetColors) do
-            local width=1/#presetColors
-            local swatch=button(presets,"",{Name="Preset"..index,Position=UDim2.fromScale((index-1)*width,0),
-                Size=UDim2.new(width,-4,0,28),BackgroundColor3=color,LayoutOrder=index})
-            round(swatch,7); local ss=stroke(swatch,C.Border,1); ss.Transparency=.1
-            connect(window,swatch.Activated,function() self:Set(color) end,window._popupConnections)
-        end
-
         connect(window,hex.FocusLost,function()
-            local value=hex.Text:gsub("#","")
-            if #value==6 and value:match("^%x+$") then self:Set(Color3.fromHex(value)) else syncFromValue() end
+            local v=hex.Text:gsub("#","")
+            if #v==6 and v:match("^%x+$") then
+                self:Set(Color3.fromHex(v))
+            else
+                draw()
+            end
         end,window._popupConnections)
-
+        local function fitCompact()
+            local paletteHeight=math.clamp(panel.AbsoluteSize.Y-225,95,135)
+            palette.Size=UDim2.new(1,0,0,paletteHeight)
+            local d=paletteHeight-117
+            tone.Position=UDim2.fromOffset(0,186+d)
+            stats.Position=UDim2.new(1,-192,0,186+d)
+            hue.Position=UDim2.fromOffset(0,206+d)
+            for _,entry in ipairs(buttons) do
+                local p=entry.Tile.Position
+                entry.Tile.Position=UDim2.new(p.X.Scale,p.X.Offset,0,252+d)
+            end
+            for _,child in ipairs(body:GetChildren()) do
+                if child:IsA("TextLabel") and child.Text=="COLORES RÁPIDOS" then
+                    child.Position=UDim2.fromOffset(0,231+d)
+                end
+            end
+        end
+        connect(window,panel:GetPropertyChangedSignal("AbsoluteSize"),fitCompact,window._popupConnections)
+        fitCompact()
         window._popupCleanup=function() self._updateColor=nil end
-        syncFromValue()
+        draw()
     end
-
     connect(c.Window,hit.Activated,function() c:Open() end)
     c:Set(o.Default or o.Value or C.White,true)
     return c
