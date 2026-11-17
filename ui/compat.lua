@@ -164,7 +164,7 @@ local THEMES = {
 
 local CURRENT_THEME_NAME = canonicalThemeName(XeroEnv.XERO_THEME or "Xero")
 local CURRENT_THEME = THEMES[CURRENT_THEME_NAME] or THEMES.Xero
-local Nox = { Version = "8.0.0-concept-c-compact", Brand = "Ryou", SupportsGameLabels = true, Creator = "Ryou", UIScale = 1 }
+local Nox = { Version = "9.0.0-concept-c-clean", Brand = "Ryou", SupportsGameLabels = true, Creator = "Ryou", UIScale = 1 }
 local C, Glass = {}, {}
 
 local function overwriteTable(target, source)
@@ -207,7 +207,7 @@ end
 -- PNGs live in /icons on GitHub. They are downloaded lazily once, cached locally
 -- and reused by every control/tab that declares Icon = "name".
 local XERO_ICON_BASE_URL = tostring(XeroEnv.XERO_ICON_BASE_URL or
-    "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/ryou-ui-v8-compact-home/icons/")
+    "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/ryou-ui-v9-compact-fix/icons/")
 local XERO_ICON_CACHE_FOLDER = tostring(XeroEnv.XERO_ICON_CACHE_FOLDER or "Ryou/Icons/v2")
 
 local XERO_ICON_FILES = {
@@ -632,15 +632,15 @@ end
 function Control:_resize(width)
     if self.Destroyed then return end
     local section=self.__type=="Section"
-    local px=section and 5 or 12
-    local py=section and 6 or 9
+    local px=section and 3 or 10
+    local py=section and 5 or 8
     local headWidth=math.max(40,width-px*2)
     local reserve=self.Reserve or 0
     local copyOffsetX=self.CopyOffsetX or 0
     local copyWidth=math.max(30,headWidth-reserve-copyOffsetX)
     local titleHeight=textHeight(self.Title,self.TitleLabel.TextSize,self.TitleLabel.Font,copyWidth)
     local descHeight=textHeight(self.Desc,self.DescLabel.TextSize,self.DescLabel.Font,copyWidth)
-    local copyHeight=titleHeight+(descHeight>0 and 4+descHeight or 0)
+    local copyHeight=titleHeight+(descHeight>0 and 2+descHeight or 0)
     local headHeight=math.max(copyHeight,self.HeadMinimum or 0)
     self.Head.Position=UDim2.fromOffset(px,py)
     self.Head.Size=UDim2.new(1,-px*2,0,headHeight)
@@ -679,7 +679,7 @@ function Control:_resize(width)
         y+=sliderAreaHeight+sliderLimitsGap+14
     end
     if self.Rule then self.Rule.Position=UDim2.fromOffset(px,y+5); self.Rule.Size=UDim2.new(1,-px*2,0,1); y+=7 end
-    local height=y+(section and 3 or py)
+    local height=y+(section and 2 or py)
     self.ElementFrame.Size=UDim2.new(1,0,0,height)
     self.Slot.Size=UDim2.new(1,-6,0,height)
 end
@@ -690,10 +690,10 @@ function Tab:_layout()
     for _,c in ipairs(self.Elements) do
         if not c.Destroyed then
             c:_resize(width)
-            if c.Slot.Visible then height+=c.Slot.Size.Y.Offset+8 end
+            if c.Slot.Visible then height+=c.Slot.Size.Y.Offset+5 end
         end
     end
-    local bottomPad=14
+    local bottomPad=8
     local canvasHeight=math.max(0,height-8+bottomPad)
     self.Content.CanvasSize=UDim2.fromOffset(0,canvasHeight)
     local viewportHeight=self.Content.AbsoluteWindowSize.Y / self.Window.UIScale
@@ -818,7 +818,7 @@ function Tab:_control(kind, options)
         Size=UDim2.new(1,-4,0,0),LayoutOrder=self._order},self.Content)
     local row = new("Frame", {Name=kind,BackgroundColor3=lightTheme and lightColor or darkColor,BackgroundTransparency=Glass.Row,
         Size=UDim2.new(1,0,0,0),LayoutOrder=self._order,ClipsDescendants=true},slot)
-    round(row,14); local rowStroke=stroke(row,lightTheme and lightStrokeColor or darkStrokeColor); rowStroke.Transparency=.22
+    round(row,12); local rowStroke=stroke(row,lightTheme and lightStrokeColor or darkStrokeColor); rowStroke.Transparency=.28
     local head = new("Frame", {Name="Heading",BackgroundTransparency=1,
         Size=UDim2.new(1,0,0,0),LayoutOrder=1},row)
     local copy = new("Frame", {Name="Copy",BackgroundTransparency=1,
@@ -845,17 +845,17 @@ function Tab:_control(kind, options)
         local iconKeys={Toggle="circle-dot",Button="zap",Input="keyboard",
             Slider="sliders-horizontal",Dropdown="folder-open",Colorpicker="palette",Paragraph="badge-info"}
         local chip=new("Frame",{Name="RyouCardIcon",BackgroundColor3=C.Field,BackgroundTransparency=.10,
-            Size=UDim2.fromOffset(34,34),Position=UDim2.fromOffset(0,0)},head)
-        round(chip,11)
+            Size=UDim2.fromOffset(28,28),Position=UDim2.fromOffset(0,0)},head)
+        round(chip,9)
         local chipStroke=stroke(chip,C.Border);chipStroke.Transparency=.38
         local fallback=label(chip,"•",20,C.White,{Font=BOLD,Size=UDim2.fromScale(1,1),
             TextXAlignment=Enum.TextXAlignment.Center})
-        local picture=remoteIcon(chip,iconKeys[kind] or "badge-info",20,C.White,function()
+        local picture=remoteIcon(chip,iconKeys[kind] or "badge-info",17,C.White,function()
             if fallback.Parent then fallback.Visible=false end
         end)
         picture.AnchorPoint=Vector2.new(.5,.5)
         picture.Position=UDim2.fromScale(.5,.5)
-        control.CopyOffsetX=45
+        control.CopyOffsetX=35
         control.CardIcon=chip
     end
     table.insert(self.Elements,control)
@@ -1038,20 +1038,8 @@ local function field(parent, placeholder)
             end)
         end
     end)
-    -- Área táctil explícita: un TextBox dentro de ScrollingFrame puede
-    -- recibir el toque sin que el teclado virtual aparezca.
-    local focusHit=button(box,"",{Name="TextFocusHit",BackgroundTransparency=1,
-        Size=UDim2.fromScale(1,1),ZIndex=box.ZIndex+1})
-    focusHit.AutoButtonColor=false
-    focusHit.Activated:Connect(function()
-        task.defer(function()
-            if box.Parent and box.TextEditable then
-                pcall(function() box:CaptureFocus() end)
-            end
-        end)
-    end)
-    box.Focused:Connect(function() focusHit.Visible=false end)
-    box.FocusLost:Connect(function() focusHit.Visible=true end)
+    -- Captura de foco sin un botón transparente que intercepte el cursor.
+    -- El propio TextBox recibe el toque y conserva la selección de texto.
     return box
 end
 function Tab:Input(options)
@@ -1976,36 +1964,36 @@ function Nox:CreateWindow(options)
         local statsCard=conceptPanel("SessionCard")
         local cardHeadings={}
         local function cardTitle(card,titleText,caption,iconKey)
-            local iconChip=new("Frame",{Name="IconTile",Position=UDim2.fromOffset(15,15),
-                Size=UDim2.fromOffset(39,39),BackgroundColor3=C.Field},card)
+            local iconChip=new("Frame",{Name="IconTile",Position=UDim2.fromOffset(12,10),
+                Size=UDim2.fromOffset(32,32),BackgroundColor3=C.Field},card)
             round(iconChip,13)
             local iconEdge=stroke(iconChip,C.White);iconEdge.Transparency=.42
             local fallback=label(iconChip,"•",16,C.White,{Size=UDim2.fromScale(1,1),
                 TextXAlignment=Enum.TextXAlignment.Center,Font=BOLD})
-            local picture=remoteIcon(iconChip,iconKey,22,C.White,function()
+            local picture=remoteIcon(iconChip,iconKey,18,C.White,function()
                 if fallback.Parent then fallback.Visible=false end
             end)
             picture.AnchorPoint=Vector2.new(.5,.5)
             picture.Position=UDim2.fromScale(.5,.5)
-            local heading=label(card,titleText,16,C.Text,{Position=UDim2.fromOffset(65,14),
-                Size=UDim2.new(1,-76,0,28),Font=BOLD,
+            local heading=label(card,titleText,14,C.Text,{Position=UDim2.fromOffset(55,10),
+                Size=UDim2.new(1,-64,0,22),Font=BOLD,
                 TextTruncate=Enum.TextTruncate.AtEnd})
-            local hint=label(card,caption,10,C.Muted,{Position=UDim2.fromOffset(65,40),
-                Size=UDim2.new(1,-76,0,22),TextTruncate=Enum.TextTruncate.AtEnd})
-            local rule=new("Frame",{Name="CardRule",BackgroundColor3=C.Border,BackgroundTransparency=.45,
-                Position=UDim2.fromOffset(15,74),Size=UDim2.new(1,-30,0,1)},card)
+            local hint=label(card,caption,10,C.Muted,{Position=UDim2.fromOffset(55,30),
+                Size=UDim2.new(1,-64,0,18),TextTruncate=Enum.TextTruncate.AtEnd})
+            local rule=new("Frame",{Name="CardRule",BackgroundColor3=C.Border,BackgroundTransparency=.55,
+                Position=UDim2.fromOffset(12,56),Size=UDim2.new(1,-24,0,1)},card)
             cardHeadings[#cardHeadings+1]={Card=card,Icon=iconChip,Heading=heading,Hint=hint,Rule=rule}
             return hint
         end
         local mainCaption=cardTitle(mainCard,title,tab.Desc,opt.Icon or "layout-grid")
         cardTitle(quickCard,"Acciones rápidas","Abre otra sección.","zap")
         cardTitle(statsCard,"Sesión actual","Información en tiempo real.","clock-3")
-        local list=scroll(mainCard,{Name="Options",Position=UDim2.fromOffset(10,75),
-            Size=UDim2.new(1,-20,1,-85),AutomaticCanvasSize=Enum.AutomaticSize.None,
+        local list=scroll(mainCard,{Name="Options",Position=UDim2.fromOffset(10,62),
+            Size=UDim2.new(1,-20,1,-69),AutomaticCanvasSize=Enum.AutomaticSize.None,
             ScrollBarThickness=3,ScrollBarImageColor3=C.White})
-        vertical(list,6); padding(list,2,2)
+        vertical(list,5); padding(list,2,1)
         local empty=label(mainCard,"Sin coincidencias. Prueba otra búsqueda.",12,C.Muted,{
-            Position=UDim2.fromOffset(18,89),Size=UDim2.new(1,-36,0,46),
+            Position=UDim2.fromOffset(18,70),Size=UDim2.new(1,-36,0,42),
             TextWrapped=true,Visible=false,ZIndex=5})
         local quickButtons={}
         for i=1,3 do
@@ -2135,18 +2123,18 @@ function Nox:CreateWindow(options)
                     shell.CanvasSize=UDim2.fromOffset(0,mainHeight+actionHeight+sessionHeight+3*gap+2*pad)
                 end
             end
-            list.Position=UDim2.fromOffset(10,75)
-            list.Size=UDim2.new(1,-20,0,math.max(95,mainCard.Size.Y.Offset-85))
+            list.Position=UDim2.fromOffset(10,62)
+            list.Size=UDim2.new(1,-20,0,math.max(95,mainCard.Size.Y.Offset-69))
             for _,head in ipairs(cardHeadings) do
-                local small=head.Card.Size.X.Offset<225
-                head.Icon.Position=UDim2.fromOffset(small and 11 or 15,14)
-                head.Icon.Size=UDim2.fromOffset(small and 32 or 39,small and 32 or 39)
-                head.Heading.Position=UDim2.fromOffset(small and 49 or 65,11)
-                head.Heading.Size=UDim2.new(1,small and -57 or -76,0,28)
-                head.Heading.TextSize=small and 12 or 16
+                local small=head.Card.Size.X.Offset<200
+                head.Icon.Position=UDim2.fromOffset(12,10)
+                head.Icon.Size=UDim2.fromOffset(small and 27 or 32,small and 27 or 32)
+                head.Heading.Position=UDim2.fromOffset(small and 47 or 55,9)
+                head.Heading.Size=UDim2.new(1,small and -56 or -64,0,22)
+                head.Heading.TextSize=small and 12 or 14
                 head.Hint.Visible=not small
-                head.Hint.Position=UDim2.fromOffset(65,40)
-                head.Rule.Position=UDim2.fromOffset(15,small and 56 or 74)
+                head.Hint.Position=UDim2.fromOffset(55,30)
+                head.Rule.Position=UDim2.fromOffset(12,small and 45 or 56)
             end
         end
         tab._fitConcept=fitConcept
