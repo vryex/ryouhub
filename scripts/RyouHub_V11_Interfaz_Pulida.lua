@@ -7434,6 +7434,15 @@ local function mountRyouSkin(window,tab)
         BackgroundColor3=cardBg,BackgroundTransparency=.08,
         BorderSizePixel=0,ZIndex=16,ClipsDescendants=true}),14)
     edge(right,.30)
+    -- La vista previa tiene scroll propio, separado de la galería de outfits.
+    -- El botón Aplicar queda siempre visible en el pie.
+    local previewScroll=el("ScrollingFrame",right,{Name="PreviewScroll",
+        BackgroundTransparency=1,BorderSizePixel=0,Active=true,
+        ScrollingEnabled=true,ScrollingDirection=Enum.ScrollingDirection.Y,
+        ElasticBehavior=Enum.ElasticBehavior.Never,
+        AutomaticCanvasSize=Enum.AutomaticCanvasSize.None,CanvasSize=UDim2.new(),
+        ScrollBarThickness=3,ScrollBarImageColor3=mint,
+        ClipsDescendants=true,ZIndex=17})
     local userMode=action(left,"Usuario",true)
     local idMode=action(left,"Outfit ID",false)
     local username=curve(el("TextBox",left,{Name="OutfitUsername",Text="",
@@ -7463,14 +7472,14 @@ local function mountRyouSkin(window,tab)
     pageLabel.TextColor3=dim
     local nextPage=action(footer,"›",false)
 
-    local previewLabel=copy(right,"VISTA PREVIA",10,true)
+    local previewLabel=copy(previewScroll,"VISTA PREVIA",10,true)
     previewLabel.TextColor3=dim
-    local previewImage=curve(el("ImageLabel",right,{Name="OutfitPreview",
+    local previewImage=curve(el("ImageLabel",previewScroll,{Name="OutfitPreview",
         Image="",ScaleType=Enum.ScaleType.Fit,BackgroundColor3=fieldBg,
         BorderSizePixel=0,ZIndex=17}),12)
     local previewStroke=edge(previewImage,.47)
-    local previewName=copy(right,"Selecciona un outfit",12,true)
-    local previewId=copy(right,"",10,false)
+    local previewName=copy(previewScroll,"Selecciona un outfit",12,true)
+    local previewId=copy(previewScroll,"",10,false)
     previewId.TextColor3=dim
     local apply=action(right,"Aplicar outfit",true)
 
@@ -7660,16 +7669,28 @@ local function mountRyouSkin(window,tab)
         local columns=listW>=345 and 3 or 2
         local cellW=math.max(70,math.floor((listW-8-(columns-1)*6)/columns))
         grid.CellSize=UDim2.fromOffset(cellW,math.clamp(math.floor(cellW*.88)+23,91,122))
-        previewLabel.Position=UDim2.fromOffset(12,11)
-        previewLabel.Size=UDim2.new(1,-24,0,20)
-        previewImage.Position=UDim2.fromOffset(12,37)
-        previewImage.Size=UDim2.new(1,-24,1,-140)
-        previewName.Position=UDim2.new(0,12,1,-94)
-        previewName.Size=UDim2.new(1,-24,0,22)
-        previewId.Position=UDim2.new(0,12,1,-72)
-        previewId.Size=UDim2.new(1,-24,0,18)
-        apply.Position=UDim2.new(0,12,1,-45)
-        apply.Size=UDim2.new(1,-24,0,33)
+        -- Independiente del scroll de la galería, el panel de detalles se
+        -- desplaza cuando no cabe. Aplicar permanece accesible al pie.
+        local rightW,rightH=right.Size.X.Offset,right.Size.Y.Offset
+        local previewHeight=math.max(85,rightH-62)
+        previewScroll.Position=UDim2.fromOffset(7,7)
+        previewScroll.Size=UDim2.new(1,-14,0,previewHeight)
+        previewLabel.Position=UDim2.fromOffset(6,3)
+        previewLabel.Size=UDim2.new(1,-21,0,20)
+        local imageHeight=math.clamp(math.floor((rightW-35)*.83),115,245)
+        previewImage.Position=UDim2.fromOffset(6,29)
+        previewImage.Size=UDim2.new(1,-22,0,imageHeight)
+        previewName.Position=UDim2.fromOffset(7,39+imageHeight)
+        previewName.Size=UDim2.new(1,-22,0,22)
+        previewId.Position=UDim2.fromOffset(7,65+imageHeight)
+        previewId.Size=UDim2.new(1,-22,0,19)
+        local contentHeight=imageHeight+98
+        previewScroll.CanvasSize=UDim2.fromOffset(0,contentHeight)
+        previewScroll.ScrollingEnabled=contentHeight>previewHeight
+        previewScroll.CanvasPosition=Vector2.new(0,math.clamp(
+            previewScroll.CanvasPosition.Y,0,math.max(0,contentHeight-previewHeight)))
+        apply.Position=UDim2.new(0,11,1,-44)
+        apply.Size=UDim2.new(1,-22,0,34)
     end
     gallery:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutGallery)
     task.defer(layoutGallery)
