@@ -1468,6 +1468,25 @@ function Nox:CreateWindow(options)
     end)
     local env=(getgenv and getgenv()) or _G
     if env.__NOX_UI and env.__NOX_UI.Destroy then pcall(function() env.__NOX_UI:Destroy() end) end
+    -- Roblox puede conservar ScreenGuis viejas al ejecutar la siguiente versión
+    -- desde un contexto distinto. Limpiar exclusivamente las GUIs propias de Ryou.
+    local function clearRyouDisplays(folder)
+        if not folder then return end
+        for _,entry in ipairs(folder:GetChildren()) do
+            if entry:IsA("ScreenGui") and (
+                entry.Name=="RyouUI"
+                or entry.Name=="RyouLauncher"
+                or entry.Name=="RyouHub_OutfitBrowser"
+            ) then
+                pcall(function() entry:Destroy() end)
+            end
+        end
+    end
+    pcall(function() clearRyouDisplays(player:FindFirstChildOfClass("PlayerGui")) end)
+    pcall(function() clearRyouDisplays(game:GetService("CoreGui")) end)
+    if type(gethui)=="function" then
+        pcall(function() clearRyouDisplays(gethui()) end)
+    end
     local resolvedTheme = canonicalThemeName(o.Theme or CURRENT_THEME_NAME)
     local w={_connections={},_popupConnections={},_onDestroy={},_onOpen={},_onClose={},Tabs={},
         Groups={},Opened=true,Destroyed=false,Compact=false,ToggleKey=o.ToggleKey or Enum.KeyCode.RightShift,
