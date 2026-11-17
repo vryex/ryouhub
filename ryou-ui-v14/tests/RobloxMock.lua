@@ -58,6 +58,7 @@ function Color3.fromHSV(h,s,v)
 end
 local ColorSequence={new=function(...) return {...} end}
 local NumberSequence={new=function(...) return {...} end}
+local NumberSequenceKeypoint={new=function(...) return {...} end}
 local ColorSequenceKeypoint={new=function(...) return {...} end}
 local UDim = {new=dim}
 local UDim2 = {

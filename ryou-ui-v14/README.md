@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/neo-mark.png" width="104" alt="Símbolo Ryou">
+  <img src="assets/neo/R_FACETADA_VECTOR_512.png" width="104" alt="Símbolo Ryou">
   <h1>Ryou UI</h1>
   <p>Biblioteca visual en un archivo para scripts Luau de cliente Roblox.</p>
   <p><strong>14.0.0 · Neo Sidebar</strong> · Rama de revisión · Created by Ryou</p>
@@ -13,7 +13,7 @@
 
 [Inicio rápido](docs/getting-started.md) · [English](docs/getting-started.en.md) · [API](docs/api-reference.md) · [Ejemplos](examples/) · [Cambios](CHANGELOG.md)
 
-Ryou UI reúne ventanas, navegación lateral adaptable, controles de formulario y avisos. La paleta usa negro carbón con acento menta. El monograma facetado se dibuja dentro de Roblox y está disponible como [SVG editable](assets/neo-mark.svg) y [PNG](assets/neo-mark.png).
+Ryou UI reúne ventanas, navegación lateral adaptable, controles de formulario y avisos. La paleta usa negro carbón con acento menta. El monograma facetado, el halo y las demás capas de marca se cargan desde [los PNG V3](assets/neo/manifest.json). Los [SVG editables](assets/neo/source/) vienen con el paquete.
 
 ## Instalación rápida
 
@@ -27,6 +27,21 @@ home:Button({ Title = "Estado", Callback = function()
     window:Notify({ Type = "success", Title = "Panel activo" })
 end })
 ```
+
+## Showcase con arte V3
+
+Ejecuta este bloque en el cliente compatible. Abre el showcase de Ryou UI con cinco pantallas de demostración.
+
+```lua
+local base = "https://raw.githubusercontent.com/vryex/ryouhub/314858dedfc664c2c0a8b05346bb3f4d8f1b770c/ryou-ui-v14/"
+local UI = assert(loadstring(game:HttpGet(base .. "RyouUI.lua")))()
+local mount = assert(loadstring(game:HttpGet(base .. "examples/NeoShowcase.lua")))()
+mount(UI, { Motion = "Full" })
+```
+
+`RyouUI.lua` descarga los PNG por HTTPS desde el commit de arte indicado en el [manifiesto](assets/neo/manifest.json). Valida firma y tamaño, guarda los bytes con `writefile` en `RyouUI/Cache/<versión>/` y registra el archivo con `getcustomasset` o `getsynasset`. Las imágenes aparecen en segundo plano y las aperturas siguientes reutilizan el identificador o el archivo en disco. El cliente usa nombres versionados en la raíz si las carpetas están indisponibles.
+
+En Studio y en clientes sin esas API, abre la misma interfaz con una R tipográfica y controles nativos. La consola indica cuándo el arte personalizado está indisponible. Consulta la [guía de carga](docs/neo-sidebar.md#arte-de-github-y-caché) para más detalles.
 
 ## Documentación
 
@@ -44,7 +59,7 @@ end })
 
 ## Compatibilidad y pruebas
 
-La biblioteca requiere servicios del cliente Roblox y acceso a `PlayerGui`. Luau CLI sirve para compilación y simulación de estado. La [prueba para Roblox](tests/Smoke.client.lua) se incluye para ejecutarla en **Play**. La revisión actual tiene verificación en CLI y quedan pendientes el renderizado, el tacto real en Android y las capturas de la interfaz.
+La biblioteca requiere servicios del cliente Roblox y acceso a `PlayerGui`. Luau CLI sirve para compilación y simulación de estado. La [prueba para Roblox](tests/Smoke.client.lua) se incluye para ejecutarla en **Play**. Se verificaron los archivos RAW, la caché simulada, los callbacks y los límites de los modales en Luau CLI. Quedan pendientes el render en Roblox, el tacto en Android y las capturas de la interfaz.
 
 Consulta [cómo contribuir](CONTRIBUTING.md) y la [revisión de procedencia](docs/provenance.md) antes de enviar recursos nuevos. El código original de la biblioteca, los ejemplos y las pruebas se distribuye bajo [MIT](LICENSE).
 

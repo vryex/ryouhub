@@ -1,4 +1,5 @@
 """Compile the package and run state tests under Luau CLI."""
+from json import loads
 from pathlib import Path
 from subprocess import run, DEVNULL
 from sys import argv
@@ -13,7 +14,10 @@ smoke = root / "tests" / "Smoke.client.lua"
 mock = root / "tests" / "RobloxMock.lua"
 neo = root / "tests" / "NeoState.lua"
 showcase = root / "examples" / "NeoShowcase.lua"
-scripts = [source, smoke, mock, neo, *sorted((root / "examples").glob("*.lua"))]
+assets = root / "tests" / "NeoAssets.lua"
+manifest = loads((root / "assets" / "neo" / "manifest.json").read_text())
+sizes = ", ".join(f'["{asset["path"].rsplit("/", 1)[1]}"]={asset["bytes"]}' for asset in manifest["assets"])
+scripts = [source, smoke, mock, neo, assets, *sorted((root / "examples").glob("*.lua"))]
 run([argv[2], *map(str, scripts)], check=True, stdout=DEVNULL)
 with TemporaryDirectory() as folder:
     fixture = Path(folder) / "smoke.lua"
@@ -23,5 +27,6 @@ with TemporaryDirectory() as folder:
                        f"\nlocal function showcase()\n{showcase.read_text()}\nend\n"
                        "local window = showcase()(UI, { Open = false, Motion = 'Off' })\n"
                        "window:Open()\nassert(#window.Tabs == 5 and window.Opened)\nwindow:Destroy()\n"
-                       "print('Neo Sidebar showcase: OK')\n")
+                       f"print('Neo Sidebar showcase: OK')\n{assets.read_text()}\n"
+                       f'testNeoAssets(module, {{{sizes}}}, "{manifest["revision"]}")\n')
     run([argv[1], str(fixture)], check=True)

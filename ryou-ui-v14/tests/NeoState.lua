@@ -48,6 +48,19 @@ for _, node in ipairs(w.panel:GetDescendants()) do
 end
 findButton("Aplicar").Activated:Fire()
 assert(color:Get():ToHex()=="00FF00" and count==2 and not w.dismissModal)
+for _, viewport in ipairs({Vector2.new(1672,941), Vector2.new(1536,709), Vector2.new(853,394)}) do
+    w.screen.AbsoluteSize=viewport
+    local bounds=Vector2.new(w.frame.Size.X.Offset,w.frame.Size.Y.Offset)
+    w.frame.AbsoluteSize=bounds
+    catalog:Open()
+    local card=w.panel:FindFirstChild("ModalVeil"):FindFirstChild("ToolDialog")
+    local apply=findButton("Aplicar")
+    local dx, dy=card.Size.X.Offset/2, card.Size.Y.Offset/2
+    assert(card.Position.X.Offset-dx>=0 and card.Position.X.Offset+dx<=bounds.X)
+    assert(dy<=bounds.Y/2)
+    assert(apply.Parent.Position.Y.Offset+apply.Parent.Size.Y.Offset<=0 and apply.Active)
+    catalog:Close()
+end
 catalog:Open()
 w:Close()
 assert(not w.Opened and not w.dismissModal and w.launcher.Visible)
