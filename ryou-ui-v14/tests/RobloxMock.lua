@@ -112,7 +112,9 @@ function Instance.new(class)
         if not self._events[key] then self._events[key]=signal() end
         return self._events[key]
     end
-    function o:IsFocused() return false end
+    function o:IsFocused() return self._focused == true end
+    function o:CaptureFocus() self._focused=true; self.Focused:Fire() end
+    function o:ReleaseFocus() self._focused=false; self.FocusLost:Fire(false) end
     function o:Destroy()
         self.Destroying:Fire()
         for _, c in ipairs(self:GetChildren()) do c:Destroy() end

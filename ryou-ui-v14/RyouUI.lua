@@ -27,7 +27,7 @@ local Input = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local TextService = game:GetService("TextService")
 
-local UI = { Version = "14.0.0", Variant = "Neo Sidebar" }
+local UI = { Version = "14.0.0", Variant = "Neo Sidebar V6" }
 local Window, Tab, Control = {}, {}, {}
 Window.__index, Tab.__index, Control.__index = Window, Tab, Control
 
@@ -114,7 +114,7 @@ end
 
 local function label(w, parent, str, size, bold, role, props)
     local settings = {
-        Text = str, TextSize = size, TextXAlignment = LEFT,
+        Text = str, TextSize = size, TextScaled = false, TextXAlignment = LEFT,
         Font = bold and w.boldFont or w.font, Size = UDim2.new(1, 0, 0, 20),
     }
     for key, value in pairs(props or {}) do settings[key] = value end
@@ -168,6 +168,7 @@ end
 
 -- Coordinates are on a 24 × 24 grid. Width is measured perpendicular to each segment.
 local icons = {
+    magnifier = {{4,9,6,5},{6,5,12,4},{12,4,16,8},{16,8,15,13},{15,13,11,16},{11,16,6,14},{6,14,4,9},{15,14,21,20}},
     minimize = {{5,12,19,12}},
     cloud = {{5,18,19,18},{5,18,3,15},{3,15,4,11},{4,11,8,11},{8,11,10,6},{10,6,15,6},{15,6,18,11},{18,11,21,12},{21,12,21,16},{21,16,19,18}},
     bell = {{4,17,20,17},{6,17,8,13},{8,13,8,7},{8,7,12,4},{12,4,16,7},{16,7,16,13},{16,13,18,17},{10,20,14,20}},
@@ -715,7 +716,7 @@ function Window:_moveFrame(position)
     local center = Vector2.new(
         math.clamp(position.X,halfX+8,math.max(halfX+8,bounds.X-halfX-8)),
         math.clamp(position.Y,halfY+8,math.max(halfY+8,bounds.Y-halfY-8)))
-    self.frame.Position = px(center.X,center.Y)
+    self.frame.Position = px(math.floor(center.X+.5),math.floor(center.Y+.5))
     self:_fitLauncher()
     return center
 end
@@ -727,7 +728,7 @@ function Window:_fit()
     local maximum = Vector2.new(math.max(1,bounds.X-16)/scale,math.max(1,bounds.Y-16)/scale)
     local width = math.clamp(self.desired.X,math.min(MIN_WIDTH,maximum.X),maximum.X)
     local height = math.clamp(self.desired.Y,math.min(MIN_HEIGHT,maximum.Y),maximum.Y)
-    self.frame.Size = px(width*scale,height*scale)
+    self.frame.Size = px(math.floor(width*scale+.5),math.floor(height*scale+.5))
     self.panel.Size = px(width,height)
     self:_moveFrame(self.position or bounds/2)
     local widest, minimum = 0, 0
@@ -797,7 +798,8 @@ end
 function Window:_resetEntrance()
     for group, position in pairs(self.entrance) do
         self:_cancel(group)
-        group.GroupTransparency, group.Position = 0, position
+        group.Position = position
+        if group:IsA("CanvasGroup") then group.GroupTransparency = 0 end
     end
     self:_cancel(self.brandScale)
     self.brandScale.Scale = 1
@@ -811,9 +813,13 @@ end
 
 function Window:_stage(group, time, delay, x, y)
     local endPosition = self.entrance[group]
-    group.GroupTransparency = 1
-    group.Position = endPosition + px(x, y)
-    self:_animate(group, time, { GroupTransparency = 0, Position = endPosition }, delay)
+    local goal = {Position=endPosition}
+    if group:IsA("CanvasGroup") then
+        group.GroupTransparency = 1
+        goal.GroupTransparency = 0
+    end
+    group.Position = endPosition + px(x,y)
+    self:_animate(group,time,goal,delay)
 end
 
 function Window:_launcherOffset(limitX,limitY)
@@ -885,6 +891,7 @@ function Window:_hide(minimized)
     if not self.Opened then return self:SetOpenButtonVisible(self.launcherEnabled) end
     self.Opened = false
     self.panel.Interactable = false
+    self:_closePopup()
     if self.dismissModal then self.dismissModal() end
     if self.finishDialog then self.finishDialog() end
     self:_endGesture(false)
@@ -1060,6 +1067,7 @@ end
 function Window:Destroy()
     if self.Destroyed then return end
     self.Destroyed, self.Opened = true, false
+    self:_closePopup()
     if self.dismissModal then self.dismissModal() end
     if self.finishDialog then self.finishDialog() end
     self:_endGesture(false)
@@ -1069,6 +1077,129 @@ function Window:Destroy()
     if not self.guiDestroying then self.gui:Destroy() end
     if self.library.Window == self then self.library.Window = nil end
     for _, fn in ipairs(self.destroyCallbacks) do callback(fn, self) end
+end
+
+function Window:_closePopup()
+    local popup = self.popup
+    if not popup then return end
+    self.popup = nil
+    clean(popup.owner)
+    local focused = Input:GetFocusedTextBox()
+    if focused and focused:IsDescendantOf(popup.panel) then focused:ReleaseFocus(false) end
+    self:_cancel(popup.scale)
+    popup.scale:Destroy()
+    popup.panel.Visible = false
+    self.popupLayer.Visible = false
+    popup.closed()
+end
+
+function Window:_showPopup(anchor,panel,preferredHeight,closed,scrollHost)
+    if not self.Opened or self.Destroyed or self.dismissModal then return false end
+    self:_closePopup()
+    self:_endGesture(false)
+    local owner = childScope(self.owner)
+    local scale = make("UIScale",panel,{Scale=.98})
+    self.popup = {owner=owner,panel=panel,scale=scale,closed=closed}
+    local function fit()
+        local factor = self.interfaceScale
+        local view = self.panel.Size
+        local width,height = view.X.Offset,view.Y.Offset
+        if width<20 or height<20 then return end
+        local origin = self.panel.AbsolutePosition
+        local point = (anchor.AbsolutePosition-origin)/factor
+        local bounds = anchor.AbsoluteSize/factor
+        if scrollHost then
+            local top = scrollHost.AbsolutePosition.Y
+            local bottom = top+scrollHost.AbsoluteWindowSize.Y
+            if anchor.AbsolutePosition.Y+anchor.AbsoluteSize.Y<=top or anchor.AbsolutePosition.Y>=bottom then
+                self:_closePopup()
+                return
+            end
+        end
+        local w = math.min(math.max(panel.Name=="SearchPopup" and 246 or 150,bounds.X),width-16)
+        local below = math.max(0,height-point.Y-bounds.Y-12)
+        local above = math.max(0,point.Y-12)
+        local down = below>=preferredHeight or below>=above
+        local h = math.min(preferredHeight,math.max(82,down and below or above),height-16)
+        local y = down and point.Y+bounds.Y+4 or point.Y-h-4
+        panel.Size = px(math.floor(w),math.floor(h))
+        panel.Position = px(math.floor(math.clamp(point.X,8,width-w-8)),
+            math.floor(math.clamp(y,8,height-h-8)))
+    end
+    listen(owner,anchor:GetPropertyChangedSignal("AbsolutePosition"),fit)
+    listen(owner,anchor:GetPropertyChangedSignal("AbsoluteSize"),fit)
+    listen(owner,self.panel:GetPropertyChangedSignal("Size"),fit)
+    fit()
+    if not self.popup then return false end
+    self.popupLayer.Visible,panel.Visible = true,true
+    self:_animate(scale,.13,{Scale=1})
+    return true
+end
+
+local function addHeaderSearch(w)
+    local button = action(w,w.owner,w.header,"",{
+        Name="HeaderSearch",AnchorPoint=Vector2.new(1,.5),Position=UDim2.new(1,-77,.5,0),
+        Size=px(34,38),ZIndex=4,
+    },false,"window")
+    icon(w,button,"magnifier",15,"Text",UDim2.new(.5,-7,.5,-7))
+    local panel = surface(w,w.popupLayer,"Base",{Name="SearchPopup",Visible=false,Active=true,ZIndex=2},8)
+    finish(w,panel,"Raised")
+    local query = textBox(w,w.owner,panel,"Buscar en la interfaz…",{Position=px(6,5),Size=UDim2.new(1,-12,0,32)})
+    local results = scroll(w,panel,{Position=px(6,43),Size=UDim2.new(1,-12,1,-49)})
+    stack(results,4)
+    local items
+    local function clear()
+        if items then clean(items); items=nil end
+        for _, child in ipairs(results:GetChildren()) do
+            if child:IsA("GuiObject") then child:Destroy() end
+        end
+    end
+    local function refresh()
+        if not panel.Visible then return end
+        clear()
+        items = childScope(w.owner)
+        local needle = string.lower(query.Text)
+        local count = 0
+        local function add(tab,control,title)
+            if count>=35 or not string.find(string.lower(title),needle,1,true) then return end
+            count += 1
+            local hit = action(w,items,results,title,{Size=UDim2.new(1,-3,0,32),LayoutOrder=count})
+            hit.TextTruncate = Enum.TextTruncate.AtEnd
+            listen(items,hit.Activated,function()
+                w:_closePopup()
+                w:SelectTab(tab)
+                if control and control.row.Parent then
+                    task.defer(function()
+                        if w.Destroyed or w.Selected~=tab or not control.row.Parent then return end
+                        local host = tab.scroller
+                        local delta = (control.row.AbsolutePosition.Y-host.AbsolutePosition.Y)/w.interfaceScale
+                        host.CanvasPosition = Vector2.new(0,math.max(0,host.CanvasPosition.Y+delta-6))
+                    end)
+                end
+            end)
+        end
+        for _, tab in ipairs(w.Tabs) do
+            add(tab,nil,tab.Title)
+            if needle~="" then
+                for _, control in ipairs(tab.Elements) do
+                    if control.Title~="" and not control.Destroyed and control.row.Visible~=false then
+                        add(tab,control,tab.Title.." · "..control.Title)
+                    end
+                end
+            end
+        end
+        if count==0 then label(w,results,"Sin resultados",13,false,"Muted") end
+        results.CanvasPosition = Vector2.zero
+    end
+    listen(w.owner,query:GetPropertyChangedSignal("Text"),refresh)
+    listen(w.owner,button.Activated,function()
+        if panel.Visible then w:_closePopup(); return end
+        if w:_showPopup(button,panel,218,clear) then
+            query.Text = ""
+            refresh()
+            query:CaptureFocus()
+        end
+    end)
 end
 
 function UI:CreateWindow(options)
@@ -1115,6 +1246,11 @@ function UI:CreateWindow(options)
     })
     w.panelScale = make("UIScale",w.panel,{Scale=w.interfaceScale})
     w.Root = w.panel
+    w.popupLayer = make("Frame",w.panel,{Name="InternalPopups",Visible=false,Size=full,ZIndex=11})
+    local dismiss = make("TextButton",w.popupLayer,{
+        Name="DismissPopup",Size=full,Active=true,Selectable=false,Text="",AutoButtonColor=false,
+    })
+    listen(w.owner,dismiss.Activated,function() w:_closePopup() end)
     w:_bind(w.panel, "BackgroundColor3", "Base")
     w.panel.BackgroundTransparency = 0
     corner(w.panel, 22)
@@ -1138,8 +1274,8 @@ function UI:CreateWindow(options)
     w.brandScale = make("UIScale",w.brand,{})
     -- PNG alpha bounds are 391 × 289 of 512. A 50 px slot reduces the visible mark by 19%.
     mark(w,w.brand,50,px(3,3),false,true)
-    w.titleGroup = make("CanvasGroup", header, { Position = UDim2.new(0, 91, .5, -23), Size = UDim2.new(1, -350, 0, 26) })
-    w.subtitleGroup = make("CanvasGroup", header, { Position = UDim2.new(0, 92, .5, 3), Size = UDim2.new(1, -350, 0, 19) })
+    w.titleGroup = make("Frame", header, { Position = UDim2.new(0, 91, .5, -23), Size = UDim2.new(1, -350, 0, 26) })
+    w.subtitleGroup = make("Frame", header, { Position = UDim2.new(0, 92, .5, 3), Size = UDim2.new(1, -350, 0, 19) })
     w.title = label(w, w.titleGroup, copyText(o.Title, "Ryou UI"), 25, true, nil,
         { Size = full, TextTruncate = Enum.TextTruncate.AtEnd })
     w.subtitle = label(w, w.subtitleGroup, copyText(o.Subtitle or o.Author, "Created by Ryou"), 13, false, "Muted",
@@ -1148,7 +1284,7 @@ function UI:CreateWindow(options)
     windowAction(w,w.owner,header,"minimize",43,function() w:Minimize() end)
     windowAction(w,w.owner,header,"error",9,function() w:Close() end)
 
-    w.utilities = make("CanvasGroup", header, {
+    w.utilities = make("Frame", header, {
         Position = UDim2.new(1,-251,.5,-17), Size = px(92,34), Active=false,
     })
     local badge = surface(w, w.utilities, "Field", { Size = px(92,26), Position = px(0,4) }, 7)
@@ -1160,6 +1296,7 @@ function UI:CreateWindow(options)
     local cloud = action(w,w.owner,header,"",{Position=UDim2.new(1,-155,.5,-16),Size=px(31,32),ZIndex=4})
     local bell = action(w,w.owner,header,"",{Position=UDim2.new(1,-120,.5,-16),Size=px(31,32),ZIndex=4})
     w.headerTools = {cloud,bell}
+    addHeaderSearch(w)
     icon(w,cloud,"cloud",15,"Text",px(8,8))
     icon(w,bell,"bell",15,"Text",px(8,8))
     surface(w,bell,"Accent",{ Size=px(5,5), Position=px(23,6) },3)
@@ -1171,7 +1308,7 @@ function UI:CreateWindow(options)
     end)
     local content = make("Frame", w.panel, { Position = px(0, 74), Size = UDim2.new(1, 0, 1, -74) })
     w.content = content
-    w.rail = make("CanvasGroup", content, { Position = px(0, 0) })
+    w.rail = make("Frame", content, { Position = px(0, 0) })
     w.rail.BackgroundTransparency = 0
     w:_bind(w.rail, "BackgroundColor3", "Rail")
     faceGradient(w,w.rail,"Rail")
@@ -1181,8 +1318,8 @@ function UI:CreateWindow(options)
     pad(w.nav, 6, 9)
     stack(w.nav, 4)
     w.body = make("Frame", content, {ClipsDescendants=true})
-    artworkLayer(w,w.body,"background_artwork",UDim2.fromScale(0,-.12),UDim2.fromScale(1,1.27),Enum.ScaleType.Crop,.78,nil)
-    w.pages = make("CanvasGroup", w.body, { Size = full })
+    artworkLayer(w,w.body,"background_artwork",UDim2.new(),full,Enum.ScaleType.Crop,.78,nil)
+    w.pages = make("Frame", w.body, { Size = full })
     local divider = surface(w, w.body, "Edge", { Position = px(0, 0), Size = UDim2.new(0, 1, 1, 0), BackgroundTransparency=.5 })
     divider.Name = "RailRule"
     for _, group in ipairs({ w.brand, w.titleGroup, w.subtitleGroup, w.utilities, w.rail, w.pages }) do
@@ -1310,6 +1447,7 @@ function UI:CreateWindow(options)
         w:_animate(w.launchScale, .15, { Scale = 1 })
     end)
     listen(w.owner, Input.InputBegan, function(event, consumed)
+        if event.KeyCode==Enum.KeyCode.Escape and w.popup then w:_closePopup(); return end
         if consumed or Input:GetFocusedTextBox() then return end
         if event.KeyCode == Enum.KeyCode.Escape and w.dismissModal then w.dismissModal(); return end
         if event.KeyCode == w.key then w:Toggle() end
@@ -1330,7 +1468,9 @@ function UI:CreateWindow(options)
     if o.Open == false then
         w:SetOpenButtonVisible(w.launcherEnabled)
     else
-        task.defer(function() if not w.Destroyed and not w.hasOpened and not w.initialCancelled then w:Open() end end)
+        task.delay(w.motion=="Off" and 0 or .12,function()
+            if not w.Destroyed and not w.hasOpened and not w.initialCancelled then w:_open(w.launcherEnabled) end
+        end)
     end
     return w
 end
@@ -1343,7 +1483,7 @@ function Window:SelectTab(which)
     end
     if not selected or selected == self.Selected then return selected end
     local previous = self.Selected
-    if self.openDropdown then self.openDropdown:Close(true) end
+    self:_closePopup()
     self.Selected, self.CurrentTab = selected, selected
     if previous then
         previous.page.Visible = false
@@ -1368,10 +1508,10 @@ function Window:SelectTab(which)
     self:_animate(selected.marker, .20, { Size = px(3, 23) })
     self:_bind(selected.titleLabel, "TextColor3", "Text")
     if previous and self.Opened then
-        selected.page.GroupTransparency, selected.page.Position = .38, px(5, 0)
-        self:_animate(selected.page, .20, { GroupTransparency = 0, Position = px(0, 0) })
+        selected.page.Position = px(5,0)
+        self:_animate(selected.page,.20,{Position=px(0,0)})
     else
-        selected.page.GroupTransparency, selected.page.Position = 0, px(0, 0)
+        selected.page.Position = px(0,0)
     end
     return selected
 end
@@ -1386,7 +1526,7 @@ function Window:Tab(options)
     for size=12,14 do
         t.labelWidths[size] = TextService:GetTextSize(name,size,self.boldFont,Vector2.new(10000,10000)).X
     end
-    local shell = make("CanvasGroup", slot, { Size = full })
+    local shell = make("Frame", slot, { Size = full })
     t.shell = shell
     self.entrance[shell] = shell.Position
     local hit = action(self,self.owner,shell,"",{Size=full},false,"bare")
@@ -1401,7 +1541,7 @@ function Window:Tab(options)
     gradient(t.marker,rgb(178,223,206),rgb(255,255,255),85)
     t.titleLabel = label(self, hit, name, 14, true, "Muted", { Position = px(32, 0),
         Size = UDim2.new(1, -41, 1, 0), TextWrapped = true })
-    t.page = make("CanvasGroup", self.pages, { Size = full, Visible = false })
+    t.page = make("Frame", self.pages, { Size = full, Visible = false })
     t.scroller = scroll(self, t.page, { Size = full })
     pad(t.scroller, 10, 8)
     stack(t.scroller, self.gap)
@@ -1667,7 +1807,8 @@ function Control:Destroy()
     self.Destroyed = true
     if self.closePicker then self.closePicker(); self.closePicker=nil end
     if self.closeCatalog then self.closeCatalog(); self.closeCatalog=nil end
-    if self.window.openDropdown == self then self.window.openDropdown = nil end
+    if self.window.openDropdown == self then self.window:_closePopup() end
+    if self.popupPanel then self.popupPanel:Destroy(); self.popupPanel = nil end
     if self.window.gesture and self.window.gesture.owner == self.owner then self.window:_endGesture(false) end
     clean(self.owner)
     for _, item in ipairs(self.row:GetDescendants()) do
@@ -1812,32 +1953,6 @@ local function sameList(a, b)
     return true
 end
 
-local function expandable(w, c, height, onOpen)
-    local panel = surface(w,c.row,"Base",{LayoutOrder=2,Size=UDim2.new(1,0,0,0),ClipsDescendants=true,Visible=false},8)
-    finish(w,panel,"Raised")
-    function c:Open()
-        if self.Locked or self.Destroyed or self.expanded then return self end
-        self.expanded = true
-        panel.Visible = true
-        w:_animate(panel, .21, { Size = UDim2.new(1, 0, 0, height) }, 0, onOpen)
-        return self
-    end
-    function c:Close(instant)
-        if self.Destroyed or not self.expanded then return self end
-        self.expanded = false
-        local focused = Input:GetFocusedTextBox()
-        if focused and focused:IsDescendantOf(panel) then focused:ReleaseFocus(false) end
-        if instant then
-            w:_cancel(panel)
-            panel.Size, panel.Visible = UDim2.new(1, 0, 0, 0), false
-        else
-            w:_animate(panel, .17, { Size = UDim2.new(1, 0, 0, 0) }, 0, function() panel.Visible = false end)
-        end
-        return self
-    end
-    return panel
-end
-
 function Tab:Dropdown(options)
     local o = options or {}
     local c, w = control(self, o), self.Window
@@ -1847,23 +1962,9 @@ function Tab:Dropdown(options)
         Size = UDim2.new(1, -42, 1, 0), TextTruncate = Enum.TextTruncate.AtEnd })
     icon(w, trigger, "chevron", 18, "Muted", UDim2.new(1, -26, .5, -9))
     c.targets[trigger] = true
-    local panel
-    panel = expandable(w, c, 155, function()
-        task.defer(function()
-            if w.Destroyed or c.Destroyed or not c.expanded then return end
-            local scroller = c.tab.scrollHost or c.tab.scroller
-            local viewportTop = scroller.AbsolutePosition.Y
-            local scale = w.interfaceScale
-            local viewportHeight = scroller.AbsoluteWindowSize.Y
-            local panelTop = panel.AbsolutePosition.Y
-            local visibleHeight = math.min((panel.Size.Y.Offset+8)*scale,math.max(96*scale,viewportHeight-60*scale))
-            local overflow = panelTop + visibleHeight - viewportTop - viewportHeight
-            if overflow <= 0 then return end
-            local limit = math.max(0,(scroller.AbsoluteCanvasSize.Y-viewportHeight)/scale)
-            local current = scroller.CanvasPosition
-            w:_animate(scroller,.23,{CanvasPosition=Vector2.new(current.X,math.min(current.Y+overflow/scale,limit))})
-        end)
-    end)
+    local panel = surface(w,w.popupLayer,"Base",{Name="DropdownPopup",Visible=false,Active=true,ZIndex=2},8)
+    finish(w,panel,"Raised")
+    c.popupPanel = panel
     local search = textBox(w, c.owner, panel, "Buscar opción…", { Position = px(4,4), Size = UDim2.new(1,-8,0,30) })
     c.targets[search] = true
     local list = scroll(w, panel, { Position = px(4,39), Size = UDim2.new(1,-8,1,-43) })
@@ -1953,12 +2054,20 @@ function Tab:Dropdown(options)
         rebuild()
         return self
     end
-    local open = c.Open
     function c:Open()
+        if self.Locked or self.Destroyed then return self end
         if self.expanded then return self:Close() end
-        if w.openDropdown and w.openDropdown ~= self then w.openDropdown:Close(true) end
-        open(self)
-        if self.expanded then w.openDropdown = self end
+        if w:_showPopup(trigger,panel,185,function()
+            self.expanded = false
+            if w.openDropdown == self then w.openDropdown = nil end
+        end,self.tab.scrollHost or self.tab.scroller) then
+            self.expanded = true
+            w.openDropdown = self
+        end
+        return self
+    end
+    function c:Close()
+        if w.openDropdown == self then w:_closePopup() end
         return self
     end
     c:Set(o.Value or o.Default, true)
@@ -1972,6 +2081,7 @@ function Tab:Dropdown(options)
 end
 
 local function dialog(w, owner, title, subtitle, width, height, alignToContent)
+    w:_closePopup()
     if w.dismissModal then w.dismissModal() end
     if w.finishDialog then w.finishDialog() end
     if w.Destroyed or not w.Opened then return nil end
@@ -2297,9 +2407,11 @@ function Tab:Gallery(options)
     local search=textBox(w,c.owner,pane,"Buscar por nombre o ID…",{Size=UDim2.new(.64,-6,0,38)})
     local grid=scroll(w,pane,{Name="OutfitGrid"})
     local tiles=make("UIGridLayout",grid,{CellPadding=px(5,5),SortOrder=Enum.SortOrder.LayoutOrder})
-    local empty=label(w,pane,"Sin resultados",13,true,"Muted",{Position=px(3,53),Size=UDim2.new(.62,0,0,30),Visible=false})
+    local empty=label(w,pane,"Sin resultados",13,true,"Muted",{
+        Position=px(3,53),Size=UDim2.new(.62,0,0,30),Visible=false,TextWrapped=true,
+    })
     local preview=surface(w,pane,"Field",{Name="OutfitPreview",Position=UDim2.fromScale(.64,0),Size=UDim2.fromScale(.36,1)},10)
-    edge(w,preview)
+    finish(w,preview,"Raised")
     local previewTitle=label(w,preview,"Vista previa",13,true,"Text",{Position=px(8,3),Size=UDim2.new(1,-16,0,18)})
     local previewName=label(w,preview,"",12,false,"Muted",{Position=px(8,19),Size=UDim2.new(1,-16,0,16),
         TextTruncate=Enum.TextTruncate.AtEnd})
@@ -2318,8 +2430,9 @@ function Tab:Gallery(options)
         apply.Active=current~=nil and not c.Locked and not c.statusText
         apply.TextTransparency=apply.Active and 0 or .33
         for id, row in pairs(rows) do
-            row.Hint.Visible=id==c.Value
-            w:_bind(row.Hit,"BackgroundColor3",id==c.Value and "Selected" or "Field")
+            local active = id==c.Value
+            row.Hint.Visible,row.Light.Visible = active,active
+            w:_bind(row.Hit,"BackgroundColor3",active and "Selected" or "Field")
         end
     end
     function c:Set(value,silent)
@@ -2336,16 +2449,18 @@ function Tab:Gallery(options)
         empty.Text=c.statusText or "Sin resultados"
         empty.Visible=c.statusText~=nil or #items==0
         grid.Visible=c.statusText==nil
+        w:_bind(empty,"TextColor3",c.statusKind=="error" and "Text" or "Muted")
         for index=1,math.min(c.statusText and 0 or #items,120) do
             local item=items[index]
             local hit=action(w,rowOwner,grid,"",{LayoutOrder=index})
-            local thumb=artwork(w,hit,item,px(4,4),UDim2.new(1,-8,1,-24))
+            local light=selectionLight(w,hit)
+            local thumb=artwork(w,hit,item,px(4,4),UDim2.new(1,-8,1,-26))
             local hint=icon(w,thumb,"success",12,"Accent",UDim2.new(1,-16,0,3))
-            label(w,hit,copyText(item.Title,tostring(item.Id)),11,false,"Text",{
-                Position=UDim2.new(0,5,1,-19),Size=UDim2.new(1,-9,0,16),TextTruncate=Enum.TextTruncate.AtEnd})
+            label(w,hit,copyText(item.Title,tostring(item.Id)),12,false,"Text",{
+                Position=UDim2.new(0,5,1,-20),Size=UDim2.new(1,-9,0,18),TextTruncate=Enum.TextTruncate.AtEnd})
             c.targets[hit]=true
             hit.Active=not c.Locked
-            rows[item.Id]={Hit=hit,Hint=hint}
+            rows[item.Id]={Hit=hit,Hint=hint,Light=light}
             listen(rowOwner,hit.Activated,function() if not c.Locked then c:Set(item.Id) end end)
         end
         grid.CanvasPosition=Vector2.zero
@@ -2354,6 +2469,7 @@ function Tab:Gallery(options)
     function c:SetStatus(status, message)
         if self.Destroyed then return self end
         assert(status == "ready" or status == "loading" or status == "error", "Unknown gallery status")
+        self.statusKind = status
         self.statusText = status ~= "ready" and copyText(message,status=="loading" and "Cargando…" or "No se pudo cargar") or nil
         rebuild()
         return self
@@ -2372,6 +2488,19 @@ function Tab:Gallery(options)
         -- CanvasPosition is expressed in layout pixels.
         local top = (pane.AbsolutePosition.Y-scrollHost.AbsolutePosition.Y)/scale+scrollHost.CanvasPosition.Y
         local height = math.clamp(scrollHost.AbsoluteSize.Y/scale-math.max(0,top)-16,120,280)
+        if width<330 then
+            local narrowHeight = math.max(height,275)
+            if pane.Size.Y.Offset~=narrowHeight then pane.Size=UDim2.new(1,0,0,narrowHeight) end
+            search.Size=UDim2.new(1,0,0,32)
+            grid.Position,grid.Size=px(0,38),UDim2.new(1,0,0,100)
+            empty.Position,empty.Size=px(4,42),UDim2.new(1,-8,0,28)
+            preview.Position,preview.Size=px(0,145),UDim2.new(1,0,1,-145)
+            previewTitle.TextSize=13
+            local count = width>=216 and 3 or 2
+            tiles.CellSize=px(math.max(1,math.floor((width-count*5)/count)),86)
+            tiles.FillDirectionMaxCells=count
+            return
+        end
         local split = width < 360 and .58 or .64
         local gridWidth = math.max(1,math.floor(width*split)-6)
         local columns = math.clamp(math.floor((gridWidth+5)/65),1,4)
@@ -2385,7 +2514,7 @@ function Tab:Gallery(options)
         preview.Position=UDim2.fromScale(split,0)
         preview.Size=UDim2.fromScale(1-split,1)
         previewTitle.Text="Vista previa"
-        previewTitle.TextSize=width < 300 and 11 or 13
+        previewTitle.TextSize=13
         tiles.CellSize=px(cellWidth,math.clamp(cellWidth+12,68,103))
         tiles.FillDirectionMaxCells=columns
     end
