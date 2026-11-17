@@ -164,7 +164,7 @@ local THEMES = {
 
 local CURRENT_THEME_NAME = canonicalThemeName(XeroEnv.XERO_THEME or "Xero")
 local CURRENT_THEME = THEMES[CURRENT_THEME_NAME] or THEMES.Xero
-local Nox = { Version = "11.0.0-editorial", Brand = "Ryou", SupportsGameLabels = true, Creator = "Ryou", UIScale = 1 }
+local Nox = { Version = "12.0.0-ryou-crafted", Brand = "Ryou", SupportsGameLabels = true, Creator = "Ryou", UIScale = 1 }
 local C, Glass = {}, {}
 
 local function overwriteTable(target, source)
@@ -207,7 +207,7 @@ end
 -- PNGs live in /icons on GitHub. They are downloaded lazily once, cached locally
 -- and reused by every control/tab that declares Icon = "name".
 local XERO_ICON_BASE_URL = tostring(XeroEnv.XERO_ICON_BASE_URL or
-    "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/ryou-ui-v11-editorial/icons/")
+    "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/ryou-ui-v12-crafted/icons/")
 local XERO_ICON_CACHE_FOLDER = tostring(XeroEnv.XERO_ICON_CACHE_FOLDER or "Ryou/Icons/v2")
 
 local XERO_ICON_FILES = {
@@ -422,9 +422,16 @@ local function applyThemeRolesRecursive(root)
     end
 end
 
-local FONT = Enum.Font.Gotham
-local MEDIUM = Enum.Font.GothamMedium
-local BOLD = Enum.Font.GothamBold
+-- Tipografía de interfaz Roblox moderna: sin fuentes externas ni archivos privados.
+-- Si el cliente es antiguo conserva Gotham como respaldo.
+local function fontChoice(name,fallback)
+    local ok,font=pcall(function() return Enum.Font[name] end)
+    return ok and font or fallback
+end
+local FONT = fontChoice("BuilderSans",Enum.Font.Gotham)
+local MEDIUM = fontChoice("BuilderSansMedium",Enum.Font.GothamMedium)
+local BOLD = fontChoice("BuilderSansBold",Enum.Font.GothamBold)
+local DISPLAY = fontChoice("Jura",Enum.Font.GothamBold)
 local function new(class, props, parent)
     local object = Instance.new(class)
     if object:IsA("GuiObject") then object.BorderSizePixel = 0 end
@@ -465,7 +472,7 @@ end
 local function remoteIcon(parent, name, size, color, onReady)
     local px = math.clamp(math.floor(tonumber(size) or 16), 10, 28)
     local image = new("ImageLabel", {
-        Name = "XeroIcon",
+        Name = "RyouIcon",
         BackgroundTransparency = 1,
         Size = UDim2.fromOffset(px,px),
         Image = "",
@@ -481,6 +488,7 @@ local function remoteIcon(parent, name, size, color, onReady)
     end)
     return image
 end
+local uiTween
 local function button(parent, text, props)
     local p = {
         Text = text or "",
@@ -489,7 +497,26 @@ local function button(parent, text, props)
         Size = UDim2.fromOffset(36,36)
     }
     for k,v in pairs(props or {}) do p[k] = v end
-    return new("TextButton", p, parent)
+    local surface=new("TextButton", p, parent)
+    -- Microinteracción sutil; no reescalar modales ni superficies de arrastre.
+    local excluded={ModalBackdrop=true,Modal=true,SVPlane=true,HueStrip=true,
+        ToggleHit=true,SliderArea=true}
+    if not excluded[tostring(p.Name or "")] then
+        local pressScale=new("UIScale",{Name="RyouPress",Scale=1},surface)
+        surface.InputBegan:Connect(function(input)
+            if input.UserInputType==Enum.UserInputType.Touch
+                or input.UserInputType==Enum.UserInputType.MouseButton1 then
+                uiTween(pressScale,{Scale=.976},.095,Enum.EasingStyle.Quad)
+            end
+        end)
+        surface.InputEnded:Connect(function(input)
+            if input.UserInputType==Enum.UserInputType.Touch
+                or input.UserInputType==Enum.UserInputType.MouseButton1 then
+                uiTween(pressScale,{Scale=1},.24,Enum.EasingStyle.Back)
+            end
+        end)
+    end
+    return surface
 end
 local function plain(text)
     return tostring(text or ""):gsub("<[^>]+>", "")
@@ -514,7 +541,7 @@ local function connect(window, signal, callback, bucket)
     table.insert(bucket or window._connections, connection)
     return connection
 end
-local function uiTween(object,goal,duration,easing)
+uiTween=function(object,goal,duration,easing)
     if not object or not object.Parent then return nil end
     local tween=TweenService:Create(object,
         TweenInfo.new(duration or .17,easing or Enum.EasingStyle.Quad,Enum.EasingDirection.Out),goal)
@@ -669,6 +696,15 @@ function Control:_resize(width)
         self.BodyField.Size=UDim2.new(1,-px*2,0,fieldHeight)
         y+=4+fieldHeight
     end
+    -- Dropdown expandible en su propia tarjeta; esta altura participa
+    -- del layout real. No aparece ninguna ventana flotante.
+    if self.InlineDropdown then
+        local expandedHeight=math.max(0,math.floor(self._dropdownHeight or 0))
+        self.InlineDropdown.Position=UDim2.fromOffset(px,y+4)
+        self.InlineDropdown.Size=UDim2.new(1,-px*2,0,expandedHeight)
+        self.InlineDropdown.Visible=expandedHeight>2
+        y+=expandedHeight>0 and (expandedHeight+4) or 0
+    end
     if self.SliderArea then
         local sliderAreaHeight=self.SliderAreaHeight or 14
         local sliderLimitsGap=self.SliderLimitsGap or 2
@@ -759,6 +795,7 @@ function Control:Destroy()
     if self.Destroyed then return end
     self.Destroyed = true
     if self.Window._popupOwner == self then self.Window:_closePopup() end
+    if self.Window._inlineOpen == self then self.Window._inlineOpen = nil end
     if self.Window._drag and self.Window._drag.Owner == self then self.Window:_endDrag() end
     self.Slot:Destroy(); self.Tab:_queueFilter()
 end
@@ -1032,7 +1069,18 @@ local function field(parent, placeholder)
         Active=true,TextEditable=true,Selectable=true,MultiLine=false,
         Size=UDim2.new(1,0,0,34),ZIndex=20,LayoutOrder=2
     },parent)
-    round(box,10);stroke(box,C.Border);padding(box,10,0)
+    round(box,10)
+    local focusStroke=stroke(box,C.Border)
+    focusStroke.Transparency=.28
+    padding(box,10,0)
+    box.Focused:Connect(function()
+        uiTween(focusStroke,{Color3=C.White,Transparency=.04},.20,Enum.EasingStyle.Quart)
+        uiTween(box,{BackgroundTransparency=.03},.17)
+    end)
+    box.FocusLost:Connect(function()
+        uiTween(focusStroke,{Color3=C.Border,Transparency=.28},.22)
+        uiTween(box,{BackgroundTransparency=Glass.Field},.24)
+    end)
     return box
 end
 function Tab:Input(options)
@@ -1187,94 +1235,257 @@ local function uniqueDropdownValues(values)
     return unique
 end
 function Tab:Dropdown(options)
-    local o=options or {}; local c=self:_control("Dropdown",o)
-    c.Values=uniqueDropdownValues(o.Values); c.Multi=o.Multi==true or o.MultiSelect==true
-    local hit=button(c.ElementFrame,"",{Name="Dropdown",BackgroundColor3=C.Field,BackgroundTransparency=Glass.Field,
-        Size=UDim2.new(1,0,0,28),LayoutOrder=2}); round(hit,10); stroke(hit,C.Border)
-    local valueLabel=label(hit,"",11,C.Text,{Position=UDim2.fromOffset(8,0),Size=UDim2.new(1,-30,1,0),TextWrapped=true})
-    icon(hit,"chevron").Position=UDim2.new(1,-26,.5,-10)
-    c.Interactive=hit; c.BodyField=hit; c.ValueLabel=valueLabel
+    local o=options or {}
+    local c=self:_control("Dropdown",o)
+    c.Values=uniqueDropdownValues(o.Values)
+    c.Multi=o.Multi==true or o.MultiSelect==true
+    c._dropdownHeight=0
+    c._dropdownOpen=false
+    c._dropdownRevision=0
+    local window=c.Window
+
+    local trigger=button(c.ElementFrame,"",{Name="SelectInline",
+        BackgroundColor3=C.Field,BackgroundTransparency=Glass.Field,
+        Size=UDim2.new(1,0,0,32),LayoutOrder=2})
+    round(trigger,10)
+    local triggerEdge=stroke(trigger,C.Border)
+    triggerEdge.Transparency=.18
+    local valueLabel=label(trigger,"Seleccionar",11,C.Text,{
+        Position=UDim2.fromOffset(11,0),Size=UDim2.new(1,-48,1,0),
+        TextTruncate=Enum.TextTruncate.AtEnd})
+    local indicator=label(trigger,"⌄",18,C.Muted,{
+        Position=UDim2.new(1,-34,0,0),Size=UDim2.fromOffset(26,32),
+        TextXAlignment=Enum.TextXAlignment.Center})
+    c.Interactive=trigger
+    c.BodyField=trigger
+    c.ValueLabel=valueLabel
+
+    local panel=new("Frame",{
+        Name="InlineChoices",ClipsDescendants=true,
+        BackgroundColor3=C.Field,BackgroundTransparency=.08,
+        Size=UDim2.new(1,0,0,0),Visible=false,
+    },c.ElementFrame)
+    round(panel,11)
+    local panelBorder=stroke(panel,C.Border);panelBorder.Transparency=.25
+    c.InlineDropdown=panel
+    local panelTint=new("UIGradient",{
+        Color=ColorSequence.new(Color3.fromRGB(18,33,38),Color3.fromRGB(12,24,30)),
+        Rotation=88
+    },panel)
+    c._applyThemeExtras=function(self,light)
+        panelTint.Color=light and ColorSequence.new(
+            Color3.fromRGB(250,252,253),Color3.fromRGB(230,239,242))
+            or ColorSequence.new(
+                Color3.fromRGB(18,33,38),Color3.fromRGB(12,24,30))
+        panelBorder.Color=C.Border
+        triggerEdge.Color=C.Border
+        valueLabel.TextColor3=C.Text
+    end
+    local findBox=field(panel,"Filtrar opciones...")
+    findBox.Name="InlineSearch"
+    findBox.Position=UDim2.fromOffset(8,8)
+    findBox.Size=UDim2.new(1,-16,0,30)
+    local separator=new("Frame",{
+        Name="Separator",BackgroundColor3=C.Border,BackgroundTransparency=.45,
+        Position=UDim2.fromOffset(10,44),
+        Size=UDim2.new(1,-20,0,1)
+    },panel)
+    local optionsList=scroll(panel,{
+        Name="InlineList",BackgroundTransparency=1,
+        AutomaticCanvasSize=Enum.AutomaticSize.None,CanvasSize=UDim2.new(),
+        ScrollBarThickness=2,ScrollBarImageColor3=C.White,
+        ScrollingDirection=Enum.ScrollingDirection.Y,
+        Active=true
+    })
+    local optionLayout=new("UIListLayout",{
+        FillDirection=Enum.FillDirection.Vertical,SortOrder=Enum.SortOrder.LayoutOrder,
+        Padding=UDim.new(0,3)
+    },optionsList)
+    local footer=label(panel,"",10,C.Faint,{
+        Position=UDim2.new(0,11,1,-20),Size=UDim2.new(1,-22,0,15),
+        Font=MEDIUM
+    })
+    local optionConnections={}
+    local heightValue=new("NumberValue",{Name="DropdownHeight",Value=0},panel)
+    local anim
+    local rendering=false
+    local function targetHeight()
+        local hasSearch=#c.Values>8
+        local visibleRows=math.min(#c.Values,6)
+        if visibleRows<1 then visibleRows=1 end
+        return (hasSearch and 45 or 9)+visibleRows*33+(visibleRows-1)*3+23
+    end
+    local function render()
+        if rendering or not c._dropdownOpen or not panel.Parent or window.Destroyed then return end
+        rendering=true
+        disconnect(optionConnections)
+        for _,child in ipairs(optionsList:GetChildren()) do
+            if child:IsA("GuiObject") then child:Destroy() end
+        end
+        local query=normalized(findBox.Text)
+        local selectedValue=c.Value
+        local count=0
+        local matches=0
+        local unique={}
+        for _,value in ipairs(c.Values) do
+            local title=tostring(value)
+            local key=normalized(title)
+            if not unique[key] then
+                unique[key]=true
+                if query=="" or string.find(key,query,1,true) then
+                    matches+=1
+                    if count<180 then
+                        count+=1
+                        local selected=c.Multi and table.find(selectedValue or {},value)~=nil
+                            or (not c.Multi and selectedValue==value)
+                        local item=button(optionsList,"",{
+                            Name="Choice"..count,LayoutOrder=count,
+                            Size=UDim2.new(1,-5,0,33),
+                            BackgroundColor3=selected and C.Hover or C.Row,
+                            BackgroundTransparency=selected and .12 or .44
+                        })
+                        round(item,8)
+                        local itemText=label(item,title,11,selected and C.White or C.Text,{
+                            Font=selected and MEDIUM or FONT,
+                            Position=UDim2.fromOffset(10,0),Size=UDim2.new(1,-41,1,0),
+                            TextTruncate=Enum.TextTruncate.AtEnd
+                        })
+                        local selectedMark=label(item,selected and "✓" or "",12,C.White,{
+                            Font=BOLD,Position=UDim2.new(1,-28,0,0),
+                            Size=UDim2.fromOffset(20,33),
+                            TextXAlignment=Enum.TextXAlignment.Center
+                        })
+                        -- Los listeners de opciones se eliminan al filtrar/cerrar.
+                        -- Evitar listeners globales acumulados en búsquedas largas.
+                        connect(window,item.MouseEnter,function()
+                            uiTween(item,{BackgroundColor3=C.Hover,BackgroundTransparency=.07},.15)
+                        end,optionConnections)
+                        connect(window,item.MouseLeave,function()
+                            uiTween(item,{BackgroundColor3=selected and C.Hover or C.Row,
+                                BackgroundTransparency=selected and .12 or .44},.19)
+                        end,optionConnections)
+                        connect(window,item.Activated,function()
+                            if c.Locked then return end
+                            if c.Multi then
+                                local a=table.clone(c.Value or {})
+                                local j=table.find(a,value)
+                                if j then table.remove(a,j) else table.insert(a,value) end
+                                c:Set(a)
+                            else
+                                c:Set(value,false,true)
+                                c:Close()
+                            end
+                        end,optionConnections)
+                    end
+                end
+            end
+        end
+        local contentHeight=count>0 and count*33+math.max(0,count-1)*3 or 33
+        optionsList.CanvasSize=UDim2.fromOffset(0,contentHeight+3)
+        footer.Text=matches==0 and "No hay coincidencias"
+            or (matches>180 and ("Mostrando 180 de "..matches) or (tostring(matches).." opciones"))
+        rendering=false
+    end
+
     function c:Set(value,silent,force)
         if self.Destroyed then return self end
         local changed
         if self.Multi then
             local arr=type(value)=="table" and table.clone(value) or (value and {value} or {})
             changed=table.concat(arr,"\0") ~= table.concat(type(self.Value)=="table" and self.Value or {},"\0")
-            self.Value=arr; valueLabel.Text=#arr>0 and table.concat(arr,", ") or "Seleccionar…"
+            self.Value=arr
+            valueLabel.Text=#arr>0 and table.concat(arr,", ") or "Elegir opciones"
         else
-            changed=self.Value~=value; self.Value=value
-            valueLabel.Text=value~=nil and tostring(value) or "Seleccionar…"
+            changed=self.Value~=value
+            self.Value=value
+            valueLabel.Text=value~=nil and tostring(value) or "Elegir opción"
         end
-        if (changed or force) and not silent then invoke(self.Callback,self.Multi and table.clone(self.Value) or self.Value) end
+        if (changed or force) and not silent then
+            invoke(self.Callback,self.Multi and table.clone(self.Value) or self.Value)
+        end
         self.Tab:_queueFilter()
+        if self._dropdownOpen and not rendering then render() end
         return self
     end
     function c:Refresh(values)
         self.Values=uniqueDropdownValues(values)
-        self._revision=(self._revision or 0)+1
-        if self.Window._popupOwner==self and self._renderOptions then self._renderOptions() end
+        self._dropdownRevision+=1
+        if self._dropdownOpen then
+            self._dropdownOpen=false
+            self:Open()
+        end
         return self
+    end
+    local function setOpen(open,instant)
+        if c.Destroyed then return end
+        if anim then anim:Cancel();anim=nil end
+        if open then
+            if window._inlineOpen and window._inlineOpen~=c then
+                window._inlineOpen:Close(true)
+            end
+            window._inlineOpen=c
+        elseif window._inlineOpen==c then
+            window._inlineOpen=nil
+        end
+        c._dropdownOpen=open
+        local height=open and targetHeight() or 0
+        local hasSearch=#c.Values>8
+        local listTop=hasSearch and 49 or 8
+        findBox.Visible=hasSearch
+        separator.Visible=hasSearch
+        optionsList.Position=UDim2.fromOffset(8,listTop)
+        optionsList.Size=UDim2.new(1,-16,0,math.max(32,height-listTop-23))
+        if open then
+            panel.Visible=true
+            findBox.Text=""
+            render()
+            uiTween(triggerEdge,{Color3=C.White,Transparency=.08},.18)
+            uiTween(indicator,{Rotation=180,TextColor3=C.White},.23,Enum.EasingStyle.Quart)
+            -- Si está al fondo del panel, desplazarse suavemente para
+            -- revelar las opciones, sin dejar la lista cortada.
+            task.delay(.26,function()
+                if not c._dropdownOpen or window.Destroyed or window.CurrentTab~=c.Tab then return end
+                local viewport=c.Tab.Content
+                local bottom=panel.AbsolutePosition.Y+panel.AbsoluteSize.Y
+                local visibleBottom=viewport.AbsolutePosition.Y+viewport.AbsoluteSize.Y-8
+                local delta=bottom-visibleBottom
+                if delta>0 then
+                    local maximum=math.max(0,viewport.AbsoluteCanvasSize.Y-viewport.AbsoluteWindowSize.Y)
+                    uiTween(viewport,{CanvasPosition=Vector2.new(0,math.clamp(
+                        viewport.CanvasPosition.Y+delta+9,0,maximum))},.22,Enum.EasingStyle.Quart)
+                end
+            end)
+        else
+            uiTween(triggerEdge,{Color3=C.Border,Transparency=.18},.19)
+            uiTween(indicator,{Rotation=0,TextColor3=C.Muted},.20,Enum.EasingStyle.Quart)
+        end
+        if instant then
+            heightValue.Value=height
+        else
+            anim=TweenService:Create(heightValue,
+                TweenInfo.new(open and .23 or .17,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),
+                {Value=height})
+            anim:Play()
+        end
+    end
+    function c:Close(instant)
+        setOpen(false,instant)
     end
     function c:Open()
         if self.Locked or self.Destroyed then return end
-        local window=self.Window
-        local panel=window:_popup(self.Title,360,410,self)
-        local search=field(panel,"Buscar una opción…")
-        search.Position=UDim2.fromOffset(16,48); search.Size=UDim2.new(1,-32,0,30)
-        local list=scroll(panel,{Position=UDim2.fromOffset(16,90),Size=UDim2.new(1,-32,1,-120)})
-        vertical(list,5)
-        local hint=label(panel,"",10,C.Faint,{Position=UDim2.new(0,16,1,-29),Size=UDim2.new(1,-32,0,16)})
-        local optionConnections={}
-        local rendering=false
-        window._popupCleanup=function() disconnect(optionConnections); self._renderOptions=nil end
-        local function render()
-            if rendering or not list.Parent or window.Destroyed then return end
-            rendering=true
-            disconnect(optionConnections)
-            for _,child in ipairs(list:GetChildren()) do if child:IsA("GuiObject") then child:Destroy() end end
-            local query=normalized(search.Text); local count, matches=0,0
-            local shown={}
-            for _,value in ipairs(self.Values) do
-                local key=normalized(tostring(value))
-                if not shown[key] then
-                    shown[key]=true
-                    if query=="" or string.find(key,query,1,true) then
-                        matches+=1
-                        if count<120 then
-                        count+=1
-                        local selected=self.Multi and table.find(self.Value,value)~=nil or (not self.Multi and self.Value==value)
-                        local choiceHeight=math.max(32,textHeight(tostring(value),12,FONT,math.max(60,panel.AbsoluteSize.X-78))+12)
-                        local choice=button(list,"",{Name="Option",Size=UDim2.new(1,-4,0,choiceHeight),LayoutOrder=count,
-                            BackgroundColor3=selected and C.Text or C.Row})
-                        round(choice,10)
-                        label(choice,tostring(value),13,selected and C.Window or C.Text,{Position=UDim2.fromOffset(12,0),
-                            Size=UDim2.new(1,-38,1,0),TextWrapped=true})
-                        label(choice,selected and "✓" or "",12,C.Window,{Position=UDim2.new(1,-28,0,0),Size=UDim2.new(0,20,1,0)})
-                        connect(window,choice.Activated,function()
-                            if self.Multi then
-                                local arr=table.clone(self.Value); local i=table.find(arr,value)
-                                if i then table.remove(arr,i) else table.insert(arr,value) end
-                                self:Set(arr)
-                                if window._popupOwner==self then render() end
-                            else
-                                local revision=self._revision or 0
-                                self:Set(value,false,true)
-                                if window._popupOwner==self and revision==(self._revision or 0) then window:_closePopup() end
-                            end
-                        end,optionConnections)
-                        end
-                    end
-                end
-            end
-            hint.Text=matches==0 and "Sin resultados" or (matches>120 and "120 de "..matches.." · Escribe para filtrar" or matches.." opciones")
-            rendering=false
-        end
-        self._renderOptions=render
-        connect(window,search:GetPropertyChangedSignal("Text"),render,window._popupConnections)
-        connect(window,panel:GetPropertyChangedSignal("AbsoluteSize"),render,window._popupConnections)
-        render()
+        setOpen(not self._dropdownOpen,false)
     end
-    connect(c.Window,hit.Activated,function() c:Open() end)
+    connect(window,heightValue:GetPropertyChangedSignal("Value"),function()
+        c._dropdownHeight=heightValue.Value
+        c.Tab:_queueFilter()
+    end)
+    connect(window,findBox:GetPropertyChangedSignal("Text"),function()
+        if c._dropdownOpen then
+            optionsList.CanvasPosition=Vector2.new(0,0)
+            render()
+        end
+    end)
+    connect(window,trigger.Activated,function() c:Open() end)
     c:Set(o.Value or o.Default or (c.Multi and {} or nil),true)
     return c
 end
@@ -1592,8 +1803,8 @@ function Nox:CreateWindow(options)
         Position=UDim2.fromOffset(50,9),Size=UDim2.fromOffset(290,24)},top)
     -- El título y el contador se posicionan manualmente para mantenerlos juntos
     -- en cualquier ancho; un UIListLayout con AutomaticSize dejaba huecos raros.
-    local brand=label(titleCluster,w._brandBaseTitle,16,C.Text,{Position=UDim2.fromOffset(0,0),
-        Size=UDim2.fromOffset(120,22),Font=BOLD})
+    local brand=label(titleCluster,w._brandBaseTitle,18,C.Text,{Position=UDim2.fromOffset(0,0),
+        Size=UDim2.fromOffset(134,23),Font=DISPLAY})
     local statusLabel=label(titleCluster,"",12,C.Muted,{Position=UDim2.fromOffset(126,0),
         Size=UDim2.fromOffset(96,22),Font=BOLD})
     local inferredGameLabel=w._brandBaseTitle:match("|%s*(.-)%s*$")
@@ -1734,6 +1945,9 @@ function Nox:CreateWindow(options)
         if scroller then scroller.ScrollingEnabled=false end
     end
     function w:_closePopup()
+        if self._inlineOpen and self._inlineOpen.Close then
+            self._inlineOpen:Close(true)
+        end
         self:_endDrag(); disconnect(self._popupConnections)
         if self._popupCleanup then self._popupCleanup(); self._popupCleanup=nil end
         if self._popupLayer then self._popupLayer:Destroy(); self._popupLayer=nil end
@@ -1942,13 +2156,24 @@ function Nox:CreateWindow(options)
                 BackgroundColor3=selected and C.Hover or self.ThemeDef.Visuals.NavButtonIdle,
                 BackgroundTransparency=selected and Glass.NavActive or Glass.NavIdle
             },.19)
-            tab.NavTitle.TextColor3=selected and C.Text or C.Muted
+            uiTween(tab.NavTitle,{TextColor3=selected and C.Text or C.Muted},.24)
+            if tab.NavScale then uiTween(tab.NavScale,{Scale=selected and 1.012 or 1},.24,Enum.EasingStyle.Quart) end
             if tab.Number then tab.Number.TextColor3=selected and C.Text or C.Faint end
             if tab.NavIcon then tab.NavIcon.ImageColor3=selected and C.Text or C.Faint end
             if tab.SelectionBar then
                 tab.SelectionBar.Visible=selected
                 tab.SelectionBar.BackgroundColor3=self.ThemeName=="Blanco" and C.Text or C.White
-                tab.SelectionBar.BackgroundTransparency=selected and 0 or 1
+                if selected then
+                    tab.SelectionBar.Size=UDim2.fromOffset(3,3)
+                    tab.SelectionBar.Position=UDim2.new(0,2,.5,-1)
+                    uiTween(tab.SelectionBar,{
+                        Size=UDim2.fromOffset(3,18),
+                        Position=UDim2.new(0,2,.5,-9),
+                        BackgroundTransparency=0
+                    },.30,Enum.EasingStyle.Back)
+                else
+                    tab.SelectionBar.BackgroundTransparency=1
+                end
             end
         end
         pageTitle.Text=target.Title; pageDesc.Text=target.Desc
@@ -1963,8 +2188,8 @@ function Nox:CreateWindow(options)
             if self._pageTween then self._pageTween:Cancel() end
             if previous then previous.Page.Position=UDim2.fromOffset(0,0) end
             if self.Opened then
-                target.Page.Position=UDim2.fromOffset(12,0)
-                self._pageTween=TweenService:Create(target.Page,TweenInfo.new(.23,Enum.EasingStyle.Quart),
+                target.Page.Position=UDim2.fromOffset(15,0)
+                self._pageTween=TweenService:Create(target.Page,TweenInfo.new(.31,Enum.EasingStyle.Quint),
                     {Position=UDim2.fromOffset(0,0)})
                 self._pageTween:Play()
             end
@@ -2001,7 +2226,7 @@ function Nox:CreateWindow(options)
             round(p,20)
             local edge=stroke(p,C.Border); edge.Transparency=.16
             local panelGradient=new("UIGradient",{Rotation=102,Color=ColorSequence.new(
-                Color3.fromRGB(22,43,45),Color3.fromRGB(9,19,23))},p)
+                Color3.fromRGB(20,37,41),Color3.fromRGB(9,17,22))},p)
             table.insert(conceptPanelSkins,{Panel=p,Edge=edge,Gradient=panelGradient})
             return p
         end
@@ -2210,6 +2435,8 @@ function Nox:CreateWindow(options)
             BackgroundColor3=self.ThemeDef.Visuals.NavButtonIdle,
             BackgroundTransparency=.78,LayoutOrder=self._navOrder})
         round(navButton,10)
+        local navScale=new("UIScale",{Scale=1},navButton)
+        tab.NavScale=navScale
         -- Barra vertical menta como indicador activo, propia de Ryou.
         local selectionBar=new("Frame",{Name="Selected",Position=UDim2.new(0,2,.5,-9),
             Size=UDim2.fromOffset(3,18),BackgroundColor3=C.White,
@@ -2236,12 +2463,14 @@ function Nox:CreateWindow(options)
         table.insert(self.Tabs,tab)
         connect(self,navButton.Activated,function() self:SelectTab(tab) end)
         connect(self,navButton.MouseEnter,function()
+            uiTween(navScale,{Scale=1.025},.19,Enum.EasingStyle.Quart)
             if self.CurrentTab~=tab then
                 navButton.BackgroundColor3=self.ThemeDef.Visuals.NavButtonHover
                 navButton.BackgroundTransparency=Glass.NavHover
             end
         end)
         connect(self,navButton.MouseLeave,function()
+            uiTween(navScale,{Scale=1},.24,Enum.EasingStyle.Quart)
             if self.CurrentTab~=tab then
                 navButton.BackgroundColor3=self.ThemeDef.Visuals.NavButtonIdle
                 navButton.BackgroundTransparency=Glass.NavIdle
