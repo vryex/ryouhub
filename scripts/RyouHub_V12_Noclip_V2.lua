@@ -3419,12 +3419,11 @@ local function isNoclipBodyPart(part, character)
 end
 
 local function stopNoclipListeners()
-    for _, connection in ipairs({
-        noclipConnection, noclipHeartbeatConnection,
-        noclipCharacterConnection, noclipDescendantConnection,
-    }) do
-        if connection then connection:Disconnect() end
-    end
+    -- No usar ipairs con conexiones nil: se detiene en el primer hueco.
+    if noclipConnection then noclipConnection:Disconnect() end
+    if noclipHeartbeatConnection then noclipHeartbeatConnection:Disconnect() end
+    if noclipCharacterConnection then noclipCharacterConnection:Disconnect() end
+    if noclipDescendantConnection then noclipDescendantConnection:Disconnect() end
     noclipConnection = nil
     noclipHeartbeatConnection = nil
     noclipCharacterConnection = nil
