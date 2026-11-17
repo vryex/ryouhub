@@ -164,7 +164,7 @@ local THEMES = {
 
 local CURRENT_THEME_NAME = canonicalThemeName(XeroEnv.XERO_THEME or "Xero")
 local CURRENT_THEME = THEMES[CURRENT_THEME_NAME] or THEMES.Xero
-local Nox = { Version = "7.0.0-concept-c-polish", Brand = "Ryou", SupportsGameLabels = true, Creator = "Ryou", UIScale = 1 }
+local Nox = { Version = "8.0.0-concept-c-compact", Brand = "Ryou", SupportsGameLabels = true, Creator = "Ryou", UIScale = 1 }
 local C, Glass = {}, {}
 
 local function overwriteTable(target, source)
@@ -207,7 +207,7 @@ end
 -- PNGs live in /icons on GitHub. They are downloaded lazily once, cached locally
 -- and reused by every control/tab that declares Icon = "name".
 local XERO_ICON_BASE_URL = tostring(XeroEnv.XERO_ICON_BASE_URL or
-    "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/ryou-ui-v7-polish/icons/")
+    "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/ryou-ui-v8-compact-home/icons/")
 local XERO_ICON_CACHE_FOLDER = tostring(XeroEnv.XERO_ICON_CACHE_FOLDER or "Ryou/Icons/v2")
 
 local XERO_ICON_FILES = {
@@ -632,8 +632,8 @@ end
 function Control:_resize(width)
     if self.Destroyed then return end
     local section=self.__type=="Section"
-    local px=section and 7 or 15
-    local py=section and 8 or 13
+    local px=section and 5 or 12
+    local py=section and 6 or 9
     local headWidth=math.max(40,width-px*2)
     local reserve=self.Reserve or 0
     local copyOffsetX=self.CopyOffsetX or 0
@@ -663,11 +663,11 @@ function Control:_resize(width)
     end
     local y=py+headHeight
     if self.BodyField then
-        local fieldHeight=36
-        if self.ValueLabel then fieldHeight=math.max(36,textHeight(self.ValueLabel.Text,11,FONT,headWidth-36)+12) end
-        self.BodyField.Position=UDim2.fromOffset(px,y+6)
+        local fieldHeight=33
+        if self.ValueLabel then fieldHeight=math.max(33,textHeight(self.ValueLabel.Text,11,FONT,headWidth-36)+9) end
+        self.BodyField.Position=UDim2.fromOffset(px,y+4)
         self.BodyField.Size=UDim2.new(1,-px*2,0,fieldHeight)
-        y+=6+fieldHeight
+        y+=4+fieldHeight
     end
     if self.SliderArea then
         local sliderAreaHeight=self.SliderAreaHeight or 14
@@ -693,7 +693,7 @@ function Tab:_layout()
             if c.Slot.Visible then height+=c.Slot.Size.Y.Offset+8 end
         end
     end
-    local bottomPad=22
+    local bottomPad=14
     local canvasHeight=math.max(0,height-8+bottomPad)
     self.Content.CanvasSize=UDim2.fromOffset(0,canvasHeight)
     local viewportHeight=self.Content.AbsoluteWindowSize.Y / self.Window.UIScale
@@ -818,14 +818,14 @@ function Tab:_control(kind, options)
         Size=UDim2.new(1,-4,0,0),LayoutOrder=self._order},self.Content)
     local row = new("Frame", {Name=kind,BackgroundColor3=lightTheme and lightColor or darkColor,BackgroundTransparency=Glass.Row,
         Size=UDim2.new(1,0,0,0),LayoutOrder=self._order,ClipsDescendants=true},slot)
-    round(row,17); local rowStroke=stroke(row,lightTheme and lightStrokeColor or darkStrokeColor); rowStroke.Transparency=.22
+    round(row,14); local rowStroke=stroke(row,lightTheme and lightStrokeColor or darkStrokeColor); rowStroke.Transparency=.22
     local head = new("Frame", {Name="Heading",BackgroundTransparency=1,
         Size=UDim2.new(1,0,0,0),LayoutOrder=1},row)
     local copy = new("Frame", {Name="Copy",BackgroundTransparency=1,
         Size=UDim2.new(1,0,0,0)},head)
-    local title = label(copy,plain(o.Title or kind),13,C.Text,{Font=MEDIUM,TextWrapped=true,
+    local title = label(copy,plain(o.Title or kind),12,C.Text,{Font=MEDIUM,TextWrapped=true,
         TextYAlignment=Enum.TextYAlignment.Top,Size=UDim2.new(1,0,0,18),LayoutOrder=1})
-    local desc = label(copy,plain(o.Desc),11,C.Muted,{TextWrapped=true,AutomaticSize=Enum.AutomaticSize.Y,
+    local desc = label(copy,plain(o.Desc),10,C.Muted,{TextWrapped=true,AutomaticSize=Enum.AutomaticSize.Y,
         Size=UDim2.new(1,0,0,0),LayoutOrder=2,Visible=o.Desc ~= nil and o.Desc ~= ""})
     local controlIcon, controlIconSize
     if o.Icon ~= nil and tostring(o.Icon) ~= "" then
@@ -1025,6 +1025,33 @@ local function field(parent, placeholder)
         TextXAlignment=Enum.TextXAlignment.Left,TextSize=12,Size=UDim2.new(1,0,0,34),
         ZIndex=6,LayoutOrder=2},parent)
     round(box,10); stroke(box,C.Border); padding(box,9,0)
+    -- Forzar foco táctil: algunos clientes no activan el teclado dentro
+    -- de un ScrollingFrame anidado sin CaptureFocus explícito.
+    box.InputBegan:Connect(function(input)
+        if input.UserInputType==Enum.UserInputType.Touch
+            or input.UserInputType==Enum.UserInputType.MouseButton1 then
+            task.defer(function()
+                if box.Parent and box.Visible and box.TextEditable
+                    and Input:GetFocusedTextBox()~=box then
+                    pcall(function() box:CaptureFocus() end)
+                end
+            end)
+        end
+    end)
+    -- Área táctil explícita: un TextBox dentro de ScrollingFrame puede
+    -- recibir el toque sin que el teclado virtual aparezca.
+    local focusHit=button(box,"",{Name="TextFocusHit",BackgroundTransparency=1,
+        Size=UDim2.fromScale(1,1),ZIndex=box.ZIndex+1})
+    focusHit.AutoButtonColor=false
+    focusHit.Activated:Connect(function()
+        task.defer(function()
+            if box.Parent and box.TextEditable then
+                pcall(function() box:CaptureFocus() end)
+            end
+        end)
+    end)
+    box.Focused:Connect(function() focusHit.Visible=false end)
+    box.FocusLost:Connect(function() focusHit.Visible=true end)
     return box
 end
 function Tab:Input(options)
@@ -1038,7 +1065,14 @@ function Tab:Input(options)
         return self
     end
     c:Set(o.Value or o.Default or "",true)
+    local wasScrollable=true
+    connect(c.Window,box.Focused,function()
+        if c.Window._endDrag then c.Window:_endDrag() end
+        wasScrollable=c.Tab.Content.ScrollingEnabled
+        c.Tab.Content.ScrollingEnabled=false
+    end)
     connect(c.Window,box.FocusLost,function()
+        c.Tab.Content.ScrollingEnabled=wasScrollable
         if c.Locked then box.Text=c.Value else c:Set(box.Text) end
     end)
     if o.Live then connect(c.Window,box:GetPropertyChangedSignal("Text"),function()
@@ -1966,12 +2000,12 @@ function Nox:CreateWindow(options)
         local mainCaption=cardTitle(mainCard,title,tab.Desc,opt.Icon or "layout-grid")
         cardTitle(quickCard,"Acciones rápidas","Abre otra sección.","zap")
         cardTitle(statsCard,"Sesión actual","Información en tiempo real.","clock-3")
-        local list=scroll(mainCard,{Name="Options",Position=UDim2.fromOffset(13,82),
-            Size=UDim2.new(1,-26,1,-94),AutomaticCanvasSize=Enum.AutomaticSize.None,
+        local list=scroll(mainCard,{Name="Options",Position=UDim2.fromOffset(10,75),
+            Size=UDim2.new(1,-20,1,-85),AutomaticCanvasSize=Enum.AutomaticSize.None,
             ScrollBarThickness=3,ScrollBarImageColor3=C.White})
-        vertical(list,10); padding(list,2,3)
+        vertical(list,6); padding(list,2,2)
         local empty=label(mainCard,"Sin coincidencias. Prueba otra búsqueda.",12,C.Muted,{
-            Position=UDim2.fromOffset(24,98),Size=UDim2.new(1,-48,0,50),
+            Position=UDim2.fromOffset(18,89),Size=UDim2.new(1,-36,0,46),
             TextWrapped=true,Visible=false,ZIndex=5})
         local quickButtons={}
         for i=1,3 do
@@ -2038,51 +2072,71 @@ function Nox:CreateWindow(options)
             end
             statValues[3].Text=tostring(count)
         end
+        local isHome=(title=="Inicio")
         local function fitConcept()
             local area=page.AbsoluteSize
             local width,height=area.X,area.Y
             if width<1 or height<1 then return end
-            local gap,pad=12,3
-            if width>=770 then
-                local aw=width-2*pad-2*gap
-                local a=math.floor(aw*.51)
-                local b=math.floor(aw*.23)
-                local c=aw-a-b
+            local pad,gap=3,10
+            local fullWidth=math.max(240,width-2*pad-2)
+            if not isHome then
+                -- Concept C compacto: las funciones tienen una sola columna grande.
+                -- No aparecen tarjetas de sesión ni accesos rápidos flotando.
+                quickCard.Visible=false
+                statsCard.Visible=false
+                mainCard.Visible=true
                 mainCard.Position=UDim2.fromOffset(pad,pad)
-                mainCard.Size=UDim2.fromOffset(a,height-2*pad)
-                quickCard.Position=UDim2.fromOffset(pad+a+gap,pad)
-                quickCard.Size=UDim2.fromOffset(b,height-2*pad)
-                statsCard.Position=UDim2.fromOffset(pad+a+gap+b+gap,pad)
-                statsCard.Size=UDim2.fromOffset(c,height-2*pad)
+                mainCard.Size=UDim2.fromOffset(fullWidth,math.max(170,height-2*pad))
                 shell.ScrollingEnabled=false
                 shell.CanvasSize=UDim2.fromOffset(0,height)
-            elseif width>=610 then
-                local aw=width-2*pad-gap
-                local a=math.floor(aw*.62)
-                local b=aw-a
-                local quickHeight=math.max(190,math.floor((height-2*pad-gap)*.49))
-                local statsHeight=math.max(205,height-quickHeight-2*pad-gap)
-                mainCard.Position=UDim2.fromOffset(pad,pad)
-                mainCard.Size=UDim2.fromOffset(a,height-2*pad)
-                quickCard.Position=UDim2.fromOffset(pad+a+gap,pad)
-                quickCard.Size=UDim2.fromOffset(b,quickHeight)
-                statsCard.Position=UDim2.fromOffset(pad+a+gap,quickHeight+pad+gap)
-                statsCard.Size=UDim2.fromOffset(b,statsHeight)
-                shell.ScrollingEnabled=true
-                shell.CanvasSize=UDim2.fromOffset(0,math.max(height,statsCard.Position.Y.Offset+statsHeight+pad))
             else
-                local a=width-2*pad-5
-                local mainHeight=math.max(310,height-10)
-                mainCard.Position=UDim2.fromOffset(pad,pad)
-                mainCard.Size=UDim2.fromOffset(a,mainHeight)
-                quickCard.Position=UDim2.fromOffset(pad,pad+mainHeight+gap)
-                quickCard.Size=UDim2.fromOffset(a,290)
-                statsCard.Position=UDim2.fromOffset(pad,pad+mainHeight+gap+290+gap)
-                statsCard.Size=UDim2.fromOffset(a,367)
-                shell.ScrollingEnabled=true
-                shell.CanvasSize=UDim2.fromOffset(0,mainHeight+290+367+3*gap+2*pad)
+                mainCard.Visible=true
+                quickCard.Visible=true
+                statsCard.Visible=true
+                if width>=860 then
+                    local available=width-2*pad-2*gap
+                    local a=math.floor(available*.48)
+                    local b=math.floor(available*.25)
+                    local c=available-a-b
+                    mainCard.Position=UDim2.fromOffset(pad,pad)
+                    mainCard.Size=UDim2.fromOffset(a,height-2*pad)
+                    quickCard.Position=UDim2.fromOffset(pad+a+gap,pad)
+                    quickCard.Size=UDim2.fromOffset(b,height-2*pad)
+                    statsCard.Position=UDim2.fromOffset(pad+a+gap+b+gap,pad)
+                    statsCard.Size=UDim2.fromOffset(c,height-2*pad)
+                    shell.ScrollingEnabled=false
+                    shell.CanvasSize=UDim2.fromOffset(0,height)
+                elseif width>=570 then
+                    -- A tamaño intermedio los datos quedan apilados a la derecha,
+                    -- siempre dentro del área del panel, sin elementos cortados.
+                    local a=math.floor((width-2*pad-gap)*.57)
+                    local b=width-2*pad-gap-a
+                    local hTop=math.max(200,math.floor((height-2*pad-gap)*.48))
+                    local hBottom=math.max(315,height-2*pad-gap-hTop)
+                    mainCard.Position=UDim2.fromOffset(pad,pad)
+                    mainCard.Size=UDim2.fromOffset(a,math.max(height,hTop+hBottom+gap))
+                    quickCard.Position=UDim2.fromOffset(pad+a+gap,pad)
+                    quickCard.Size=UDim2.fromOffset(b,hTop)
+                    statsCard.Position=UDim2.fromOffset(pad+a+gap,pad+hTop+gap)
+                    statsCard.Size=UDim2.fromOffset(b,hBottom)
+                    shell.ScrollingEnabled=true
+                    shell.CanvasSize=UDim2.fromOffset(0,math.max(height,hTop+hBottom+gap+2*pad))
+                else
+                    local mainHeight=math.max(250,height*.66)
+                    local actionHeight=265
+                    local sessionHeight=350
+                    mainCard.Position=UDim2.fromOffset(pad,pad)
+                    mainCard.Size=UDim2.fromOffset(fullWidth,mainHeight)
+                    quickCard.Position=UDim2.fromOffset(pad,pad+mainHeight+gap)
+                    quickCard.Size=UDim2.fromOffset(fullWidth,actionHeight)
+                    statsCard.Position=UDim2.fromOffset(pad,pad+mainHeight+gap+actionHeight+gap)
+                    statsCard.Size=UDim2.fromOffset(fullWidth,sessionHeight)
+                    shell.ScrollingEnabled=true
+                    shell.CanvasSize=UDim2.fromOffset(0,mainHeight+actionHeight+sessionHeight+3*gap+2*pad)
+                end
             end
-            list.Size=UDim2.new(1,-26,0,math.max(100,mainCard.Size.Y.Offset-94))
+            list.Position=UDim2.fromOffset(10,75)
+            list.Size=UDim2.new(1,-20,0,math.max(95,mainCard.Size.Y.Offset-85))
             for _,head in ipairs(cardHeadings) do
                 local small=head.Card.Size.X.Offset<225
                 head.Icon.Position=UDim2.fromOffset(small and 11 or 15,14)
