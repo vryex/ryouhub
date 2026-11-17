@@ -41,13 +41,13 @@ local DARK = {
     Base = rgb(9, 15, 18), Rail = rgb(15, 22, 25), Field = rgb(23, 33, 37),
     Hover = rgb(29, 46, 47), Edge = rgb(45, 69, 68), Text = rgb(243, 249, 248),
     Muted = rgb(168, 183, 185), Accent = rgb(73, 245, 184), Ink = rgb(4, 23, 17),
-    Selected = rgb(19, 61, 48), Raised = rgb(23, 36, 39), AccentHover = rgb(124, 255, 207), LightMint = rgb(126, 255, 209),
+    Selected = rgb(16, 47, 41), Raised = rgb(26, 41, 42), AccentHover = rgb(124, 255, 207), LightMint = rgb(181, 255, 225), Rim = rgb(80, 113, 107), SelectedText = rgb(198,255,230),
 }
 local LIGHT = {
     Base = rgb(247, 249, 248), Rail = rgb(235, 240, 238), Field = rgb(225, 232, 229),
     Hover = rgb(214, 224, 220), Edge = rgb(182, 194, 189), Text = rgb(25, 39, 35),
     Muted = rgb(66, 83, 77), Accent = rgb(0, 104, 77), Ink = rgb(255, 255, 255),
-    Selected = rgb(192, 232, 214), Raised = rgb(246, 250, 248), AccentHover = rgb(0, 76, 57), LightMint = rgb(127, 255, 206),
+    Selected = rgb(192, 232, 214), Raised = rgb(246, 250, 248), AccentHover = rgb(0, 76, 57), LightMint = rgb(127, 255, 206), Rim = rgb(101, 126, 117), SelectedText = rgb(0,76,57),
 }
 local MOTION = { Full = 1, Reduced = .34, Off = 0 }
 local KEYBOARD = Enum.KeyCode.RightShift
@@ -392,6 +392,67 @@ local function gradient(parent, top, bottom, rotation)
     return make("UIGradient", parent, { Color = ColorSequence.new(top, bottom), Rotation = rotation or 90 })
 end
 
+-- The neutral stops preserve custom themes while shaping separate highlights and shadows.
+local finishes = {
+    Shell = {255,234,183,.77,.96,.54},
+    Header = {255,224,175,.78,.98,.72},
+    Card = {255,224,178,.45,.84,.57},
+    Raised = {255,214,164,.30,.83,.53},
+    Field = {241,229,207,.57,.86,.73},
+    Secondary = {255,221,171,.40,.83,.62},
+    Primary = {255,232,183,.14,.68,.49},
+    Selected = {230,211,163,.36,.68,.54},
+}
+
+local function finish(w, node, name)
+    local top, mid, bottom, shine, dark, foot = table.unpack(finishes[name])
+    make("UIGradient",node,{
+        Rotation=90, Color=ColorSequence.new({
+            ColorSequenceKeypoint.new(0,rgb(top,top,top)),
+            ColorSequenceKeypoint.new(.49,rgb(mid,mid,mid)),
+            ColorSequenceKeypoint.new(1,rgb(bottom,bottom,bottom)),
+        }),
+    })
+    local line = edge(w,node)
+    w:_bind(line,"Color",name == "Primary" and "LightMint" or name == "Selected" and "Accent" or "Rim")
+    make("UIGradient",line,{
+        Rotation=120, Transparency=NumberSequence.new({
+            NumberSequenceKeypoint.new(0,shine),
+            NumberSequenceKeypoint.new(.56,dark),
+            NumberSequenceKeypoint.new(1,foot),
+        }),
+    })
+    return line
+end
+
+local function selectionLight(w, parent)
+    local light = surface(w,parent,"Accent",{
+        Name="SelectionLight",Size=full,BackgroundTransparency=.79,Visible=false,
+    },6)
+    make("UIGradient",light,{
+        Rotation=12, Transparency=NumberSequence.new({
+            NumberSequenceKeypoint.new(0,1),
+            NumberSequenceKeypoint.new(.53,.83),
+            NumberSequenceKeypoint.new(.84,.16),
+            NumberSequenceKeypoint.new(1,.47),
+        }),
+    })
+    return light
+end
+
+local function depth(parent, radius, layers)
+    local shade = make("Frame",parent,{Name="Depth",Size=full})
+    for i=1,layers do
+        local spread = (layers-i)*2
+        local layer = make("Frame",shade,{
+            Position=px(-spread,1-spread), Size=UDim2.new(1,spread*2,1,spread*2),
+            BackgroundColor3=rgb(0,0,0), BackgroundTransparency=.94-i*.036,
+        })
+        corner(layer,radius+spread)
+    end
+    return shade
+end
+
 local function mark(w, parent, size, position, large)
     local node = make("Frame", parent, { Name = "RyouMark", Size = px(size, size), Position = position })
     local fallback = label(w, node, "R", math.floor(size*.61), true, "Accent", {
@@ -435,7 +496,7 @@ local function icon(w, parent, name, size, role, position)
     return slot
 end
 
-local function action(w, owner, parent, text, props, primary)
+local function action(w, owner, parent, text, props, primary, style)
     local b = make("TextButton", parent, props)
     b.Text, b.TextSize, b.Font = text or "", 14, w.boldFont
     b.AutoButtonColor = false
@@ -443,29 +504,58 @@ local function action(w, owner, parent, text, props, primary)
     corner(b, w.radius)
     w:_bind(b, "TextColor3", primary and "Ink" or "Text")
     w:_bind(b, "BackgroundColor3", primary and "Accent" or "Field")
+    local visual = b
+    if style == "window" then
+        b.BackgroundTransparency = 1
+        visual = surface(w,b,"Field",{
+            Name="Plate",AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),
+            Size=px(28,26),
+        },6)
+    end
+    if style ~= "bare" then
+        finish(w,visual,primary and "Primary" or "Secondary")
+    end
     if primary then
-        gradient(b, rgb(255,255,255), rgb(174,223,204), 90)
-        local rim = edge(w,b)
-        w:_bind(rim,"Color","LightMint")
-        rim.Transparency = .73
+        local glint = make("Frame",b,{
+            Name="Glint",Position=px(2,1),Size=UDim2.new(1,-4,.34,0),
+            BackgroundColor3=rgb(238,255,249),BackgroundTransparency=.72,
+        })
+        corner(glint,w.radius-1)
+        make("UIGradient",glint,{Rotation=90,Transparency=NumberSequence.new(.35,1)})
     end
     local scale = make("UIScale", b, {})
     local function rest()
         w:_animate(scale, .14, { Scale = 1 })
     end
     listen(owner, b.MouseEnter, function()
-        if b.Active then w:_animate(b, .12, { BackgroundColor3 = w.theme[primary and "AccentHover" or "Hover"] }) end
+        if b.Active then w:_animate(visual, .12, { BackgroundColor3 = w.theme[primary and "AccentHover" or "Hover"] }) end
     end)
     listen(owner, b.MouseLeave, function()
-        w:_animate(b, .13, { BackgroundColor3 = w.theme[w.bindings[b].BackgroundColor3] })
+        w:_animate(visual, .13, { BackgroundColor3 = w.theme[w.bindings[visual].BackgroundColor3] })
         rest()
     end)
     listen(owner, b.InputBegan, function(input)
         if b.Active and (input.UserInputType == MOUSE or input.UserInputType == TOUCH) then
             w:_animate(scale, .09, { Scale = .975 })
+            if style ~= "bare" then
+                w:_animate(visual,.09,{BackgroundColor3=w.theme[primary and "AccentHover" or "Hover"]})
+            end
         end
     end)
-    listen(owner, b.InputEnded, rest)
+    listen(owner, b.InputEnded, function()
+        rest()
+        w:_animate(visual,.14,{BackgroundColor3=w.theme[w.bindings[visual].BackgroundColor3]})
+    end)
+    return b
+end
+
+local function windowAction(w, owner, parent, glyph, right, pressed)
+    local b = action(w,owner,parent,"",{
+        Name=glyph == "minimize" and "Minimize" or "Close",
+        AnchorPoint=Vector2.new(1,.5), Position=UDim2.new(1,-right,.5,0), Size=px(34,38),
+    },false,"window")
+    icon(w,b,glyph,13,"Text",UDim2.new(.5,-6.5,.5,-6.5))
+    listen(owner,b.Activated,pressed)
     return b
 end
 
@@ -480,7 +570,7 @@ local function textBox(w, owner, parent, placeholder, props)
     w:_bind(box, "BackgroundColor3", "Field")
     w:_bind(box, "TextColor3", "Text")
     w:_bind(box, "PlaceholderColor3", "Muted")
-    local line = edge(w, box)
+    local line = finish(w,box,"Field")
     listen(owner, box.Focused, function()
         w:_animate(line, .15, { Color = w.theme.Accent })
     end)
@@ -556,16 +646,17 @@ function Window:_fit()
         math.clamp(desired.X, width/2+8, math.max(width/2+8, bounds.X-width/2-8)),
         math.clamp(desired.Y, height/2+8, math.max(height/2+8, bounds.Y-height/2-8)))
     self.frame.Position = px(center.X, center.Y)
-    local compact = width < 560
+    local widest, minimum = 0, 0
+    for _, tab in ipairs(self.Tabs) do
+        widest = math.max(widest,tab.labelWidths[14])
+        minimum = math.max(minimum,tab.labelWidths[12])
+    end
+    local maxRail = math.min(222,math.floor(width*.25),width-394)
+    local compact = maxRail < math.max(115,math.ceil(minimum+58))
     self.Compact = compact
     local railWidth = 53
     if not compact then
-        local widest = 0
-        for _, tab in ipairs(self.Tabs) do
-            widest = math.max(widest, tab.labelWidths[14])
-        end
-        local maxRail = math.min(222, math.floor(width*.25))
-        railWidth = math.min(maxRail, math.max(122, math.floor(width*.185), math.ceil(widest+58)))
+        railWidth = math.min(maxRail, math.max(115, math.floor(width*.185), math.ceil(widest+58)))
     end
     local headerHeight = height < 415 and 55 or 70
     self.header.Size = UDim2.new(1, 0, 0, headerHeight)
@@ -574,7 +665,7 @@ function Window:_fit()
     self.content.Position = px(0, headerHeight)
     self.content.Size = UDim2.new(1, 0, 1, -headerHeight)
     self.utilities.Visible = width >= 660
-    self.titleGroup.Size = UDim2.new(1, -(width >= 660 and 423 or 192), 0, 26)
+    self.titleGroup.Size = UDim2.new(1, -(width >= 660 and 347 or 176), 0, 26)
     self.subtitleGroup.Size = self.titleGroup.Size - px(0, 7)
     self.rail.Size = UDim2.new(0, railWidth, 1, 0)
     self.body.Position = px(railWidth + 1, 0)
@@ -585,10 +676,6 @@ function Window:_fit()
         local textSize = 14
         while textSize > 12 and tab.labelWidths[textSize] > textWidth do textSize -= 1 end
         local rowHeight = height < 415 and 37 or 40
-        if not compact and tab.labelWidths[textSize] > textWidth then
-            local wrapped = TextService:GetTextSize(tab.Title,textSize,self.boldFont,Vector2.new(textWidth,10000))
-            rowHeight = math.max(rowHeight, wrapped.Y+10)
-        end
         tab.slot.Size = UDim2.new(1,0,0,rowHeight)
         tab.titleLabel.TextSize = textSize
         tab.titleLabel.Visible = not compact
@@ -678,7 +765,7 @@ function Window:Open()
     return self
 end
 
-function Window:Close()
+function Window:_hide(minimized)
     if self.Destroyed then return self end
     self.initialCancelled = true
     if not self.Opened then return self:SetOpenButtonVisible(self.launcherEnabled) end
@@ -689,12 +776,21 @@ function Window:Close()
     local focused = Input:GetFocusedTextBox()
     if focused and focused:IsDescendantOf(self.panel) then focused:ReleaseFocus(false) end
     self:_fitLauncher()
-    self:_animate(self.panel, .17, { GroupTransparency = 1, Position = px(0, 8) }, 0, function()
+    local target = px(0,8)
+    if minimized and self.launcher.Visible then
+        local dx = self.launcher.Position.X.Offset-self.frame.Position.X.Offset
+        local dy = self.launcher.Position.Y.Offset-self.frame.Position.Y.Offset
+        target = px(math.clamp(dx*.12,-21,21),math.clamp(dy*.12,-17,17))
+    end
+    self:_animate(self.panel, .17, { GroupTransparency = 1, Position = target }, 0, function()
         if not self.Opened then self.panel.Visible = false; self.shadow.Visible = false end
     end)
     for _, fn in ipairs(self.closedCallbacks) do callback(fn, self) end
     return self
 end
+
+function Window:Minimize() return self:_hide(true) end
+function Window:Close() return self:_hide(false) end
 
 function Window:Toggle()
     return self.Opened and self:Close() or self:Open()
@@ -841,25 +937,19 @@ function UI:CreateWindow(options)
     w.ScreenGui = w.gui
     w.screen = make("Frame", w.gui, { Size = full })
     w.frame = make("Frame", w.screen, { AnchorPoint = Vector2.new(.5, .5) })
-    w.shadow = make("Frame", w.frame, { Position = px(-7, 5), Size = UDim2.new(1,14,1,8), Visible=false })
-    for i=1,4 do
-        local layer = make("Frame", w.shadow, {
-            Position=px(i*2,i*2), Size=UDim2.new(1,-i*4,1,-i*4),
-            BackgroundColor3=rgb(0,0,0), BackgroundTransparency=.94-i*.032,
-        })
-        corner(layer, 24-i)
-    end
+    w.shadow = depth(w.frame,22,4)
+    w.shadow.Position = px(0,4)
+    w.shadow.Visible = false
     w.panel = make("CanvasGroup", w.frame, { Size = full, Visible = false })
     w.Root = w.panel
     w:_bind(w.panel, "BackgroundColor3", "Base")
     w.panel.BackgroundTransparency = .035
     corner(w.panel, 22)
-    local outline = edge(w, w.panel)
-    outline.Transparency = .18
-    gradient(outline, rgb(150,188,180), rgb(91,255,193), 75)
+    finish(w,w.panel,"Shell")
 
     local header = surface(w, w.panel, "Rail", { Size = UDim2.new(1, 0, 0, 74), Active = true, ClipsDescendants = true })
     w.header = header
+    gradient(header,rgb(249,255,252),rgb(171,189,185),90)
     w.headerRibbon = artworkLayer(w,header,"header_ribbon",UDim2.new(),px(488,70),Enum.ScaleType.Fit,.19)
     local rule = surface(w, header, "Edge", { Position = UDim2.new(0, 16, 1, -1), Size = UDim2.new(1, -32, 0, 1) })
     rule.Name = "HeaderRule"
@@ -878,27 +968,23 @@ function UI:CreateWindow(options)
     w.subtitle = label(w, w.subtitleGroup, copyText(o.Subtitle or o.Author, "Created by Ryou"), 13, false, "Muted",
         { Size = full, TextTruncate = Enum.TextTruncate.AtEnd })
     w.Title, w.Author = w.title.Text, w.subtitle.Text
-    local close = action(w, w.owner, header, "", { Position = UDim2.new(1, -52, .5, -22), Size = px(44, 44) })
-    local minimize = action(w, w.owner, header, "", { Position = UDim2.new(1, -99, .5, -22), Size = px(44, 44) })
-    icon(w, close, "error", 17, "Text", px(13, 13))
-    icon(w, minimize, "minimize", 17, "Text", px(13,13))
-    listen(w.owner, close.Activated, function() w:Close() end)
-    listen(w.owner, minimize.Activated, function() w:Close() end)
+    windowAction(w,w.owner,header,"minimize",43,function() w:Minimize() end)
+    windowAction(w,w.owner,header,"error",9,function() w:Close() end)
 
     w.utilities = make("CanvasGroup", header, {
-        Position = UDim2.new(1, -320, .5,-22), Size = px(213, 44),
+        Position = UDim2.new(1,-251,.5,-17), Size = px(164,34),
     })
-    local badge = surface(w, w.utilities, "Field", { Size = px(112, 34), Position = px(0,5) }, 10)
-    edge(w,badge)
-    surface(w,badge,"Accent",{Size = px(7,7),Position = px(10,14)}, 4)
-    label(w,badge,copyText(o.Badge, "V14 · Stable"),12,true,"Text",{Position=px(24,0),Size=UDim2.new(1,-28,1,0),
+    local badge = surface(w, w.utilities, "Field", { Size = px(92,26), Position = px(0,4) }, 7)
+    finish(w,badge,"Raised")
+    surface(w,badge,"Accent",{Size = px(5,5),Position = px(8,11)}, 4)
+    label(w,badge,copyText(o.Badge, "V14 · Stable"),12,true,"Text",{Position=px(19,0),Size=UDim2.new(1,-22,1,0),
         TextTruncate=Enum.TextTruncate.AtEnd})
     local util = type(o.Utilities) == "table" and o.Utilities or {}
-    local cloud = action(w, w.owner, w.utilities, "", { Position = px(121,0), Size = px(42,44) })
-    local bell = action(w, w.owner, w.utilities, "", { Position = px(169,0), Size = px(42,44) })
-    icon(w,cloud,"cloud",19,"Text",px(11,12))
-    icon(w,bell,"bell",19,"Text",px(11,12))
-    surface(w,bell,"Accent",{ Size=px(5,5), Position=px(32,9) },3)
+    local cloud = action(w, w.owner, w.utilities, "", { Position = px(96,1), Size = px(31,32) })
+    local bell = action(w, w.owner, w.utilities, "", { Position = px(131,1), Size = px(31,32) })
+    icon(w,cloud,"cloud",15,"Text",px(8,8))
+    icon(w,bell,"bell",15,"Text",px(8,8))
+    surface(w,bell,"Accent",{ Size=px(5,5), Position=px(23,6) },3)
     listen(w.owner,cloud.Activated,function()
         if util.Cloud then callback(util.Cloud, w) else w:Notify({Title="Ryou UI", Content="Biblioteca visual V14"}) end
     end)
@@ -910,12 +996,14 @@ function UI:CreateWindow(options)
     w.rail = make("CanvasGroup", content, { Position = px(0, 0) })
     w.rail.BackgroundTransparency = 0
     w:_bind(w.rail, "BackgroundColor3", "Rail")
-    artworkLayer(w, w.rail, "rail_glow", UDim2.fromScale(0,.18), UDim2.fromScale(1,.82), Enum.ScaleType.Stretch)
+    gradient(w.rail,rgb(204,225,220),rgb(249,255,252),100)
+    local railGlow = artworkLayer(w,w.rail,"rail_glow",UDim2.fromScale(0,1),UDim2.fromScale(1,.84),Enum.ScaleType.Fit,.12)
+    railGlow.AnchorPoint = Vector2.new(0,1)
     w.nav = scroll(w, w.rail, { Size = full })
     pad(w.nav, 6, 9)
     stack(w.nav, 4)
     w.body = make("Frame", content, {ClipsDescendants=true})
-    artworkLayer(w, w.body, "background_artwork", UDim2.new(), full, Enum.ScaleType.Crop, .84)
+    artworkLayer(w,w.body,"background_artwork",UDim2.fromScale(0,-.12),UDim2.fromScale(1,1.27),Enum.ScaleType.Crop,.78)
     w.pages = make("CanvasGroup", w.body, { Size = full })
     local divider = surface(w, w.body, "Edge", { Position = px(0, 0), Size = UDim2.new(0, 1, 1, 0), BackgroundTransparency=.5 })
     divider.Name = "RailRule"
@@ -1106,23 +1194,16 @@ function Window:Tab(options)
     local shell = make("CanvasGroup", slot, { Size = full })
     t.shell = shell
     self.entrance[shell] = shell.Position
-    local hit = action(self, self.owner, shell, "", { Size = full })
+    local hit = action(self,self.owner,shell,"",{Size=full},false,"bare")
     hit.BackgroundTransparency = 1
     t.hit = hit
-    t.activeFill = surface(self, hit, "Selected", { Size = full, Visible = false }, 8)
-    edge(self,t.activeFill).Transparency = .48
-    gradient(t.activeFill,rgb(155,192,181),rgb(255,255,255),22)
-    local spill = surface(self,t.activeFill,"Accent",{
-        Position=UDim2.fromScale(.05,0),Size=UDim2.fromScale(.95,1),BackgroundTransparency=.65,
-    },8)
-    make("UIGradient",spill,{
-        Transparency=NumberSequence.new({
-            NumberSequenceKeypoint.new(0,1), NumberSequenceKeypoint.new(.58,.76), NumberSequenceKeypoint.new(1,.18),
-        }),
-    })
+    t.activeFill = surface(self,hit,"Selected",{Size=full,Visible=false},7)
+    finish(self,t.activeFill,"Selected")
+    selectionLight(self,t.activeFill).Visible = true
     t.glyph = icon(self, hit, o.Icon or "grid", 18, "Muted", UDim2.new(0, 12, .5, -9))
     t.marker = surface(self, hit, "Accent", { AnchorPoint = Vector2.new(0, .5),
         Position = UDim2.new(0, 1, .5, 0), Size = px(3, 23), Visible = false }, 2)
+    gradient(t.marker,rgb(178,223,206),rgb(255,255,255),85)
     t.titleLabel = label(self, hit, name, 14, true, "Muted", { Position = px(32, 0),
         Size = UDim2.new(1, -41, 1, 0), TextWrapped = true })
     t.page = make("CanvasGroup", self.pages, { Size = full, Visible = false })
@@ -1169,8 +1250,23 @@ function Tab:Section(options)
     local w = self.Window
     self.order = (self.order or 0) + 1
     local row = make("Frame", self.scroller, { Size = UDim2.new(1, 0, 0, 19), LayoutOrder = self.order })
-    label(w, row, copyText(o.Title or o.Name), 12, true, "Muted", { TextTruncate = Enum.TextTruncate.AtEnd })
-    surface(w, row, "Edge", { Position = UDim2.new(0, 0, 1, -1), Size = UDim2.new(1, 0, 0, 1) })
+    local inset = o.Icon and 20 or 0
+    local badgeWidth = o.Badge and 54 or 0
+    if o.Icon then icon(w,row,o.Icon,13,"Accent",px(2,3)) end
+    label(w,row,copyText(o.Title or o.Name),12,true,"Text",{
+        Position=px(inset,0),Size=UDim2.new(1,-inset-badgeWidth,1,0),TextTruncate=Enum.TextTruncate.AtEnd,
+    })
+    if o.Badge then
+        local badge = surface(w,row,"Selected",{
+            Position=UDim2.new(1,-49,0,1),Size=px(47,16),
+        },5)
+        finish(w,badge,"Selected")
+        surface(w,badge,"Accent",{Position=px(5,6),Size=px(4,4)},2)
+        label(w,badge,copyText(o.Badge),10,true,"SelectedText",{
+            Position=px(13,0),Size=UDim2.new(1,-15,1,0),TextTruncate=Enum.TextTruncate.AtEnd,
+        })
+    end
+    surface(w,row,"Edge",{Position=UDim2.new(0,0,1,-1),Size=UDim2.new(1,0,0,1),BackgroundTransparency=.6})
     return self
 end
 
@@ -1188,10 +1284,12 @@ function Tab:Banner(options)
     banner.BackgroundTransparency=0
     w:_bind(banner,"BackgroundColor3","Rail")
     corner(banner,12)
-    edge(w,banner).Transparency=.28
-    gradient(banner,rgb(179,205,199),rgb(255,255,255),15)
-    artworkLayer(w,banner,"background_artwork",UDim2.new(),full,Enum.ScaleType.Crop,.86)
-    local orbits = artworkLayer(w,banner,"hero_orbits",UDim2.new(1,0,0,0),full,Enum.ScaleType.Fit,.13)
+    finish(w,banner,"Raised")
+    local halo = artworkLayer(w,banner,"background_artwork",UDim2.fromScale(.15,-.12),UDim2.fromScale(.85,1.24),Enum.ScaleType.Crop,.70)
+    make("UIGradient",halo,{Transparency=NumberSequence.new({
+        NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(.40,.75),NumberSequenceKeypoint.new(1,0),
+    })})
+    local orbits = artworkLayer(w,banner,"hero_orbits",UDim2.new(1,0,0,0),full,Enum.ScaleType.Fit,.22)
     orbits.AnchorPoint = Vector2.new(1,0)
     local device = make("Frame", banner, {
         AnchorPoint=Vector2.new(.5,.5), Size=px(220,210),
@@ -1240,10 +1338,9 @@ function Tab:Columns(options)
         local holder = make("Frame",wrapper,{LayoutOrder=index,Size=UDim2.new(1,0,0,0),AutomaticSize=VERTICAL})
         if o.Cards ~= false then
             holder.BackgroundTransparency=0
-            w:_bind(holder,"BackgroundColor3","Rail")
-            corner(holder,12)
-            edge(w,holder).Transparency=.35
-            gradient(holder,rgb(255,255,255),rgb(156,176,169),95)
+            w:_bind(holder,"BackgroundColor3","Raised")
+            corner(holder,11)
+            finish(w,holder,"Raised")
             pad(holder,8,6)
         end
         stack(holder,5)
@@ -1274,6 +1371,7 @@ function Tab:Stats(options)
     for index=1,count do
         local value = values[index]
         local cell = surface(w,row,"Field",{Size=UDim2.new(1/count,-math.ceil(4*(count-1)/count),1,0),LayoutOrder=index},8)
+        finish(w,cell,"Field")
         local glyph = icon(w,cell,value.Icon or "activity",14,"Accent",UDim2.new(0,6,.5,-7))
         local caption = label(w,cell,copyText(value.Value),12,true,"Text",{TextTruncate=Enum.TextTruncate.AtEnd})
         local detail = label(w,cell,copyText(value.Text),10,false,"Muted",{TextTruncate=Enum.TextTruncate.AtEnd})
@@ -1308,8 +1406,7 @@ local function control(tab, options, bare)
         row.BackgroundTransparency = 0
         w:_bind(row, "BackgroundColor3", "Rail")
         corner(row, w.radius)
-        local outline = edge(w,row)
-        outline.Transparency = .42
+        finish(w,row,"Card")
     end
     pad(row, bare and 0 or 8, bare and 1 or 6)
     stack(row, 4)
@@ -1397,7 +1494,6 @@ function Tab:Button(options)
     local hit = action(w, c.owner, c.row, copyText(o.Action, o.Compact and c.Title or "Abrir"),
         { Size = UDim2.new(1,0,0,o.Compact and 35 or 37), LayoutOrder = 1 }, o.Primary == true)
     if o.Compact then
-        if not o.Primary then edge(w,hit).Transparency=.35 end
         hit.TextTruncate=Enum.TextTruncate.AtEnd
         hit.TextXAlignment=LEFT
         pad(hit,o.Icon and 28 or 9,0)
@@ -1517,6 +1613,7 @@ end
 
 local function expandable(w, c, height, onOpen)
     local panel = surface(w,c.row,"Base",{LayoutOrder=2,Size=UDim2.new(1,0,0,0),ClipsDescendants=true,Visible=false},8)
+    finish(w,panel,"Raised")
     function c:Open()
         if self.Locked or self.Destroyed or self.expanded then return self end
         self.expanded = true
@@ -1544,14 +1641,13 @@ function Tab:Dropdown(options)
     local o = options or {}
     local c, w = control(self, o), self.Window
     c.Values, c.Multi = choices(o.Values), o.Multi == true or o.MultiSelect == true
-    local trigger = action(w, c.owner, c.row, "", { Size = UDim2.new(1, 0, 0, 44), LayoutOrder = 1 })
+    local trigger = action(w,c.owner,c.row,"",{Size=UDim2.new(1,0,0,33),LayoutOrder=1})
     local summary = label(w, trigger, "", 14, false, nil, { Position = px(9, 0),
         Size = UDim2.new(1, -42, 1, 0), TextTruncate = Enum.TextTruncate.AtEnd })
     icon(w, trigger, "chevron", 18, "Muted", UDim2.new(1, -26, .5, -9))
     c.targets[trigger] = true
-    edge(w,trigger)
     local panel
-    panel = expandable(w, c, 195, function()
+    panel = expandable(w, c, 155, function()
         task.defer(function()
             if w.Destroyed or c.Destroyed or not c.expanded then return end
             local scroller = c.tab.scrollHost or c.tab.scroller
@@ -1566,9 +1662,9 @@ function Tab:Dropdown(options)
             w:_animate(scroller,.23,{CanvasPosition=Vector2.new(current.X,math.min(current.Y+overflow,limit))})
         end)
     end)
-    local search = textBox(w, c.owner, panel, "Buscar opción…", { Position = px(2, 2), Size = UDim2.new(1, -4, 0, 42) })
+    local search = textBox(w, c.owner, panel, "Buscar opción…", { Position = px(4,4), Size = UDim2.new(1,-8,0,30) })
     c.targets[search] = true
-    local list = scroll(w, panel, { Position = px(0, 50), Size = UDim2.new(1, 0, 1, -50) })
+    local list = scroll(w, panel, { Position = px(4,39), Size = UDim2.new(1,-8,1,-43) })
     stack(list, 4)
     local optionsScope
     local rows = {}
@@ -1585,9 +1681,11 @@ function Tab:Dropdown(options)
             summary.Text = copyText(c.Value, "Seleccionar")
         end
         for value, row in pairs(rows) do
-            row.check.Visible = selected(value)
-            w:_bind(row.hit,"BackgroundColor3",selected(value) and "Selected" or "Field")
-            w:_animate(row.text, .12, { TextColor3 = selected(value) and w.theme.Accent or w.theme.Text })
+            local active = selected(value)
+            row.check.Visible, row.light.Visible = active, active
+            local role = active and "Selected" or "Field"
+            w:_bind(row.hit,"BackgroundColor3",role)
+            w:_bind(row.text,"TextColor3",active and "SelectedText" or "Text")
         end
     end
     function c:Set(value, silent, force)
@@ -1621,11 +1719,11 @@ function Tab:Dropdown(options)
         for index, value in ipairs(c.Values) do
             if not string.find(string.lower(tostring(value)), needle, 1, true) then continue end
             if count >= 180 then break end
-            local hit = action(w, optionsScope, list, "", { LayoutOrder = index, Size = UDim2.new(1, -3, 0, 44) })
+            local hit = action(w, optionsScope, list, "", { LayoutOrder = index, Size = UDim2.new(1,-2,0,31) })
             hit.Active, hit.Selectable = not c.Locked, not c.Locked
             c.targets[hit] = true
             rows[value] = {
-                hit = hit,
+                hit = hit, light = selectionLight(w,hit),
                 text = label(w, hit, tostring(value), 14, false, nil, { Position = px(9, 0),
                     Size = UDim2.new(1, -40, 1, 0), TextTruncate = Enum.TextTruncate.AtEnd }),
                 check = icon(w, hit, "success", 17, "Accent", UDim2.new(1, -25, .5, -8)),
@@ -1681,19 +1779,19 @@ local function dialog(w, owner, title, subtitle, width, height, alignToContent)
     local layer = make("TextButton",w.panel,{Name="ModalVeil",Text="",AutoButtonColor=false,
         Active=true,Modal=true,Selectable=false,Size=full,ZIndex=12,
         BackgroundColor3=rgb(0,0,0),BackgroundTransparency=.37})
-    local card = surface(w,layer,"Base",{Name="ToolDialog",AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),
-        Active=true,ClipsDescendants=true},14)
-    edge(w,card)
+    local shell = make("Frame",layer,{AnchorPoint=Vector2.new(.5,.5)})
+    depth(shell,14,3)
+    local card = surface(w,shell,"Base",{Name="ToolDialog",Size=full,Active=true,ClipsDescendants=true},14)
+    finish(w,card,"Raised")
     local scope = childScope(owner)
-    local header = surface(w,card,"Rail",{ClipsDescendants=true})
+    local header = surface(w,card,"Raised",{ClipsDescendants=true})
+    finish(w,header,"Header")
     artworkLayer(w,header,"header_ribbon",UDim2.new(.25,20,0,0),px(321,46),Enum.ScaleType.Fit,.24)
     mark(w,header,43,UDim2.new(0,8,.5,-22),false)
     label(w,header,title,17,true,"Text",{Position=px(53,6),Size=UDim2.new(1,-102,0,23),
         TextTruncate=Enum.TextTruncate.AtEnd})
     label(w,header,subtitle,12,false,"Muted",{Position=px(53,28),Size=UDim2.new(1,-102,0,17),
         TextTruncate=Enum.TextTruncate.AtEnd})
-    local close = action(w,scope,header,"",{Position=UDim2.new(1,-45,0,5),Size=px(38,42)})
-    icon(w,close,"error",17,"Text",px(10,12))
     local body = make("Frame",card,{ClipsDescendants=true})
     local footer = make("Frame",card,{})
     local dead = false
@@ -1714,14 +1812,14 @@ local function dialog(w, owner, title, subtitle, width, height, alignToContent)
         local short = bounds.Y < 415
         local cardHeight = math.max(1,math.min(height,bounds.Y-(short and 48 or 32)))
         local cardWidth = math.max(1,math.min(width,bounds.X-32, short and 468 or width))
-        local top, bottom = short and 46 or 54, short and 36 or 42
-        card.Size=px(cardWidth,cardHeight)
+        local top, bottom = short and 45 or 52, short and 32 or 36
+        shell.Size=px(cardWidth,cardHeight)
         local center = bounds.X/2
         if alignToContent then
             local margin = math.min(16,(bounds.X-cardWidth)/2)
             center = math.min(center + w.body.Position.X.Offset/2, bounds.X-cardWidth/2-margin)
         end
-        card.Position=UDim2.new(0,center,.5,0)
+        shell.Position=UDim2.new(0,center,.5,0)
         header.Size=UDim2.new(1,0,0,top)
         body.Position=px(10,top+7)
         body.Size=UDim2.new(1,-20,1,-top-bottom-22)
@@ -1730,10 +1828,10 @@ local function dialog(w, owner, title, subtitle, width, height, alignToContent)
     end
     listen(scope,w.frame:GetPropertyChangedSignal("AbsoluteSize"),fit)
     listen(scope,w.body:GetPropertyChangedSignal("Position"),fit)
-    listen(scope,close.Activated,release)
+    windowAction(w,scope,header,"error",7,release)
     w.dismissModal = release
     fit()
-    local scale=make("UIScale",card,{Scale=.975})
+    local scale=make("UIScale",shell,{Scale=.975})
     w:_animate(scale,.18,{Scale=1})
     return body,footer,release,scope
 end
@@ -2159,17 +2257,18 @@ function Tab:Catalog(options)
             for index=1,math.min(#items,120) do
                 local item=items[index]
                 local hit=action(w,rowOwner,list,"",{LayoutOrder=index,Size=UDim2.new(1,-4,0,46)})
+                local light=selectionLight(w,hit)
                 artwork(w,hit,item,px(5,4),px(64,38))
                 label(w,hit,copyText(item.Title,tostring(item.Id)),14,true,"Text",{
                     Position=px(78,4),Size=UDim2.new(1,-110,0,22),TextTruncate=Enum.TextTruncate.AtEnd})
                 label(w,hit,copyText(item.Desc),12,false,"Muted",{
                     Position=px(78,23),Size=UDim2.new(1,-105,0,18),TextTruncate=Enum.TextTruncate.AtEnd})
                 local selection=icon(w,hit,"success",14,"Accent",UDim2.new(1,-25,.5,-7))
-                rows[item.Id]={Hit=hit,Selection=selection}
+                rows[item.Id]={Hit=hit,Selection=selection,Light=light}
                 local function select()
                     draft=item.Id
                     for id,row in pairs(rows) do
-                        row.Selection.Visible=id==draft
+                        row.Selection.Visible, row.Light.Visible = id==draft, id==draft
                         w:_bind(row.Hit,"BackgroundColor3",id==draft and "Selected" or "Field")
                     end
                     paintPreview()
@@ -2177,7 +2276,7 @@ function Tab:Catalog(options)
                 listen(rowOwner,hit.Activated,select)
             end
             for id,row in pairs(rows) do
-                row.Selection.Visible=id==draft
+                row.Selection.Visible, row.Light.Visible = id==draft, id==draft
                 w:_bind(row.Hit,"BackgroundColor3",id==draft and "Selected" or "Field")
             end
             list.CanvasPosition=Vector2.zero

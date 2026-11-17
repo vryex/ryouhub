@@ -5,7 +5,8 @@ return function(UI, options)
     config.Subtitle=config.Subtitle or "Created by Ryou"
     local w=UI:CreateWindow(config)
     local function page(title, icon)
-        return w:Tab({Title=title,Id=title,Icon=icon,ShowTitle=false})
+        return w:Tab({Title=title,Id=title,Icon=icon,ShowTitle=title=="Controles",
+            Desc=title=="Controles" and "Componentes interactivos de Neo Sidebar" or nil})
     end
     local home=page("Inicio","home")
     local controls=page("Controles","grid")
@@ -18,12 +19,12 @@ return function(UI, options)
 
     home:Banner({Title='Ryou <font color="#62F6BB">UI</font>',Subtitle="Biblioteca visual para Luau"})
     local action,status=home:Columns({Split=.53,MinWidth=334})
-    action:Button({Title="Demostración",Desc="Prueba un aviso de la interfaz.",Icon="bell",
-        Action="Mostrar aviso",Primary=true,Callback=function() toast("Todo listo","La acción de prueba funciona.") end})
-    status:Section({Title="Estado · Listo",Icon="activity"})
+    action:Button({Title="Acción de prueba",Desc="Muestra un aviso de Neo Sidebar.",Icon="bell",
+        Action="Mostrar aviso",Primary=true,Callback=function() toast("Todo listo","El showcase está activo.") end})
+    status:Section({Title="Estado",Icon="activity",Badge="Listo"})
     status:Stats({{Icon="layers",Value="V14",Text="Versión"},{Icon="activity",Value="Estable",Text="Estado"},
         {Icon="palette",Value="Neo",Text="Diseño"}})
-    home:Section({Title="Accesos rápidos"})
+    home:Section({Title="Accesos rápidos",Icon="grid"})
     local left,middle,right=home:Columns({Count=3,MinWidth=360,Cards=false})
     left:Button({Title="Controles",Icon="grid",Compact=true,Callback=function() controls:Select() end})
     middle:Button({Title="Apariencia",Icon="user",Compact=true,Callback=function() outfits:Select() end})
@@ -31,7 +32,7 @@ return function(UI, options)
 
     prefs:Banner({Title="Ajustes",Subtitle="Configuración y preferencias",Height=83})
     local presets,settings=prefs:Columns({Split=.43,MinWidth=405})
-    presets:Section({Title="Presets"})
+    presets:Section({Title="Presets",Icon="layers"})
     presets:Dropdown({Title="Perfil visual",Values={"Por defecto","Rendimiento","Seguro","Personalizado"},
         Value="Por defecto",Callback=function(value)
             w:SetMotion(value=="Rendimiento" and "Reduced" or value=="Seguro" and "Off" or "Full")
@@ -39,6 +40,7 @@ return function(UI, options)
     presets:Section({Title="Configuración"})
     presets:Button({Title="Guardar configuración de muestra",Icon="success",Compact=true,Primary=true,
         Callback=function() toast("Configuración guardada","El perfil queda activo durante esta sesión.") end})
+    settings:Section({Title="Configuración",Icon="sliders"})
     settings:Dropdown({Title="Modo de movimiento",Values={"Full","Reduced","Off"},Value="Full",
         Callback=function(value) w:SetMotion(value) end})
     settings:Toggle({Title="Tema claro",Desc="Alterna el tema de toda la ventana.",Value=false,
@@ -50,9 +52,8 @@ return function(UI, options)
         if notifications then toast("Perfil actualizado",value) end
     end})
 
-    controls:Banner({Title="Controles",Subtitle="Elementos interactivos de Neo Sidebar",Height=83})
-    local basics,selection=controls:Columns({Split=.48})
-    basics:Section({Title="Básicos"})
+    local basics,selection=controls:Columns({Split=.48,MinWidth=372})
+    basics:Section({Title="Básicos",Icon="info"})
     basics:Toggle({Title="Activar prueba",Desc="Cambia el estado de este control.",Value=true})
     basics:Toggle({Title="Alternar selección",Value=false})
     local intensity=basics:Slider({Title="Intensidad",Min=0,Max=100,Default=75,Step=1})
@@ -61,7 +62,7 @@ return function(UI, options)
         intensity:Set(75)
         toast("Valores restablecidos","Intensidad: 75")
     end})
-    selection:Section({Title="Entrada y selección"})
+    selection:Section({Title="Entrada y selección",Icon="sliders"})
     selection:Input({Title="Nombre personalizado",Placeholder="Ingresa un nombre..."})
     selection:Dropdown({Title="Modo de interfaz",MultiSelect=true,Values={"Moderno","Compacto","Clásico","Minimalista","Experimental"},
         Value={"Moderno","Compacto"}})
