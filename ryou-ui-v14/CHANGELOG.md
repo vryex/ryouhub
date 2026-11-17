@@ -1,5 +1,13 @@
 # Cambios
 
+## 14.0.0 · Neo Sidebar V6
+
+- Desplegables anclados en una capa interna con apertura hacia arriba cuando falta espacio debajo.
+- Buscador de pestañas y controles en la cabecera, junto a Minimizar.
+- Menos grupos de composición alrededor del texto, bordes de ventana redondeados a píxeles y fondo ajustado a su contenedor con recorte proporcional.
+- Galería adaptable con selección menta, miniaturas de proporción conservada, carga, error y vista previa con Aplicar.
+- Apertura inicial automática desde el launcher cuando se configura `Open = true`.
+
 ## 14.0.0 · Neo Sidebar V5
 
 - Monograma de cabecera aproximadamente 19 % más pequeño. El PNG aprobado conserva su proporción y el placeholder se oculta al asignar el recurso.

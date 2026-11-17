@@ -16,11 +16,44 @@ root:Banner({Title="Inicio",Subtitle="Prueba"})
 local a,b=root:Columns({Split=.53})
 a:Button({Title="Abrir",Compact=true})
 b:Stats({{Value="V14",Text="Versión"}})
+w:Open()
 local selected=root:Dropdown({Title="Perfil",Items={},Values={"Menta","Oscuro"},Multi=true})
+w.panel.AbsolutePosition=Vector2.new(70,40)
+local trigger
+for _, child in ipairs(selected.row:GetChildren()) do
+    if child:IsA("TextButton") then trigger=child end
+end
+root.scroller.AbsolutePosition=Vector2.new(70,80)
+root.scroller.AbsoluteWindowSize=Vector2.new(400,280)
+trigger.AbsolutePosition=Vector2.new(250,315)
+trigger.AbsoluteSize=Vector2.new(140,33)
 selected:Open()
-assert(selected.expanded)
-selected:Close()
+assert(selected.expanded and selected.popupPanel.Parent==w.popupLayer)
+assert(selected.popupPanel.Position.Y.Offset<trigger.AbsolutePosition.Y-w.panel.AbsolutePosition.Y)
+assert(selected.popupPanel.Position.Y.Offset+selected.popupPanel.Size.Y.Offset<=w.panel.Size.Y.Offset)
+w.popupLayer:FindFirstChild("DismissPopup").Activated:Fire()
+assert(not selected.expanded and not w.popup and not w.popupLayer.Visible)
+selected:Open()
+controls:Select()
 assert(not selected.expanded)
+local headerSearch=w.header:FindFirstChild("HeaderSearch")
+headerSearch.Activated:Fire()
+assert(w.popup and w.popup.panel.Name=="SearchPopup")
+local searchPopup=w.popup.panel
+local query, found
+for _, child in ipairs(searchPopup:GetChildren()) do
+    if child:IsA("TextBox") then query=child end
+end
+query.Text="perfil"
+for _, child in ipairs(searchPopup:GetDescendants()) do
+    if child:IsA("TextButton") and child.Text=="Inicio · Perfil" then found=child end
+end
+assert(found)
+found.Activated:Fire()
+assert(w.CurrentTab==root and not w.popup)
+selected:Open()
+selected:Destroy()
+assert(not w.popup and not w.popupLayer.Visible)
 local gallery=root:Gallery({Items={{Id=1,Title="Uno",Art="Avatar"},{Id=2,Title="Dos"}}})
 assert(gallery:Get()==1)
 gallery:Set(2)
