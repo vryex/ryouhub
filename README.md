@@ -1,9 +1,15 @@
 <div align="center">
-  <img src="ryou-ui-v14/assets/ryou-mark.png" width="104" alt="Símbolo Ryou">
+  <img src="ryou-ui-v14/assets/neo-mark.png" width="104" alt="Símbolo Ryou">
   <h1>Ryou UI</h1>
   <p>Biblioteca visual de un archivo para scripts Luau de cliente Roblox.</p>
-  <p><strong>14.0.0</strong> · Rama de revisión · Created by Ryou</p>
+  <p><strong>14.0.0 · Neo Sidebar</strong> · Rama de revisión · Created by Ryou</p>
 </div>
+
+![Master Neo Sidebar · mockup conceptual](ryou-ui-v14/assets/neo-master-mockup.jpg)
+
+*Referencia 01 del paquete Neo Sidebar. Mockup conceptual. Las capturas ejecutadas en Roblox están pendientes.*
+
+[Showcase interactivo](ryou-ui-v14/examples/NeoShowcase.lua) · [Guía visual y recursos](ryou-ui-v14/docs/neo-sidebar.md) · [Matriz de QA](ryou-ui-v14/docs/neo-qa.md)
 
 ## Empieza aquí
 

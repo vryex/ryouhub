@@ -16,13 +16,15 @@ Las llamadas usan `:`. Los nombres `UI`, `w`, `t` y `c` de los ejemplos represen
 
 `UI.Version` identifica la distribución. `UI.Window` es la ventana viva del objeto de biblioteca o `nil`.
 
+Para `Banner`, `Columns`, `Stats`, `Gallery`, `Catalog` y las opciones de Neo Sidebar, consulta la [API de composición](neo-sidebar.md#componentes-nuevos).
+
 ## Opciones de ventana
 
 | Campo | Tipo | Inicial y restricciones |
 | --- | --- | --- |
 | `Title` | string | `"Ryou UI"` |
 | `Subtitle`, `Author` | string | `"Created by Ryou"`. Si se reciben ambos, usa `Subtitle`. |
-| `Size` | Vector2 o UDim2 | 710 × 435 px; para UDim2 usa offsets positivos. |
+| `Size` | Vector2 o UDim2 | 1040 × 615 px; para UDim2 usa offsets positivos. |
 | `Position` | Vector2 | Centro del área segura. El punto representa el centro de la ventana. |
 | `Open` | boolean | `true`; la apertura se difiere hasta después de la creación. |
 | `Theme` | string o tabla | Tema configurado en UI o `Dark`. |
@@ -75,7 +77,7 @@ Los constructores aceptan una tabla. Los campos comunes son `Title`, `Desc` (ali
 | `t:Slider(options?)` | `Min = 0`, `Max = 100`, `Step = 1`, `Value` o `Default = Min`; admite tabla V12 con `Value.Min/Max/Default`. Arrastra el área horizontal. | `t:Slider({Min = 1, Max = 20, Default = 8})` |
 | `t:Input(options?)` | `Value` o `Default = ""`, `Placeholder`, `Live = false`. Usa teclado y foco nativos. | `t:Input({Title = "Nombre", Placeholder = "Escribe"})` |
 | `t:Dropdown(options?)` | `Values = {}`, `Multi` o `MultiSelect = false`, `Value` o `Default = nil` (simple) o `{}` (múltiple). Usa búsqueda y desplazamiento. | `t:Dropdown({Values = {"A", "B"}, Default = "A"})` |
-| `t:Colorpicker(options?)`, `t:ColorPicker(options?)` | `Value` o `Default` Color3; inicia con el acento. Usa gesto horizontal HSV o HEX con teclado. | `t:Colorpicker({Value = Color3.fromHex("84F1C6")})` |
+| `t:Colorpicker(options?)`, `t:ColorPicker(options?)` | `Value` o `Default` Color3; inicia con el acento. Abre una herramienta HSV/HEX con arrastre y confirmación. | `t:Colorpicker({Value = Color3.fromHex("84F1C6")})` |
 | `t:Paragraph(options?)` | Solo lectura visual y sin callback de usuario. | `t:Paragraph({Title = "Estado", Desc = "Listo"})` |
 
 ### Métodos del control

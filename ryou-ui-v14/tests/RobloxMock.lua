@@ -6,7 +6,10 @@ enum = setmetatable({}, {__index=function(t,k)
 end})
 local function numbers(name, parts)
     local mt = { kind = name }
-    mt.__index = mt
+    mt.__index = function(self,key)
+        if key=="Magnitude" and name=="Vector2" then return math.sqrt(self.X*self.X+self.Y*self.Y) end
+        return mt[key]
+    end
     mt.__eq = function(a,b) for _, k in ipairs(parts) do if a[k] ~= b[k] then return false end end; return true end
     local function new(...)
         local fields = {...}
@@ -33,7 +36,29 @@ local Vector2 = { new=v2, zero=v2() }
 local Color3 = { new=col, fromRGB=function(r,g,b) return col(r/255,g/255,b/255) end }
 function Color3.fromHex(s) return Color3.fromRGB(tonumber(s:sub(1,2),16),tonumber(s:sub(3,4),16),tonumber(s:sub(5,6),16)) end
 function colMt:ToHex() return string.format("%02X%02X%02X",math.round(self.R*255),math.round(self.G*255),math.round(self.B*255)) end
-function colMt:ToHSV() return 0,0,math.max(self.R,self.G,self.B) end
+function colMt:ToHSV()
+    local maximum,minimum=math.max(self.R,self.G,self.B),math.min(self.R,self.G,self.B)
+    local span=maximum-minimum
+    if span==0 then return 0,0,maximum end
+    local h
+    if maximum==self.R then h=(self.G-self.B)/span
+    elseif maximum==self.G then h=2+(self.B-self.R)/span
+    else h=4+(self.R-self.G)/span end
+    return (h/6)%1,span/maximum,maximum
+end
+function colMt:Lerp(to,t)
+    return col(self.R+(to.R-self.R)*t,self.G+(to.G-self.G)*t,self.B+(to.B-self.B)*t)
+end
+function Color3.fromHSV(h,s,v)
+    local function channel(n)
+        local k=(n+h*6)%6
+        return v-v*s*math.max(0,math.min(k,4-k,1))
+    end
+    return col(channel(5),channel(3),channel(1))
+end
+local ColorSequence={new=function(...) return {...} end}
+local NumberSequence={new=function(...) return {...} end}
+local ColorSequenceKeypoint={new=function(...) return {...} end}
 local UDim = {new=dim}
 local UDim2 = {
     new=function(a,b,c,d) return dims(dim(a,b),dim(c,d)) end,
@@ -64,10 +89,15 @@ local properties = {
 }
 local guiTypes = {Frame=true,CanvasGroup=true,TextButton=true,TextBox=true,TextLabel=true,ImageLabel=true,ScrollingFrame=true}
 function Instance.new(class)
-    local o = {ClassName=class, _props={Position=UDim2.new(),AbsoluteSize=v2(800,600),AbsolutePosition=v2(),ScrollingEnabled=true},
-        _events={}, _children={} }
+    local o = {ClassName=class, _props={Position=UDim2.new(),AbsoluteSize=v2(800,600),AbsolutePosition=v2(),ScrollingEnabled=true,Text="",CanvasPosition=v2(),AbsoluteCanvasSize=v2(800,600),AbsoluteWindowSize=v2(800,600)},
+        _events={}, _children={}, _attributes={} }
     function o:IsA(name) return name == class or (name == "GuiObject" and guiTypes[class]) end
+    function o:SetAttribute(key,value) self._attributes[key]=value end
+    function o:GetAttribute(key) return self._attributes[key] end
     function o:GetChildren() return table.clone(self._children) end
+    function o:FindFirstChild(name)
+        for _, child in ipairs(self._children) do if child.Name==name then return child end end
+    end
     function o:GetDescendants()
         local out={}
         for _, child in ipairs(self._children) do
@@ -128,3 +158,4 @@ local Enum=enum
 local warn=print
 local Vector3={new=function(...) return {...} end}
 dim2Mt.__add=function(a,b) return dims(a.X+b.X,a.Y+b.Y) end
+dim2Mt.__sub=function(a,b) return dims(a.X-b.X,a.Y-b.Y) end

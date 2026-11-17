@@ -1,13 +1,19 @@
 <div align="center">
-  <img src="assets/ryou-mark.png" width="104" alt="Símbolo Ryou">
+  <img src="assets/neo-mark.png" width="104" alt="Símbolo Ryou">
   <h1>Ryou UI</h1>
   <p>Biblioteca visual en un archivo para scripts Luau de cliente Roblox.</p>
-  <p><strong>14.0.0</strong> · Rama de revisión · Created by Ryou</p>
+  <p><strong>14.0.0 · Neo Sidebar</strong> · Rama de revisión · Created by Ryou</p>
 </div>
+
+![Master Neo Sidebar · mockup conceptual](assets/neo-master-mockup.jpg)
+
+*Referencia 01 del paquete Neo Sidebar. Mockup conceptual. Las capturas ejecutadas en Roblox están pendientes.*
+
+[Showcase interactivo](examples/NeoShowcase.lua) · [Guía visual y recursos](docs/neo-sidebar.md) · [Matriz de QA](docs/neo-qa.md)
 
 [Inicio rápido](docs/getting-started.md) · [English](docs/getting-started.en.md) · [API](docs/api-reference.md) · [Ejemplos](examples/) · [Cambios](CHANGELOG.md)
 
-Ryou UI reúne ventanas, navegación lateral adaptable, controles de formulario y avisos. La paleta usa negro carbón con acento menta. El monograma de seis segmentos se dibuja dentro de Roblox y está disponible como [SVG editable](assets/ryou-mark.svg) y [PNG](assets/ryou-mark.png).
+Ryou UI reúne ventanas, navegación lateral adaptable, controles de formulario y avisos. La paleta usa negro carbón con acento menta. El monograma facetado se dibuja dentro de Roblox y está disponible como [SVG editable](assets/neo-mark.svg) y [PNG](assets/neo-mark.png).
 
 ## Instalación rápida
 

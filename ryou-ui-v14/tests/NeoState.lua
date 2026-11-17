@@ -1,0 +1,74 @@
+-- Fixture de Luau CLI, ejecutada junto al mock y la biblioteca por run-cli.py.
+local w=UI:CreateWindow({Open=false,Motion="Off",Size=Vector2.new(1040,615)})
+local root=w:Tab({Title="Inicio",ShowTitle=false})
+root:Banner({Title="Inicio",Subtitle="Prueba"})
+local a,b=root:Columns({Split=.53})
+a:Button({Title="Abrir",Compact=true})
+b:Stats({{Value="V14",Text="Versión"}})
+local selected=root:Dropdown({Title="Perfil",Items={},Values={"Menta","Oscuro"},Multi=true})
+selected:Open()
+assert(selected.expanded)
+selected:Close()
+assert(not selected.expanded)
+local gallery=root:Gallery({Items={{Id=1,Title="Uno",Art="Avatar"},{Id=2,Title="Dos"}}})
+assert(gallery:Get()==1)
+gallery:Set(2)
+assert(gallery:Get()==2)
+gallery:SetStatus("loading"):SetStatus("error","Sin conexión"):SetStatus("ready")
+gallery:Refresh({{Id=1,Title="Uno"}})
+assert(gallery:Get()==nil)
+local count=0
+local catalog=root:Catalog({Title="Sky",Items={{Id="a",Title="Azul",Art="Swatch"}},Value="a",
+    OnApply=function() count+=1 end})
+local color=root:Colorpicker({Value=Color3.fromHex("FF0000"),Callback=function() count+=1 end})
+local function findButton(text)
+    local modal=w.panel:FindFirstChild("ModalVeil")
+    for _, node in ipairs(modal:GetDescendants()) do
+        if node:IsA("TextButton") and node.Text==text then return node end
+    end
+    error("Missing "..text)
+end
+w:Open()
+catalog:Open()
+assert(w.dismissModal)
+findButton("Vista previa").Activated:Fire()
+assert(findButton("Volver a la lista"))
+findButton("Aplicar").Activated:Fire()
+assert(not w.dismissModal and catalog:Get()=="a" and count==1)
+color:Open()
+assert(w.dismissModal and color:Get():ToHex()=="FF0000")
+findButton("Cancelar").Activated:Fire()
+assert(not w.dismissModal and count==1)
+color:Open()
+for _, node in ipairs(w.panel:GetDescendants()) do
+    if node:IsA("TextBox") and node.PlaceholderText=="#RRGGBB" then
+        node.Text="#00FF00"
+        node.FocusLost:Fire(true)
+    end
+end
+findButton("Aplicar").Activated:Fire()
+assert(color:Get():ToHex()=="00FF00" and count==2 and not w.dismissModal)
+catalog:Open()
+w:Close()
+assert(not w.Opened and not w.dismissModal and w.launcher.Visible)
+w.screen.AbsoluteSize=Vector2.new(530,300)
+assert(w.Compact)
+w.screen.AbsoluteSize=Vector2.new(1300,900)
+assert(not w.Compact)
+local function pointerEvent(x,y,kind)
+    return {Position={X=x,Y=y},UserInputState=Enum.UserInputState.End,
+        UserInputType=kind or Enum.UserInputType.MouseButton1}
+end
+local start=pointerEvent(300,200)
+w.launcher.InputBegan:Fire(start)
+input.InputChanged:Fire(pointerEvent(340,220,Enum.UserInputType.MouseMovement))
+input.InputEnded:Fire(start)
+assert(not w.Opened,"A drag must not open the window")
+w.launcher.InputBegan:Fire(start)
+input.InputEnded:Fire(start)
+assert(w.Opened,"A tap must open the window")
+w:SetTheme("Light")
+assert(w:GetTheme()=="Light")
+w:Destroy()
+assert(not UI.Window and not w.dismissModal and next(w.tweens)==nil)
+print("Neo Sidebar state, HSV, catalogue, resize and launcher: OK")
