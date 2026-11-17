@@ -25,6 +25,7 @@ SOFTWARE.
 local Players = game:GetService("Players")
 local Input = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local TextService = game:GetService("TextService")
 
 local UI = { Version = "14.0.0", Variant = "Neo Sidebar" }
 local Window, Tab, Control = {}, {}, {}
@@ -219,7 +220,6 @@ local PNG_SIGNATURE = "\137PNG\r\n\26\n"
 local AssetRegistry = {
     logo_small = { file = "R_FACETADA_VECTOR_512.png", bytes = 34353 },
     logo_hero = { file = "R_GENERADA_CON_BRILLO_RGBA_1254.png", bytes = 677407 },
-    logo_glow = { file = "R_HALO_SUAVE_RGBA_1024.png", bytes = 98888 },
     launcher = { file = "LAUNCHER_GENERADO_RGBA_1254.png", bytes = 1379512 },
     launcher_fallback = { file = "LAUNCHER_CIRCULAR_VECTOR_512.png", bytes = 91469 },
     header_ribbon = { file = "HEADER_DIAGONAL_RGBA.png", bytes = 63746 },
@@ -365,34 +365,23 @@ end
 local function assetImage(parent, name, props, fallback, alternate, alternateLayout)
     local image = make("ImageLabel", parent, props)
     image.Active = false
-    local function paint()
-        if fallback then fallback.Visible = not image.IsLoaded end
-    end
-    if fallback then image:GetPropertyChangedSignal("IsLoaded"):Connect(paint) end
+    if fallback then image.Visible = false end
 
     local function apply(id)
         if not image.Parent or not id then return end
+        if fallback then fallback.Visible = false end
         image.Image = id
-        paint()
-    end
-    local function useAlternate()
-        if not alternate or not image.Parent then return end
-        ImageAssets:Get(alternate, function(replacement)
-            if not image.Parent or image.IsLoaded or not replacement then return end
-            if alternateLayout then image.Size = alternateLayout end
-            apply(replacement)
-        end)
+        if fallback then image.Visible = true end
     end
     ImageAssets:Get(name, function(id)
         if not image.Parent then return end
-        if not id then
-            useAlternate()
-            return
-        end
-        apply(id)
-        if alternate and not image.IsLoaded then
-            task.delay(4, function()
-                if image.Parent and not image.IsLoaded then useAlternate() end
+        if id then
+            apply(id)
+        elseif alternate then
+            ImageAssets:Get(alternate, function(replacement)
+                if not image.Parent or not replacement then return end
+                if alternateLayout then image.Size = alternateLayout end
+                apply(replacement)
             end)
         end
     end)
@@ -406,7 +395,7 @@ end
 local function mark(w, parent, size, position, large)
     local node = make("Frame", parent, { Name = "RyouMark", Size = px(size, size), Position = position })
     local fallback = label(w, node, "R", math.floor(size*.61), true, "Accent", {
-        Size = full, TextXAlignment = Enum.TextXAlignment.Center,
+        Name = "LogoFallback", Size = full, TextXAlignment = Enum.TextXAlignment.Center,
     })
     assetImage(node, large and "logo_hero" or "logo_small", {
         Name = "Logo", AnchorPoint = Vector2.new(.5,.5), Position = UDim2.fromScale(.51,.46),
@@ -454,7 +443,12 @@ local function action(w, owner, parent, text, props, primary)
     corner(b, w.radius)
     w:_bind(b, "TextColor3", primary and "Ink" or "Text")
     w:_bind(b, "BackgroundColor3", primary and "Accent" or "Field")
-    if primary then gradient(b, rgb(255,255,255), rgb(184,228,210), 90) end
+    if primary then
+        gradient(b, rgb(255,255,255), rgb(174,223,204), 90)
+        local rim = edge(w,b)
+        w:_bind(rim,"Color","LightMint")
+        rim.Transparency = .73
+    end
     local scale = make("UIScale", b, {})
     local function rest()
         w:_animate(scale, .14, { Scale = 1 })
@@ -564,9 +558,19 @@ function Window:_fit()
     self.frame.Position = px(center.X, center.Y)
     local compact = width < 560
     self.Compact = compact
-    local railWidth = compact and 56 or math.clamp(math.floor(width*.185), 121, 200)
-    local headerHeight = height < 415 and 58 or 74
+    local railWidth = 53
+    if not compact then
+        local widest = 0
+        for _, tab in ipairs(self.Tabs) do
+            widest = math.max(widest, tab.labelWidths[14])
+        end
+        local maxRail = math.min(222, math.floor(width*.25))
+        railWidth = math.min(maxRail, math.max(122, math.floor(width*.185), math.ceil(widest+58)))
+    end
+    local headerHeight = height < 415 and 55 or 70
     self.header.Size = UDim2.new(1, 0, 0, headerHeight)
+    self.headerRibbon.Size = px(headerHeight*(1536/220),headerHeight)
+    self.headerRibbon.Position = UDim2.new(math.clamp(.26-width/6000,.11,.17),48,0,0)
     self.content.Position = px(0, headerHeight)
     self.content.Size = UDim2.new(1, 0, 1, -headerHeight)
     self.utilities.Visible = width >= 660
@@ -577,10 +581,26 @@ function Window:_fit()
     self.body.Size = UDim2.new(1, -railWidth-1, 1, 0)
     self:_fitLauncher()
     for _, tab in ipairs(self.Tabs) do
+        local textWidth = math.max(1, railWidth-58)
+        local textSize = 14
+        while textSize > 12 and tab.labelWidths[textSize] > textWidth do textSize -= 1 end
+        local rowHeight = height < 415 and 37 or 40
+        if not compact and tab.labelWidths[textSize] > textWidth then
+            local wrapped = TextService:GetTextSize(tab.Title,textSize,self.boldFont,Vector2.new(textWidth,10000))
+            rowHeight = math.max(rowHeight, wrapped.Y+10)
+        end
+        tab.slot.Size = UDim2.new(1,0,0,rowHeight)
+        tab.titleLabel.TextSize = textSize
         tab.titleLabel.Visible = not compact
-        tab.glyph.Position = compact and UDim2.new(.5, -9, .5, -9) or UDim2.new(0, 12, .5, -9)
+        tab.glyph.Position = compact and UDim2.new(.5,-9,.5,-9) or UDim2.new(0,9,.5,-9)
     end
-    for _, group in ipairs(self.groups) do group.label.Visible = not compact end
+    for _, group in ipairs(self.groups) do
+        group.ElementFrame.Visible = not compact and group.expanded
+        if not compact then
+            local wrapped = TextService:GetTextSize(group.Title,12,self.boldFont,Vector2.new(railWidth-35,10000))
+            group.ElementFrame.Size = UDim2.new(1,0,0,math.max(19,wrapped.Y+5))
+        end
+    end
 end
 
 function Window:_fitLauncher()
@@ -593,8 +613,14 @@ function Window:_fitLauncher()
     local size = self.frame.Size
     local outside = math.abs(x-center.X.Offset) >= size.X.Offset/2+36
         or math.abs(y-center.Y.Offset) >= size.Y.Offset/2+36
-    self.launcher.Visible = self.launcherEnabled and (not self.Opened or outside or self.draggingLauncher == true)
-    self.launcher.Active = self.launcher.Visible
+    local visible = self.launcherEnabled and (not self.Opened or outside or self.draggingLauncher == true)
+    local appearing = visible and not self.launcher.Visible
+    self.launcher.Visible, self.launcher.Active = visible, visible
+    if appearing and not self.draggingLauncher then
+        self:_cancel(self.launchScale)
+        self.launchScale.Scale = self.motion == "Full" and .87 or .96
+        self:_animate(self.launchScale,.21,{Scale=1})
+    end
 end
 
 function Window:_resetEntrance()
@@ -644,7 +670,7 @@ function Window:Open()
         end
         self.sweep.Visible = self.ThemeName ~= "Light"
         self.sweep.BackgroundTransparency = .32
-        self.sweep.Position = UDim2.new(.21, -33, .65, 0)
+        self.sweep.Position = UDim2.new(.33, -5, .62, 0)
         self:_animate(self.sweep, .42, { Position = UDim2.new(.56, 0, .65, 0), BackgroundTransparency = 1 }, .17,
             function() self.sweep.Visible = false end)
     end
@@ -659,12 +685,10 @@ function Window:Close()
     self.Opened = false
     if self.dismissModal then self.dismissModal() end
     self:_endGesture(false)
-    self:_animate(self.launchScale, .12, { Scale = 1 })
     self:_resetEntrance()
     local focused = Input:GetFocusedTextBox()
     if focused and focused:IsDescendantOf(self.panel) then focused:ReleaseFocus(false) end
-    self.launcher.Visible = self.launcherEnabled
-    self.launcher.Active = self.launcherEnabled
+    self:_fitLauncher()
     self:_animate(self.panel, .17, { GroupTransparency = 1, Position = px(0, 8) }, 0, function()
         if not self.Opened then self.panel.Visible = false; self.shadow.Visible = false end
     end)
@@ -798,7 +822,7 @@ function UI:CreateWindow(options)
     local w = setmetatable({
         library = self, owner = scope(), theme = DARK, motion = o.Motion or "Full",
         radius = math.clamp(tonumber(o.Radius) or 8, 4, 16),
-        gap = math.clamp(tonumber(o.Spacing) or 9, 4, 16),
+        gap = math.clamp(tonumber(o.Spacing) or 7, 4, 16),
         font = o.Font or Enum.Font.Gotham, boldFont = o.BoldFont or Enum.Font.GothamBold,
         desired = sizeInPixels(o.Size or Vector2.new(1040, 615)), position = o.Position,
         key = o.ToggleKey or KEYBOARD, launcherEnabled = o.Launcher ~= false,
@@ -821,7 +845,7 @@ function UI:CreateWindow(options)
     for i=1,4 do
         local layer = make("Frame", w.shadow, {
             Position=px(i*2,i*2), Size=UDim2.new(1,-i*4,1,-i*4),
-            BackgroundColor3=rgb(0,0,0), BackgroundTransparency=.90-i*.025,
+            BackgroundColor3=rgb(0,0,0), BackgroundTransparency=.94-i*.032,
         })
         corner(layer, 24-i)
     end
@@ -831,14 +855,19 @@ function UI:CreateWindow(options)
     w.panel.BackgroundTransparency = .035
     corner(w.panel, 22)
     local outline = edge(w, w.panel)
-    gradient(outline, rgb(218,255,245), rgb(119,200,175), 75)
+    outline.Transparency = .18
+    gradient(outline, rgb(150,188,180), rgb(91,255,193), 75)
 
     local header = surface(w, w.panel, "Rail", { Size = UDim2.new(1, 0, 0, 74), Active = true, ClipsDescendants = true })
     w.header = header
-    artworkLayer(w, header, "header_ribbon", UDim2.fromScale(.06,0), UDim2.fromScale(.82,1), Enum.ScaleType.Stretch)
+    w.headerRibbon = artworkLayer(w,header,"header_ribbon",UDim2.new(),px(488,70),Enum.ScaleType.Fit,.19)
     local rule = surface(w, header, "Edge", { Position = UDim2.new(0, 16, 1, -1), Size = UDim2.new(1, -32, 0, 1) })
     rule.Name = "HeaderRule"
-    w.sweep = surface(w, header, "Accent", { Size = px(65, 2), Rotation = -26, Visible = false }, 2)
+    w.sweep = make("Frame",header,{Size=px(65,8),Rotation=-26,Visible=false})
+    w:_bind(w.sweep,"BackgroundColor3","Accent")
+    make("UIGradient",w.sweep,{Rotation=90,Transparency=NumberSequence.new({
+        NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(.5,.66),NumberSequenceKeypoint.new(1,1),
+    })})
     w.brand = make("CanvasGroup", header, { Size = px(60, 55), Position = UDim2.new(0, 22, .5, -27) })
     w.brandScale = make("UIScale", w.brand, {})
     mark(w, w.brand, 62, px(-3, -4), false)
@@ -883,10 +912,10 @@ function UI:CreateWindow(options)
     w:_bind(w.rail, "BackgroundColor3", "Rail")
     artworkLayer(w, w.rail, "rail_glow", UDim2.fromScale(0,.18), UDim2.fromScale(1,.82), Enum.ScaleType.Stretch)
     w.nav = scroll(w, w.rail, { Size = full })
-    pad(w.nav, 11, 15)
-    stack(w.nav, 5)
+    pad(w.nav, 6, 9)
+    stack(w.nav, 4)
     w.body = make("Frame", content, {ClipsDescendants=true})
-    artworkLayer(w, w.body, "background_artwork", UDim2.new(), full, Enum.ScaleType.Crop, .94)
+    artworkLayer(w, w.body, "background_artwork", UDim2.new(), full, Enum.ScaleType.Crop, .84)
     w.pages = make("CanvasGroup", w.body, { Size = full })
     local divider = surface(w, w.body, "Edge", { Position = px(0, 0), Size = UDim2.new(0, 1, 1, 0), BackgroundTransparency=.5 })
     divider.Name = "RailRule"
@@ -919,7 +948,7 @@ function UI:CreateWindow(options)
         w:SetOpenButtonGhosted(o.OpenButton.Ghosted)
     end
     listen(w.owner, w.launcher.MouseEnter, function()
-        if not w.gesture then w:_animate(w.launchScale,.14,{Scale=1.04}) end
+        if not w.gesture then w:_animate(w.launchScale,.19,{Scale=1.045}) end
     end)
     listen(w.owner, w.launcher.MouseLeave, function()
         if not w.gesture then w:_animate(w.launchScale,.14,{Scale=1}) end
@@ -936,12 +965,12 @@ function UI:CreateWindow(options)
     local launchStart
     w:_gesture(w.owner, w.launcher, function(point, gesture)
         if not gesture.moved and (point - gesture.origin).Magnitude < 9 then return end
+        if not gesture.moved then w:_animate(w.launchScale,.12,{Scale=1.035}) end
         gesture.moved = true
         w.draggingLauncher = true
         w.launcherPosition = launchStart + point - gesture.origin
         w:_fitLauncher()
     end, function(gesture)
-        w:_animate(w.launchScale, .15, { Scale = 1 })
         if gesture.moved then
             w:_fitLauncher()
         elseif gesture.event.UserInputState ~= Enum.UserInputState.Cancel then
@@ -949,9 +978,13 @@ function UI:CreateWindow(options)
         end
     end, function()
         if not w.launcherEnabled then return false end
-        w.gesture.restore = function() w.draggingLauncher = false; w:_fitLauncher() end
+        w.gesture.restore = function()
+            w.draggingLauncher = false
+            w:_fitLauncher()
+            w:_animate(w.launchScale,.17,{Scale=1})
+        end
         launchStart = Vector2.new(w.launcher.Position.X.Offset, w.launcher.Position.Y.Offset)
-        w:_animate(w.launchScale, .09, { Scale = .97 })
+        w:_animate(w.launchScale, .09, { Scale = .93 })
         return true
     end)
 
@@ -1065,7 +1098,11 @@ function Window:Tab(options)
     local name = copyText(o.Title or o.Name, "Pestaña")
     local t = setmetatable({ Window = self, Title = name, Id = o.Id or name, Elements = {} }, Tab)
     self.navOrder = (self.navOrder or 0) + 1
-    local slot = make("Frame", self.nav, { Size = UDim2.new(1, 0, 0, 44), LayoutOrder = self.navOrder })
+    local slot = make("Frame", self.nav, { Size = UDim2.new(1, 0, 0, 40), LayoutOrder = self.navOrder })
+    t.slot, t.labelWidths = slot, {}
+    for size=12,14 do
+        t.labelWidths[size] = TextService:GetTextSize(name,size,self.boldFont,Vector2.new(10000,10000)).X
+    end
     local shell = make("CanvasGroup", slot, { Size = full })
     t.shell = shell
     self.entrance[shell] = shell.Position
@@ -1076,21 +1113,21 @@ function Window:Tab(options)
     edge(self,t.activeFill).Transparency = .48
     gradient(t.activeFill,rgb(155,192,181),rgb(255,255,255),22)
     local spill = surface(self,t.activeFill,"Accent",{
-        Position=UDim2.fromScale(.15,0),Size=UDim2.fromScale(.85,1),BackgroundTransparency=.55,
+        Position=UDim2.fromScale(.05,0),Size=UDim2.fromScale(.95,1),BackgroundTransparency=.65,
     },8)
     make("UIGradient",spill,{
         Transparency=NumberSequence.new({
-            NumberSequenceKeypoint.new(0,1), NumberSequenceKeypoint.new(.65,.85), NumberSequenceKeypoint.new(1,.12),
+            NumberSequenceKeypoint.new(0,1), NumberSequenceKeypoint.new(.58,.76), NumberSequenceKeypoint.new(1,.18),
         }),
     })
     t.glyph = icon(self, hit, o.Icon or "grid", 18, "Muted", UDim2.new(0, 12, .5, -9))
     t.marker = surface(self, hit, "Accent", { AnchorPoint = Vector2.new(0, .5),
         Position = UDim2.new(0, 1, .5, 0), Size = px(3, 23), Visible = false }, 2)
-    t.titleLabel = label(self, hit, name, 14, true, "Muted", { Position = px(39, 0),
-        Size = UDim2.new(1, -45, 1, 0), TextTruncate = Enum.TextTruncate.AtEnd })
+    t.titleLabel = label(self, hit, name, 14, true, "Muted", { Position = px(32, 0),
+        Size = UDim2.new(1, -41, 1, 0), TextWrapped = true })
     t.page = make("CanvasGroup", self.pages, { Size = full, Visible = false })
     t.scroller = scroll(self, t.page, { Size = full })
-    pad(t.scroller, 14, 11)
+    pad(t.scroller, 10, 8)
     stack(t.scroller, self.gap)
     if o.ShowTitle ~= false then
         label(self, t.scroller, name, 19, true, nil, { Size = UDim2.new(1, 0, 0, 25), LayoutOrder = -1 })
@@ -1113,12 +1150,13 @@ function Window:Section(options)
     local stripe = make("Frame", self.nav, { Size = UDim2.new(1, 0, 0, 21), LayoutOrder = self.navOrder })
     local title = label(self, stripe, copyText(o.Title or o.Name), 12, true, "Muted",
         { Position = px(8, 0), Size = UDim2.new(1, -12, 1, 0), Visible = not self.Compact,
-            TextTruncate = Enum.TextTruncate.AtEnd })
-    local group = { label = title, window = self, Title = title.Text, ElementFrame = stripe }
+            TextWrapped = true })
+    local group = { label = title, window = self, Title = title.Text, ElementFrame = stripe, expanded = true }
     function group:Tab(config) return self.window:Tab(config) end
-    function group:Open() stripe.Visible = true; return self end
-    function group:Close() stripe.Visible = false; return self end
+    function group:Open() self.expanded = true; stripe.Visible = not self.window.Compact; return self end
+    function group:Close() self.expanded = false; stripe.Visible = false; return self end
     table.insert(self.groups, group)
+    self:_fit()
     return group
 end
 Window.Group = Window.Section
@@ -1130,7 +1168,7 @@ function Tab:Section(options)
     local o = type(options) == "string" and { Title = options } or options or {}
     local w = self.Window
     self.order = (self.order or 0) + 1
-    local row = make("Frame", self.scroller, { Size = UDim2.new(1, 0, 0, 26), LayoutOrder = self.order })
+    local row = make("Frame", self.scroller, { Size = UDim2.new(1, 0, 0, 19), LayoutOrder = self.order })
     label(w, row, copyText(o.Title or o.Name), 12, true, "Muted", { TextTruncate = Enum.TextTruncate.AtEnd })
     surface(w, row, "Edge", { Position = UDim2.new(0, 0, 1, -1), Size = UDim2.new(1, 0, 0, 1) })
     return self
@@ -1144,7 +1182,7 @@ end
 
 function Tab:Banner(options)
     local o, w = options or {}, self.Window
-    local preferredHeight = math.clamp(o.Height or 153, 74, 200)
+    local preferredHeight = math.clamp(o.Height or 138, 74, 200)
     local large = preferredHeight >= 120
     local banner = insertBlock(self, "Frame", {Size=UDim2.new(1,-3,0,preferredHeight), ClipsDescendants=true})
     banner.BackgroundTransparency=0
@@ -1152,33 +1190,39 @@ function Tab:Banner(options)
     corner(banner,12)
     edge(w,banner).Transparency=.28
     gradient(banner,rgb(179,205,199),rgb(255,255,255),15)
-    artworkLayer(w,banner,"hero_orbits",UDim2.fromScale(.07,0),UDim2.fromScale(.93,1),Enum.ScaleType.Stretch)
+    artworkLayer(w,banner,"background_artwork",UDim2.new(),full,Enum.ScaleType.Crop,.86)
+    local orbits = artworkLayer(w,banner,"hero_orbits",UDim2.new(1,0,0,0),full,Enum.ScaleType.Fit,.13)
+    orbits.AnchorPoint = Vector2.new(1,0)
     local device = make("Frame", banner, {
         AnchorPoint=Vector2.new(.5,.5), Size=px(220,210),
     })
     local scale = make("UIScale",device,{})
-    artworkLayer(w,device,"logo_glow",px(8,0),px(201,210),Enum.ScaleType.Fit,.16)
     mark(w,device,179,px(20,15),true)
     local title = label(w,banner,copyText(o.Title,"Ryou UI"),large and 34 or 21,true,"Text",{
-        Position=UDim2.new(0,18,.5,large and -40 or -28),Size=UDim2.new(1,-200,0,large and 41 or 29),
         RichText=true,TextTruncate=Enum.TextTruncate.AtEnd})
-    local subtitle = label(w,banner,copyText(o.Subtitle),large and 17 or 13,false,"Muted",{
-        Position=UDim2.new(0,19,.5,large and 3 or 2),Size=UDim2.new(1,-200,0,22),
+    local subtitle = label(w,banner,copyText(o.Subtitle),large and 16 or 13,false,"Muted",{
         TextTruncate=Enum.TextTruncate.AtEnd})
-    surface(w,banner,"Accent",{Position=UDim2.new(0,19,.5,large and 34 or 23),Size=px(37,3)},2)
+    local underline = surface(w,banner,"Accent",{Size=px(29,2)},2)
     local function fit()
         local width = banner.AbsoluteSize.X
         local short = w.frame.Size.Y.Offset > 0 and w.frame.Size.Y.Offset < 415
-        local height = short and math.min(preferredHeight,105) or preferredHeight
+        local height = short and math.min(preferredHeight,large and 96 or 74) or preferredHeight
         if banner.Size.Y.Offset ~= height then banner.Size = UDim2.new(1,-3,0,height) end
+        orbits.Size = px(height*(1536/550),height)
         local narrow = width < 485
-        device.Visible = width >= 305
-        scale.Scale = math.min(height/145, narrow and .69 or 1.08)
-        device.Position = UDim2.new(1,narrow and -73 or (large and -137 or -92),.50,0)
-        local reserve = width < 305 and 27 or (narrow and 146 or (large and 245 or 170))
-        title.Size = UDim2.new(1,-reserve,0,large and 41 or 29)
-        title.TextSize = large and ((narrow or short) and 27 or 36) or 21
-        subtitle.Size = UDim2.new(1,-reserve,0,22)
+        device.Visible = width >= 275
+        local logoScale = math.min(height/145,narrow and .70 or 1.06)
+        scale.Scale = logoScale
+        device.Position = UDim2.new(1,-math.floor(112*logoScale),.54,0)
+        local inset = short and 13 or 17
+        local reserve = device.Visible and math.ceil(195*logoScale)+inset or inset*2
+        title.TextSize = large and ((narrow or short) and 27 or 34) or 21
+        subtitle.TextSize = large and not short and 16 or 13
+        local top = math.max(6,math.floor((height-title.TextSize-subtitle.TextSize-12)/2))
+        title.Position, title.Size = px(inset,top),UDim2.new(1,-reserve,0,title.TextSize+4)
+        subtitle.Position = px(inset,top+title.TextSize+5)
+        subtitle.Size = UDim2.new(1,-reserve,0,subtitle.TextSize+4)
+        underline.Position = px(inset,top+title.TextSize+subtitle.TextSize+12)
     end
     listen(w.owner,banner:GetPropertyChangedSignal("AbsoluteSize"),fit)
     listen(w.owner,w.frame:GetPropertyChangedSignal("Size"),fit)
@@ -1190,7 +1234,7 @@ function Tab:Columns(options)
     local o, w = options or {}, self.Window
     local count = math.clamp(math.floor(o.Count or 2), 2, 3)
     local wrapper = insertBlock(self, "Frame", { Size=UDim2.new(1,-3,0,0), AutomaticSize=VERTICAL })
-    local layout = stack(wrapper,8)
+    local layout = stack(wrapper,7)
     local columns = {}
     for index=1,count do
         local holder = make("Frame",wrapper,{LayoutOrder=index,Size=UDim2.new(1,0,0,0),AutomaticSize=VERTICAL})
@@ -1200,10 +1244,10 @@ function Tab:Columns(options)
             corner(holder,12)
             edge(w,holder).Transparency=.35
             gradient(holder,rgb(255,255,255),rgb(156,176,169),95)
-            pad(holder,10,9)
+            pad(holder,8,6)
         end
-        stack(holder,7)
-        columns[index] = setmetatable({Window=w,scroller=holder,Elements=self.Elements,scrollHost=self.scrollHost or self.scroller},Tab)
+        stack(holder,5)
+        columns[index] = setmetatable({Window=w,scroller=holder,Elements=self.Elements,scrollHost=self.scrollHost or self.scroller,cardColumn=o.Cards ~= false},Tab)
     end
     local function fit()
         local compact = wrapper.AbsoluteSize.X < (o.MinWidth or (count == 3 and 570 or 455))
@@ -1211,7 +1255,7 @@ function Tab:Columns(options)
         for index, column in ipairs(columns) do
             local ratio = count == 2 and math.clamp(o.Split or .53,.32,.68) or 1/count
             if count == 2 and index == 2 then ratio = 1-ratio end
-            column.scroller.Size = UDim2.new(compact and 1 or ratio,compact and 0 or -math.ceil(8*(count-1)/count),0,0)
+            column.scroller.Size = UDim2.new(compact and 1 or ratio,compact and 0 or -math.ceil(7*(count-1)/count),0,0)
         end
     end
     listen(w.owner,wrapper:GetPropertyChangedSignal("AbsoluteSize"),fit)
@@ -1224,18 +1268,32 @@ function Tab:Stats(options)
     local values = options or {}
     if #values == 0 then return nil end
     local count = math.min(#values,3)
-    local row = insertBlock(self,"Frame",{Size=UDim2.new(1,-3,0,48)})
-    local layout = stack(row,5)
-    layout.FillDirection = Enum.FillDirection.Horizontal
+    local row = insertBlock(self,"Frame",{Size=UDim2.new(1,0,0,41)})
+    stack(row,4).FillDirection = Enum.FillDirection.Horizontal
+    local cells = {}
     for index=1,count do
         local value = values[index]
-        local cell = surface(w,row,"Field",{Size=UDim2.new(1/count,-4,1,0),LayoutOrder=index},8)
-        icon(w,cell,value.Icon or "activity",14,"Accent",UDim2.new(0,6,.5,-7))
-        label(w,cell,copyText(value.Value),12,true,"Text",{Position=px(23,5),Size=UDim2.new(1,-26,0,18),
-            TextTruncate=Enum.TextTruncate.AtEnd})
-        label(w,cell,copyText(value.Text),10,false,"Muted",{Position=px(23,24),Size=UDim2.new(1,-26,0,16),
-            TextTruncate=Enum.TextTruncate.AtEnd})
+        local cell = surface(w,row,"Field",{Size=UDim2.new(1/count,-math.ceil(4*(count-1)/count),1,0),LayoutOrder=index},8)
+        local glyph = icon(w,cell,value.Icon or "activity",14,"Accent",UDim2.new(0,6,.5,-7))
+        local caption = label(w,cell,copyText(value.Value),12,true,"Text",{TextTruncate=Enum.TextTruncate.AtEnd})
+        local detail = label(w,cell,copyText(value.Text),10,false,"Muted",{TextTruncate=Enum.TextTruncate.AtEnd})
+        cells[index] = { glyph, caption, detail }
     end
+    local function fit()
+        local narrow = row.AbsoluteSize.X/count < 77
+        for _, cell in ipairs(cells) do
+            local glyph, caption, detail = table.unpack(cell)
+            glyph.Visible = not narrow
+            local inset = narrow and 2 or 24
+            local align = narrow and Enum.TextXAlignment.Center or LEFT
+            caption.Position, detail.Position = px(inset,4),px(inset,21)
+            caption.Size, detail.Size = UDim2.new(1,-inset-3,0,17),UDim2.new(1,-inset-3,0,14)
+            caption.TextXAlignment,detail.TextXAlignment = align,align
+            caption.TextSize = narrow and 11 or 12
+        end
+    end
+    listen(w.owner,row:GetPropertyChangedSignal("AbsoluteSize"),fit)
+    fit()
     return row
 end
 
@@ -1253,19 +1311,19 @@ local function control(tab, options, bare)
         local outline = edge(w,row)
         outline.Transparency = .42
     end
-    pad(row, bare and 0 or 10, bare and 2 or 8)
-    stack(row, 5)
+    pad(row, bare and 0 or 8, bare and 1 or 6)
+    stack(row, 4)
     local head = make("Frame", row, { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = VERTICAL, LayoutOrder = 0 })
     local iconSize = math.clamp(tonumber(o.IconSize) or 17, 12, 24)
     local inset = o.Icon and iconSize + 8 or 0
     if o.Icon then icon(w, head, o.Icon, iconSize, "Muted", px(0, 2)) end
     c.head = head
     c.copy = make("Frame", head, { Position = px(inset, 0), Size = UDim2.new(1, -inset, 0, 0), AutomaticSize = VERTICAL })
-    stack(c.copy, 1)
+    stack(c.copy, 0)
     c.title = label(w, c.copy, copyText(o.Title or o.Name), 14, true, nil,
         { LayoutOrder = 0, TextWrapped = true, AutomaticSize = VERTICAL, Size = UDim2.new(1, 0, 0, 0) })
     c.title.Visible = c.title.Text ~= ""
-    c.desc = label(w, c.copy, copyText(o.Desc or o.Description or o.Content), 13, false, "Muted",
+    c.desc = label(w, c.copy, copyText(o.Desc or o.Description or o.Content), 12, false, "Muted",
         { LayoutOrder = 1, TextWrapped = true, AutomaticSize = VERTICAL, Size = UDim2.new(1, 0, 0, 0) })
     c.desc.Visible = c.desc.Text ~= ""
     c.Title, c.Desc = c.title.Text, c.desc.Text
@@ -1333,17 +1391,17 @@ function Tab:Paragraph(options)
 end
 function Tab:Button(options)
     local o = options or {}
-    local c = control(self, o, o.Compact)
+    local c = control(self, o, o.Compact or self.cardColumn)
     local w = self.Window
     if o.Compact then c.head.Visible=false end
     local hit = action(w, c.owner, c.row, copyText(o.Action, o.Compact and c.Title or "Abrir"),
-        { Size = UDim2.new(1, 0, 0, 44), LayoutOrder = 1 }, o.Primary == true)
+        { Size = UDim2.new(1,0,0,o.Compact and 35 or 37), LayoutOrder = 1 }, o.Primary == true)
     if o.Compact then
-        edge(w,hit).Transparency=.35
+        if not o.Primary then edge(w,hit).Transparency=.35 end
         hit.TextTruncate=Enum.TextTruncate.AtEnd
         hit.TextXAlignment=LEFT
-        pad(hit,o.Icon and 35 or 10,0)
-        if o.Icon then icon(w,hit,o.Icon,16,o.Primary and "Ink" or "Accent",UDim2.new(0,-25,.5,-8)) end
+        pad(hit,o.Icon and 28 or 9,0)
+        if o.Icon then icon(w,hit,o.Icon,16,o.Primary and "Ink" or "Accent",UDim2.new(0,-21,.5,-8)) end
     else
         icon(w, hit, "arrow", 17, o.Primary and "Ink" or "Muted", UDim2.new(1, -27, .5, -8))
     end
@@ -1628,7 +1686,7 @@ local function dialog(w, owner, title, subtitle, width, height, alignToContent)
     edge(w,card)
     local scope = childScope(owner)
     local header = surface(w,card,"Rail",{ClipsDescendants=true})
-    artworkLayer(w,header,"header_ribbon",UDim2.fromScale(.18,0),UDim2.fromScale(.82,1),Enum.ScaleType.Stretch)
+    artworkLayer(w,header,"header_ribbon",UDim2.new(.25,20,0,0),px(321,46),Enum.ScaleType.Fit,.24)
     mark(w,header,43,UDim2.new(0,8,.5,-22),false)
     label(w,header,title,17,true,"Text",{Position=px(53,6),Size=UDim2.new(1,-102,0,23),
         TextTruncate=Enum.TextTruncate.AtEnd})
@@ -1852,22 +1910,31 @@ local function itemWithId(items,id)
     return nil
 end
 
-local function artwork(w, parent, item, pos, size)
+local function avatarImage(value)
+    return type(value)=="string" and (value:match("^rbxassetid://%d+$")
+        or value:match("^rbxthumb://.+") or value:match("^rbxasset://.+"))
+end
+
+local function artwork(w, parent, item, pos, size, isPreview)
     local frame = surface(w,parent,"Field",{Position=pos,Size=size,ClipsDescendants=true},8)
     if not item then return frame end
-    local thumbnail=item.Thumbnail
-    if type(thumbnail)=="string" and (thumbnail:match("^rbxassetid://%d+$") or thumbnail:match("^rbxthumb://")) then
-        make("ImageLabel",frame,{Size=full,Image=thumbnail,ScaleType=Enum.ScaleType.Fit})
+    local thumbnail = isPreview and avatarImage(item.Preview) and item.Preview or item.Thumbnail
+    if avatarImage(thumbnail) then
+        make("ImageLabel",frame,{Name="AvatarImage",Size=full,Image=thumbnail,ScaleType=Enum.ScaleType.Fit})
         return frame
     end
     local tone = typeof(item.Tint)=="Color3" and item.Tint or rgb(70,210,161)
     if item.Art=="Avatar" then
+        local portrait = make("Frame",frame,{
+            AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),Size=full,
+        })
+        make("UIAspectRatioConstraint",portrait,{AspectRatio=1,AspectType=Enum.AspectType.FitWithinMaxSize})
         local avatar = {
             {.39,.12,.22,.23, false}, {.32,.36,.36,.30,true}, {.20,.37,.11,.29,true}, {.69,.37,.11,.29,true},
             {.34,.67,.15,.25,true}, {.51,.67,.15,.25,true},
         }
         for _, part in ipairs(avatar) do
-            local block=make("Frame",frame,{Position=UDim2.fromScale(part[1],part[2]),Size=UDim2.fromScale(part[3],part[4]),
+            local block=make("Frame",portrait,{Position=UDim2.fromScale(part[1],part[2]),Size=UDim2.fromScale(part[3],part[4]),
                 BackgroundColor3=part[5] and tone or rgb(212,221,218),BackgroundTransparency=0})
             corner(block,3)
             gradient(block,rgb(255,255,255),rgb(104,138,137))
@@ -1911,25 +1978,28 @@ function Tab:Gallery(options)
     local o,w=options or {},self.Window
     local c=control(self,o)
     c.Items=normalizeItems(o.Items)
-    local pane=make("Frame",c.row,{LayoutOrder=1,Size=UDim2.new(1,0,0,298)})
+    local pane=make("Frame",c.row,{Name="OutfitPane",LayoutOrder=1,Size=UDim2.new(1,0,0,245)})
     local scrollHost=self.scrollHost or self.scroller
     local search=textBox(w,c.owner,pane,"Buscar por nombre o ID…",{Size=UDim2.new(.64,-6,0,38)})
-    local grid=scroll(w,pane,{Position=px(0,46),Size=UDim2.new(.64,-6,1,-46)})
-    local tiles=make("UIGridLayout",grid,{CellPadding=UDim2.fromOffset(5,5),SortOrder=Enum.SortOrder.LayoutOrder})
+    local grid=scroll(w,pane,{Name="OutfitGrid"})
+    local tiles=make("UIGridLayout",grid,{CellPadding=px(5,5),SortOrder=Enum.SortOrder.LayoutOrder})
     local empty=label(w,pane,"Sin resultados",13,true,"Muted",{Position=px(3,53),Size=UDim2.new(.62,0,0,30),Visible=false})
-    local preview=surface(w,pane,"Field",{Position=UDim2.fromScale(.64,0),Size=UDim2.fromScale(.36,1)},10)
+    local preview=surface(w,pane,"Field",{Name="OutfitPreview",Position=UDim2.fromScale(.64,0),Size=UDim2.fromScale(.36,1)},10)
     edge(w,preview)
     local previewTitle=label(w,preview,"Vista previa",13,true,"Text",{Position=px(8,3),Size=UDim2.new(1,-16,0,18)})
-    local previewName=label(w,preview,"",12,false,"Muted",{Position=px(8,22),Size=UDim2.new(1,-16,0,19),
+    local previewName=label(w,preview,"",12,false,"Muted",{Position=px(8,19),Size=UDim2.new(1,-16,0,16),
         TextTruncate=Enum.TextTruncate.AtEnd})
-    local apply=action(w,c.owner,preview,"Aplicar",{Position=UDim2.new(0,7,1,-48),Size=UDim2.new(1,-14,0,41)},true)
+    local apply=action(w,c.owner,preview,"Aplicar",{Position=UDim2.new(0,7,1,-40),Size=UDim2.new(1,-14,0,34)},true)
     c.targets[search],c.targets[apply]=true,true
-    local sketch, rowOwner
+    local sketch, shownItem, rowOwner
     local rows={}
     function c.paint()
         local current=itemWithId(c.Items,c.Value)
-        if sketch then sketch:Destroy() end
-        sketch=artwork(w,preview,current,px(7,44),UDim2.new(1,-14,1,-99))
+        if not sketch or shownItem~=current then
+            if sketch then sketch:Destroy() end
+            sketch=artwork(w,preview,current,px(7,36),UDim2.new(1,-14,1,-80),true)
+            shownItem=current
+        end
         previewName.Text=current and copyText(current.Title,tostring(current.Id)) or "Sin selección"
         apply.Active=current~=nil and not c.Locked and not c.statusText
         apply.TextTransparency=apply.Active and 0 or .55
@@ -1978,25 +2048,34 @@ function Tab:Gallery(options)
         if self.Destroyed then return self end
         self.Items=normalizeItems(items)
         if not itemWithId(self.Items,self.Value) then self.Value=nil end
+        if sketch then sketch:Destroy(); sketch = nil end
         rebuild()
         return self
     end
     local function fit()
-        local width=pane.AbsoluteSize.X
-        local height=math.clamp(scrollHost.AbsoluteSize.Y-132,127,298)
+        local width = pane.AbsoluteSize.X
+        -- CanvasPosition cancels the parent's scroll offset in the pane's absolute position.
+        local top = pane.AbsolutePosition.Y-scrollHost.AbsolutePosition.Y+scrollHost.CanvasPosition.Y
+        local height = math.clamp(scrollHost.AbsoluteSize.Y-math.max(0,top)-16,120,280)
+        local split = width < 360 and .58 or .64
+        local gridWidth = math.max(1,math.floor(width*split)-6)
+        local columns = math.clamp(math.floor((gridWidth+5)/65),1,4)
+        local cellWidth = math.max(1,math.floor((gridWidth-(columns-1)*5-3)/columns))
         if pane.Size.Y.Offset~=height then pane.Size=UDim2.new(1,0,0,height) end
-        local narrow=width < 408
-        local columns=width>=610 and 4 or width>=380 and 3 or 2
-        local split=narrow and .57 or .64
-        search.Size=UDim2.new(split,-6,0,38)
-        grid.Size=UDim2.new(split,-6,1,-46)
+        search.Size=UDim2.new(split,-6,0,32)
+        grid.Position=px(0,38)
+        grid.Size=UDim2.new(split,-6,1,-38)
+        empty.Position=px(3,40)
+        empty.Size=UDim2.new(split,-9,0,28)
         preview.Position=UDim2.fromScale(split,0)
         preview.Size=UDim2.fromScale(1-split,1)
-        previewTitle.Text=narrow and "Preview" or "Vista previa"
-        tiles.CellSize=UDim2.new(1/columns,-5,0,narrow and 74 or 94)
+        previewTitle.Text="Vista previa"
+        previewTitle.TextSize=width < 300 and 11 or 13
+        tiles.CellSize=px(cellWidth,math.clamp(cellWidth+12,68,103))
         tiles.FillDirectionMaxCells=columns
     end
     listen(c.owner,pane:GetPropertyChangedSignal("AbsoluteSize"),fit)
+    listen(c.owner,pane:GetPropertyChangedSignal("AbsolutePosition"),fit)
     listen(c.owner,scrollHost:GetPropertyChangedSignal("AbsoluteSize"),fit)
     listen(c.owner,search:GetPropertyChangedSignal("Text"),rebuild)
     listen(c.owner,apply.Activated,function()

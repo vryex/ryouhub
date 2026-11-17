@@ -1,6 +1,17 @@
 -- Fixture de Luau CLI, ejecutada junto al mock y la biblioteca por run-cli.py.
 local w=UI:CreateWindow({Open=false,Motion="Off",Size=Vector2.new(1040,615)})
 local root=w:Tab({Title="Inicio",ShowTitle=false})
+local controls=w:Tab("Controles")
+local outfits=w:Tab("Apariencia")
+local longTab=w:Tab("Una pestaña con un nombre especialmente largo")
+w.screen.AbsoluteSize=Vector2.new(596,394)
+assert(not w.Compact and controls.titleLabel.Visible and outfits.titleLabel.Visible)
+assert(controls.titleLabel.Text=="Controles" and outfits.titleLabel.Text=="Apariencia")
+assert(outfits.labelWidths[outfits.titleLabel.TextSize]<=w.rail.Size.X.Offset-58)
+assert(longTab.titleLabel.TextWrapped and longTab.slot.Size.Y.Offset>37)
+w.screen.AbsoluteSize=Vector2.new(525,394)
+assert(w.Compact and not outfits.titleLabel.Visible and outfits.glyph.Position.X.Scale==.5)
+root:Select()
 root:Banner({Title="Inicio",Subtitle="Prueba"})
 local a,b=root:Columns({Split=.53})
 a:Button({Title="Abrir",Compact=true})
@@ -17,6 +28,25 @@ assert(gallery:Get()==2)
 gallery:SetStatus("loading"):SetStatus("error","Sin conexión"):SetStatus("ready")
 gallery:Refresh({{Id=1,Title="Uno"}})
 assert(gallery:Get()==nil)
+local selectedAvatar, appliedAvatar
+local avatar={Id=33,Title="Avatar",Thumbnail="rbxthumb://type=Avatar&id=33&w=150&h=150",Preview="rbxassetid://123"}
+gallery.Callback=function(id) selectedAvatar=id end
+gallery:Refresh({avatar})
+gallery:Set(33)
+local pane=gallery.ElementFrame:FindFirstChild("OutfitPane")
+local function imageIn(parent)
+    for _, node in ipairs(parent:GetDescendants()) do
+        if node.Name=="AvatarImage" then return node end
+    end
+end
+assert(selectedAvatar==33 and imageIn(pane:FindFirstChild("OutfitGrid")).Image==avatar.Thumbnail)
+assert(imageIn(pane:FindFirstChild("OutfitPreview")).Image==avatar.Preview)
+local avatarGallery=root:Gallery({Items={avatar},OnApply=function(item) appliedAvatar=item end})
+local avatarPreview=avatarGallery.ElementFrame:FindFirstChild("OutfitPane"):FindFirstChild("OutfitPreview")
+for _, node in ipairs(avatarPreview:GetChildren()) do
+    if node:IsA("TextButton") and node.Text=="Aplicar" then node.Activated:Fire() end
+end
+assert(appliedAvatar==avatar)
 local count=0
 local catalog=root:Catalog({Title="Sky",Items={{Id="a",Title="Azul",Art="Swatch"}},Value="a",
     OnApply=function() count+=1 end})
