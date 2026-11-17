@@ -18,13 +18,15 @@ El cargador dinámico sigue aceptando la URL con el SHA completo del repositorio
 
 El marco parte de 1040 × 615 px. La cabecera mide 74 px o 58 px en un viewport bajo. El rail usa aproximadamente el 18.5 % del ancho y pasa a 56 px bajo 560 px. Los componentes en columnas se apilan cuando su ancho disponible baja del mínimo. El launcher usa un disco de 70 px; aparece junto al marco cuando hay espacio y al cerrar. Arrastra el disco 9 px o más para moverlo sin alternar la ventana.
 
-- [Símbolo editable](../assets/neo-mark.svg) y PNG transparentes de [512 px](../assets/neo-mark.png), [96 px](../assets/neo-mark-96.png) y [48 px](../assets/neo-mark-48.png). [Monocromo SVG](../assets/neo-mark-mono.svg) y [PNG](../assets/neo-mark-mono.png).
-- [Launcher editable](../assets/neo-launcher.svg) y [PNG](../assets/neo-launcher.png).
-- Recursos decorativos separados para [cabecera](../assets/neo-header-ribbon.svg), [hero](../assets/neo-hero-ribbon.svg) y [rail](../assets/neo-rail-ribbon.svg).
+## Arte de GitHub y caché
 
-Usa el símbolo sin disco en cabecera y hero, y centrado dentro del círculo en el launcher. Conserva el espacio del corte interno y la inclinación de las facetas al escalar. El SVG es editable y el PNG sirve para importar en Studio. Si se usa como `ImageLabel` en otra integración, publica el PNG en la cuenta o grupo propietario y usa su ID real con los permisos correspondientes.
+El [manifiesto V3](../assets/neo/manifest.json) enlaza cada PNG a su URL RAW fijada, SHA-256, tamaño, ruta de caché y componente. Los detalles de la ventana usan la R vectorial de 512 px, el hero usa la R artística con un halo por detrás, y el launcher usa el disco de neón. La variante vectorial del disco queda disponible como respaldo. Las bandas de cabecera, órbitas y curva del rail son PNG independientes. El tema claro conserva la marca y oculta el arte ambiental oscuro.
 
-La biblioteca dibuja la R desde ocho polígonos facetados en Luau y usa Frames, UIStroke y UIGradient para las curvas y destellos. Los SVG y PNG se incluyen como archivos de diseño e importación opcional. El runtime no descarga el master ni utiliza IDs para esta identidad. Las ilustraciones de personajes y cielos del showcase son formas y muestras generadas por la biblioteca. Los detalles fotográficos, efectos de mapa y material 3D de las láminas se traducen a superficies de UI.
+`RyouUI.lua` solicita únicamente los archivos del manifiesto. Prueba `game:HttpGet` y, si hace falta, la API de solicitud del host. Valida tamaño y estructura básica del PNG antes de escribir. El identificador devuelto por `getcustomasset` o `getsynasset` se asigna al `ImageLabel`. La cabecera, el monograma y el launcher se programan primero. El estado de carga mantiene el botón y el texto utilizables.
+
+La caché de disco usa `RyouUI/Cache/be94fa3ecf37/`. Si el host impide crear carpetas, usa el prefijo `RyouUI-be94fa3ecf37-` en la raíz. Con `readfile` disponible, los archivos de caché se validan antes de registrarse. Con `isfile` como único método de consulta, se intenta reutilizar el archivo existente y se vuelve a descargar si falla el registro. Los identificadores se comparten entre las vistas del mismo módulo.
+
+Si faltan `writefile` o las funciones de registro de imágenes locales, la librería avisa en la consola y conserva el monograma tipográfico, el launcher y los controles nativos. Si GitHub devuelve datos inesperados, realiza un segundo intento y conserva el respaldo cuando el recurso sigue indisponible. Los `SVG` editables están en [assets/neo/source](../assets/neo/source/). Las muestras del catálogo y los outfits del showcase son ilustraciones de demostración.
 
 ## Componentes nuevos
 
