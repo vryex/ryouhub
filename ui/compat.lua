@@ -2067,7 +2067,7 @@ function Nox:CreateWindow(options)
                 mainCard.Visible=true
                 quickCard.Visible=true
                 statsCard.Visible=true
-                if width>=860 then
+                if width>=705 then
                     local available=width-2*pad-2*gap
                     local a=math.floor(available*.48)
                     local b=math.floor(available*.25)
