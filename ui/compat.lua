@@ -1038,6 +1038,20 @@ local function field(parent, placeholder)
             end)
         end
     end)
+    -- Área táctil explícita: un TextBox dentro de ScrollingFrame puede
+    -- recibir el toque sin que el teclado virtual aparezca.
+    local focusHit=button(box,"",{Name="TextFocusHit",BackgroundTransparency=1,
+        Size=UDim2.fromScale(1,1),ZIndex=box.ZIndex+1})
+    focusHit.AutoButtonColor=false
+    focusHit.Activated:Connect(function()
+        task.defer(function()
+            if box.Parent and box.TextEditable then
+                pcall(function() box:CaptureFocus() end)
+            end
+        end)
+    end)
+    box.Focused:Connect(function() focusHit.Visible=false end)
+    box.FocusLost:Connect(function() focusHit.Visible=true end)
     return box
 end
 function Tab:Input(options)
@@ -2079,7 +2093,7 @@ function Nox:CreateWindow(options)
                 mainCard.Visible=true
                 quickCard.Visible=true
                 statsCard.Visible=true
-                if width>=1030 then
+                if width>=860 then
                     local available=width-2*pad-2*gap
                     local a=math.floor(available*.48)
                     local b=math.floor(available*.25)
