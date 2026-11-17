@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="434" viewBox="0 0 600 434" role="img"><title>Catálogo de iconos de Ryou UI</title>
+<rect width="600" height="434" rx="18" fill="#111315"/><text x="24" y="40" fill="#eef2f1" font-size="20" font-family="sans-serif">Ryou UI · iconos nativos</text>
+<rect x="24" y="61" width="128" height="75" rx="8" fill="#1e2224"/>
+<g transform="translate(70 71) scale(1.45)" stroke="#84f1c6">
+<path d="M4 3L4 21" stroke-width="3"/>
+<path d="M4 4L15 4" stroke-width="3"/>
+<path d="M15 4L20 8" stroke-width="3"/>
+<path d="M20 8L15 12" stroke-width="3"/>
+<path d="M10 12L15 12" stroke-width="3"/>
+<path d="M13 15L20 21" stroke-width="3"/>
+</g><text x="88" y="121" text-anchor="middle" font-size="13" font-family="sans-serif" fill="#eef2f1">ryou</text>
+<rect x="164" y="61" width="128" height="75" rx="8" fill="#1e2224"/>
+<g transform="translate(210 71) scale(1.45)" stroke="#84f1c6">
+<path d="M3 11L12 3" stroke-width="1.7"/>
+<path d="M12 3L21 11" stroke-width="1.7"/>
+<path d="M6 10L6 21" stroke-width="1.7"/>
+<path d="M6 21L18 21" stroke-width="1.7"/>
+<path d="M18 21L18 10" stroke-width="1.7"/>
+</g><text x="228" y="121" text-anchor="middle" font-size="13" font-family="sans-serif" fill="#eef2f1">home</text>
+<rect x="304" y="61" width="128" height="75" rx="8" fill="#1e2224"/>
+<g transform="translate(350 71) scale(1.45)" stroke="#84f1c6">
+<path d="M4 5L20 5" stroke-width="1.7"/>
+<path d="M4 12L20 12" stroke-width="1.7"/>
+<path d="M4 19L20 19" stroke-width="1.7"/>
+<path d="M8 2L8 8" stroke-width="4"/>
+<path d="M16 9L16 15" stroke-width="4"/>
+<path d="M11 16L11 22" stroke-width="4"/>
+</g><text x="368" y="121" text-anchor="middle" font-size="13" font-family="sans-serif" fill="#eef2f1">sliders</text>
+<rect x="444" y="61" width="128" height="75" rx="8" fill="#1e2224"/>
+<g transform="translate(490 71) scale(1.45)" stroke="#84f1c6">
+<path d="M4 7L20 7" stroke-width="1.7"/>
+<path d="M4 17L20 17" stroke-width="1.7"/>
+<path d="M7 4L7 20" stroke-width="1.7"/>
+<path d="M17 4L17 20" stroke-width="1.7"/>
+</g><text x="508" y="121" text-anchor="middle" font-size="13" font-family="sans-serif" fill="#eef2f1">grid</text>
+<rect x="24" y="148" width="128" height="75" rx="8" fill="#1e2224"/>
+<g transform="translate(70 158) scale(1.45)" stroke="#84f1c6">
+<path d="M12 3L20 8" stroke-width="1.7"/>
+<path d="M20 8L20 15" stroke-width="1.7"/>
+<path d="M20 15L12 21" stroke-width="1.7"/>
+<path d="M12 21L4 17" stroke-width="1.7"/>
+<path d="M4 17L4 8" stroke-width="1.7"/>
+<path d="M4 8L12 3" stroke-width="1.7"/>
+<path d="M9 10L9 11" stroke-width="3"/>
+<path d="M14 8L14 9" stroke-width="3"/>
+<path d="M15 14L15 15" stroke-width="3"/>
+</g><text x="88" y="208" text-anchor="middle" font-size="13" font-family="sans-serif" fill="#eef2f1">palette</text>
+<rect x="164" y="148" width="128" height="75" rx="8" fill="#1e2224"/>
+<g transform="translate(210 158) scale(1.45)" stroke="#84f1c6">
+<path d="M12 10L12 20" stroke-width="2.5"/>
+<path d="M12 4L12 5" stroke-width="3"/>
+</g><text x="228" y="208" text-anchor="middle" font-size="13" font-family="sans-serif" fill="#eef2f1">info</text>
+<rect x="304" y="148" width="128" height="75" rx="8" fill="#1e2224"/>
+<g transform="translate(350 158) scale(1.45)" stroke="#84f1c6">
+<path d="M4 12L9 17" stroke-width="2.5"/>
+<path d="M9 17L20 6" stroke-width="2.5"/>
+</g><text x="368" y="208" text-anchor="middle" font-size="13" font-family="sans-serif" fill="#eef2f1">success</text>
+<rect x="444" y="148" width="128" height="75" rx="8" fill="#1e2224"/>
+<g transform="translate(490 158) scale(1.45)" stroke="#84f1c6">
+<path d="M12 3L21 20" stroke-width="1.7"/>
+<path d="M21 20L3 20" stroke-width="1.7"/>
+<path d="M3 20L12 3" stroke-width="1.7"/>
+<path d="M12 9L12 13" stroke-width="1.7"/>
+<path d="M12 16L12 17" stroke-width="1.7"/>
+</g><text x="508" y="208" text-anchor="middle" font-size="13" font-family="sans-serif" fill="#eef2f1">warning</text>
+<rect x="24" y="235" width="128" height="75" rx="8" fill="#1e2224"/>
+<g transform="translate(70 245) scale(1.45)" stroke="#84f1c6">
+<path d="M5 5L19 19" stroke-width="2.5"/>
+<path d="M19 5L5 19" stroke-width="2.5"/>
+</g><text x="88" y="295" text-anchor="middle" font-size="13" font-family="sans-serif" fill="#eef2f1">error</text>
+<rect x="164" y="235" width="128" height="75" rx="8" fill="#1e2224"/>
+<g transform="translate(210 245) scale(1.45)" stroke="#84f1c6">
+<path d="M5 9L12 16" stroke-width="1.7"/>
+<path d="M12 16L19 9" stroke-width="1.7"/>
+</g><text x="228" y="295" text-anchor="middle" font-size="13" font-family="sans-serif" fill="#eef2f1">chevron</text>
+<rect x="304" y="235" width="128" height="75" rx="8" fill="#1e2224"/>
+<g transform="translate(350 245) scale(1.45)" stroke="#84f1c6">
+<path d="M4 12L20 12" stroke-width="1.7"/>
+<path d="M14 6L20 12" stroke-width="1.7"/>
+<path d="M20 12L14 18" stroke-width="1.7"/>
+</g><text x="368" y="295" text-anchor="middle" font-size="13" font-family="sans-serif" fill="#eef2f1">arrow</text>
+<rect x="444" y="235" width="128" height="75" rx="8" fill="#1e2224"/>
+<g transform="translate(490 245) scale(1.45)" stroke="#84f1c6">
+<path d="M9 21L21 9" stroke-width="1.7"/>
+<path d="M15 21L21 15" stroke-width="1.7"/>
+</g><text x="508" y="295" text-anchor="middle" font-size="13" font-family="sans-serif" fill="#eef2f1">grip</text>
+<rect x="24" y="322" width="128" height="75" rx="8" fill="#1e2224"/>
+<g transform="translate(70 332) scale(1.45)" stroke="#84f1c6">
+<path d="M8 4L16 4" stroke-width="1.7"/>
+<path d="M16 4L16 11" stroke-width="1.7"/>
+<path d="M16 11L8 11" stroke-width="1.7"/>
+<path d="M8 11L8 4" stroke-width="1.7"/>
+<path d="M5 21L5 16" stroke-width="1.7"/>
+<path d="M5 16L19 16" stroke-width="1.7"/>
+<path d="M19 16L19 21" stroke-width="1.7"/>
+</g><text x="88" y="382" text-anchor="middle" font-size="13" font-family="sans-serif" fill="#eef2f1">user</text>
+<rect x="164" y="322" width="128" height="75" rx="8" fill="#1e2224"/>
+<g transform="translate(210 332) scale(1.45)" stroke="#84f1c6">
+<path d="M3 4L21 4" stroke-width="1.7"/>
+<path d="M21 4L21 20" stroke-width="1.7"/>
+<path d="M21 20L3 20" stroke-width="1.7"/>
+<path d="M3 20L3 4" stroke-width="1.7"/>
+<path d="M4 17L10 11" stroke-width="1.7"/>
+<path d="M10 11L15 16" stroke-width="1.7"/>
+<path d="M15 16L20 12" stroke-width="1.7"/>
+</g><text x="228" y="382" text-anchor="middle" font-size="13" font-family="sans-serif" fill="#eef2f1">image</text>
+<rect x="304" y="322" width="128" height="75" rx="8" fill="#1e2224"/>
+<g transform="translate(350 332) scale(1.45)" stroke="#84f1c6">
+<path d="M3 9L12 4" stroke-width="1.7"/>
+<path d="M12 4L21 9" stroke-width="1.7"/>
+<path d="M21 9L12 14" stroke-width="1.7"/>
+<path d="M12 14L3 9" stroke-width="1.7"/>
+<path d="M3 15L12 20" stroke-width="1.7"/>
+<path d="M12 20L21 15" stroke-width="1.7"/>
+</g><text x="368" y="382" text-anchor="middle" font-size="13" font-family="sans-serif" fill="#eef2f1">layers</text>
+</svg>

@@ -1,0 +1,6 @@
+local UI = require(script.Parent:WaitForChild("RyouUI"))
+local window = UI:CreateWindow({ Title = "Mi panel" })
+local home = window:Tab({ Title = "Inicio", Icon = "home" })
+home:Button({ Title = "Estado", Action = "Comprobar", Callback = function()
+    window:Notify({ Type = "success", Title = "Panel activo", Content = "El callback se ejecutó." })
+end })

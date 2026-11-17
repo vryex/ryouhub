@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Ryou</title>
+  <path fill="#111315" d="M14 3h37l10 10v37L50 61H13L3 51V14Z"/>
+  <g transform="translate(8 8) scale(2)" stroke="#eef2f1" stroke-width="3" fill="none">
+    <path d="M4 3v18M4 4h11l5 4-5 4h-5M13 15l7 6"/>
+  </g>
+  <path fill="#84f1c6" d="M47 51h9l-4 4h-9Z"/>
+</svg>

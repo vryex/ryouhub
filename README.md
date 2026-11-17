@@ -1,51 +1,30 @@
-# Ryou
+<div align="center">
+  <img src="ryou-ui-v14/assets/ryou-mark.png" width="104" alt="Símbolo Ryou">
+  <h1>Ryou UI</h1>
+  <p>Biblioteca visual de un archivo para scripts Luau de cliente Roblox.</p>
+  <p><strong>14.0.0</strong> · Rama de revisión · Created by Ryou</p>
+</div>
 
-Hub en Luau para PC y móvil. **Creador: Ryou.**
+## Empieza aquí
 
-Este repositorio contiene la migración del proyecto anterior hacia la identidad Ryou sin romper de golpe la API que usan los builds existentes.
-
-## Archivos principales
-
-- `main.luau` — shell visual standalone del nuevo diseño Ryou.
-- `ui/compat.lua` — capa visual compatible con la API usada por los builds existentes.
-- `scripts/duels.lua` — Duels migrado a branding Ryou.
-- `scripts/mm2.lua` — MM2 migrado a branding Ryou, con el loader de UI corregido.
-- `PROJECT_CONTEXT.md` — contexto técnico y reglas de migración para continuar el proyecto en cualquier chat/sesión.
-
-## UI remota
-
-Los scripts admiten:
+- [Descarga el archivo Luau](ryou-ui-v14/RyouUI.lua) y sigue la [instalación](ryou-ui-v14/docs/getting-started.md).
+- [Getting started in English](ryou-ui-v14/docs/getting-started.en.md).
+- [Ejemplos ejecutables](ryou-ui-v14/examples/) y [referencia de API](ryou-ui-v14/docs/api-reference.md).
+- [Catálogo gráfico](ryou-ui-v14/assets/icon-catalog.svg), [temas](ryou-ui-v14/docs/themes.md) y [movimiento](ryou-ui-v14/docs/animations.md).
 
 ```lua
-getgenv().RYOU_UI_URL = "https://tu-endpoint/ryou-ui.lua"
+local UI = require(script.Parent:WaitForChild("RyouUI"))
+local window = UI:CreateWindow({ Title = "Mi panel" })
+local home = window:Tab({ Title = "Inicio", Icon = "home" })
+home:Button({ Title = "Estado", Callback = function()
+    window:Notify({ Type = "success", Title = "Panel activo" })
+end })
 ```
 
-antes de ejecutar el build.
+## Compatibilidad
 
-Los builds y assets ya apuntan a este repositorio. Para que `game:HttpGet` y los loadstrings RAW funcionen sin autenticación, el repositorio debe estar en visibilidad pública.
+El archivo devuelve la biblioteca visual. Puede cargarse como ModuleScript o mediante el [cargador dinámico](ryou-ui-v14/examples/DynamicLoader.lua) donde el host provea las capacidades documentadas. Requiere servicios de cliente Roblox. La [guía de migración](ryou-ui-v14/docs/migration.md) indica las firmas de V12 compatibles y las diferencias.
 
-## Desarrollo
+La [prueba de estado](ryou-ui-v14/tests/) corre en Luau CLI. Las capturas y la verificación táctil quedan pendientes de ejecución en el cliente.
 
-El objetivo es mantener una sola base de UI para Duels, MM2 y ASD, con diseño oscuro/minimalista, soporte móvil/PC, resize, botón flotante, animaciones y personalización.
-
-Consulta `PROJECT_CONTEXT.md` antes de hacer cambios grandes.
-
-**Creador:** Ryou  
-**TikTok:** @x0brxn
-
-
-## Loadstrings
-
-Duels:
-
-```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/scripts/duels.lua"))()
-```
-
-MM2:
-
-```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/main/scripts/mm2.lua"))()
-```
-
-La UI compartida vive en `ui/compat.lua` y todos los assets runtime están alojados en este mismo repositorio.
+[Contribuir](ryou-ui-v14/CONTRIBUTING.md) · [Historial de cambios](ryou-ui-v14/CHANGELOG.md) · [Procedencia y propuesta de licencia](ryou-ui-v14/docs/provenance.md) · [Contexto histórico del repositorio](PROJECT_CONTEXT.md)
