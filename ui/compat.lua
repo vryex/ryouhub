@@ -164,7 +164,7 @@ local THEMES = {
 
 local CURRENT_THEME_NAME = canonicalThemeName(XeroEnv.XERO_THEME or "Xero")
 local CURRENT_THEME = THEMES[CURRENT_THEME_NAME] or THEMES.Xero
-local Nox = { Version = "9.1.0-xero-native-input", Brand = "Ryou", SupportsGameLabels = true, Creator = "Ryou", UIScale = 1 }
+local Nox = { Version = "10.0.0-vertical-concept-c", Brand = "Ryou", SupportsGameLabels = true, Creator = "Ryou", UIScale = 1 }
 local C, Glass = {}, {}
 
 local function overwriteTable(target, source)
@@ -207,7 +207,7 @@ end
 -- PNGs live in /icons on GitHub. They are downloaded lazily once, cached locally
 -- and reused by every control/tab that declares Icon = "name".
 local XERO_ICON_BASE_URL = tostring(XeroEnv.XERO_ICON_BASE_URL or
-    "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/ryou-ui-v9-xero-native-input/icons/")
+    "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/ryou-ui-v10-side-navigation/icons/")
 local XERO_ICON_CACHE_FOLDER = tostring(XeroEnv.XERO_ICON_CACHE_FOLDER or "Ryou/Icons/v2")
 
 local XERO_ICON_FILES = {
@@ -632,14 +632,14 @@ end
 function Control:_resize(width)
     if self.Destroyed then return end
     local section=self.__type=="Section"
-    local px=section and 5 or 12
-    local py=section and 6 or 9
+    local px=section and 4 or 10
+    local py=section and 5 or 7
     local headWidth=math.max(40,width-px*2)
     local reserve=self.Reserve or 0
     local copyOffsetX=self.CopyOffsetX or 0
     local copyWidth=math.max(30,headWidth-reserve-copyOffsetX)
     local titleHeight=textHeight(self.Title,self.TitleLabel.TextSize,self.TitleLabel.Font,copyWidth)
-    local descHeight=textHeight(self.Desc,self.DescLabel.TextSize,self.DescLabel.Font,copyWidth)
+    local descHeight=math.min(29,textHeight(self.Desc,self.DescLabel.TextSize,self.DescLabel.Font,copyWidth))
     local copyHeight=titleHeight+(descHeight>0 and 4+descHeight or 0)
     local headHeight=math.max(copyHeight,self.HeadMinimum or 0)
     self.Head.Position=UDim2.fromOffset(px,py)
@@ -679,7 +679,7 @@ function Control:_resize(width)
         y+=sliderAreaHeight+sliderLimitsGap+14
     end
     if self.Rule then self.Rule.Position=UDim2.fromOffset(px,y+5); self.Rule.Size=UDim2.new(1,-px*2,0,1); y+=7 end
-    local height=y+(section and 3 or py)
+    local height=y+(section and 2 or py)
     self.ElementFrame.Size=UDim2.new(1,0,0,height)
     self.Slot.Size=UDim2.new(1,-6,0,height)
 end
@@ -690,7 +690,7 @@ function Tab:_layout()
     for _,c in ipairs(self.Elements) do
         if not c.Destroyed then
             c:_resize(width)
-            if c.Slot.Visible then height+=c.Slot.Size.Y.Offset+8 end
+            if c.Slot.Visible then height+=c.Slot.Size.Y.Offset+5 end
         end
     end
     local bottomPad=14
@@ -1549,39 +1549,24 @@ function Nox:CreateWindow(options)
     closeIcon.AnchorPoint=Vector2.new(.5,.5); closeIcon.Position=UDim2.fromScale(.5,.5)
     hover(w,minimize); hover(w,close)
     local topRule=line(root,14,57,784,1,0,C.Border); topRule.Size=UDim2.new(1,-28,0,1)
+    -- RyouHub V10: rail vertical. Compacta en iconos si hay poco ancho.
+    -- La lista de secciones se desplaza verticalmente, independiente de los ajustes.
     local sidebar=new("Frame",{Name="Navigation",BackgroundColor3=w.ThemeDef.Visuals.SidebarBase,
         BackgroundTransparency=Glass.Sidebar,ClipsDescendants=true,ZIndex=12},root)
-    round(sidebar,20); local sidebarStroke=stroke(sidebar,w.ThemeDef.Visuals.SidebarStroke)
-    local nav=scroll(sidebar,{Name="Tabs",Position=UDim2.fromOffset(7,0),Size=UDim2.new(1,-14,1,0),
-        ScrollingDirection=Enum.ScrollingDirection.X,AutomaticCanvasSize=Enum.AutomaticSize.X,ScrollBarThickness=5})
-    local function horizontal(parent,gap)
-        return new("UIListLayout",{FillDirection=Enum.FillDirection.Horizontal,
-            VerticalAlignment=Enum.VerticalAlignment.Center,SortOrder=Enum.SortOrder.LayoutOrder,
-            Padding=UDim.new(0,gap)},parent)
-    end
-    local navLayout=horizontal(nav,9)
-    local function scrollTabs(delta)
-        local maximum=math.max(0,nav.AbsoluteCanvasSize.X-nav.AbsoluteWindowSize.X)
-        nav.CanvasPosition=Vector2.new(math.clamp(nav.CanvasPosition.X+delta,0,maximum),0)
-    end
-    local navArrows={}
-    for index,direction in ipairs({-1,1}) do
-        local arrow=button(sidebar,direction<0 and "‹" or "›",{Name=direction<0 and "PreviousTabs" or "NextTabs",
-            AnchorPoint=Vector2.new(1,.5),Position=UDim2.new(1,index==1 and -37 or -4,.5,0),
-            Size=UDim2.fromOffset(31,34),TextSize=21,Visible=false})
-        round(arrow,8)
-        connect(w,arrow.Activated,function() scrollTabs(direction*nav.AbsoluteWindowSize.X*.75) end)
-        navArrows[index]=arrow
-    end
+    round(sidebar,18)
+    local sidebarStroke=stroke(sidebar,w.ThemeDef.Visuals.SidebarStroke)
+    local railTitle=label(sidebar,"SECCIONES",10,C.Faint,{Name="RailTitle",Font=BOLD,
+        Position=UDim2.fromOffset(15,15),Size=UDim2.new(1,-30,0,18)})
+    local railDivider=new("Frame",{Name="RailDivider",BackgroundColor3=C.Border,
+        BackgroundTransparency=.52,Position=UDim2.fromOffset(12,43),
+        Size=UDim2.new(1,-24,0,1)},sidebar)
+    local nav=scroll(sidebar,{Name="Tabs",Position=UDim2.fromOffset(6,53),
+        Size=UDim2.new(1,-12,1,-65),ScrollingDirection=Enum.ScrollingDirection.Y,
+        AutomaticCanvasSize=Enum.AutomaticSize.Y,ScrollBarThickness=2})
+    local navLayout=new("UIListLayout",{FillDirection=Enum.FillDirection.Vertical,
+        SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,6)},nav)
     local function fitNavigation()
-        local overflow=navLayout.AbsoluteContentSize.X>math.max(0,sidebar.AbsoluteSize.X-86*w.UIScale)
-        nav.Position=UDim2.fromOffset(overflow and 46 or 8,0)
-        nav.Size=UDim2.new(1,overflow and -92 or -16,1,0)
-        for i,arrow in ipairs(navArrows) do
-            arrow.Visible=overflow
-            arrow.AnchorPoint=Vector2.new(0,.5)
-            arrow.Position=i==1 and UDim2.new(0,6,.5,0) or UDim2.new(1,-40,.5,0)
-        end
+        nav.CanvasSize=UDim2.fromOffset(0,navLayout.AbsoluteContentSize.Y+10)
     end
     connect(w,navLayout:GetPropertyChangedSignal("AbsoluteContentSize"),fitNavigation)
     connect(w,sidebar:GetPropertyChangedSignal("AbsoluteSize"),fitNavigation)
@@ -1789,18 +1774,18 @@ function Nox:CreateWindow(options)
         root.Size=UDim2.fromOffset(width,height)
 
         local compact=width<680 or height<390
-        local inset=compact and 12 or 17
-        local topHeight=compact and 59 or 66
-        local dockHeight=compact and 44 or 52
-        local dockY=topHeight+5
-        local contentY=dockY+dockHeight+12
-        local contentEnd=height-13
+        local inset=compact and 10 or 14
+        local topHeight=compact and 56 or 64
+        local navWidth=width<560 and 60 or (width<800 and 140 or 176)
+        local contentY=topHeight+10
+        local contentEnd=height-inset
         w._compactNavigation=compact
+        w._iconOnlyNav=width<560
 
         w.Short=height<435
         w.Narrow=width<500
         w.Compact=width<650 or w.Short
-        w.ContentWidth=width-inset*2
+        w.ContentWidth=width-(inset*2+navWidth+11)
         top.Size=UDim2.new(1,0,0,topHeight)
         logo.Position=UDim2.fromOffset(inset,10)
         controls.Position=UDim2.new(1,-inset-76,0,6)
@@ -1834,12 +1819,24 @@ function Nox:CreateWindow(options)
         subtitle.TextTruncate=Enum.TextTruncate.AtEnd
         subtitle.Visible=not compact and clusterWidth>=225 and o.Subtitle~=nil and inferredGameLabel~=subtitleGame
 
-        sidebar.Position=UDim2.fromOffset(inset,dockY)
-        sidebar.Size=UDim2.new(1,-2*inset,0,dockHeight)
+        sidebar.Position=UDim2.fromOffset(inset,contentY)
+        sidebar.Size=UDim2.fromOffset(navWidth,math.max(0,contentEnd-contentY))
         sidebar.Visible=true
+        railTitle.Visible=not w._iconOnlyNav
+        railDivider.Visible=not w._iconOnlyNav
+        nav.Position=UDim2.fromOffset(5,w._iconOnlyNav and 9 or 53)
+        nav.Size=UDim2.new(1,-10,1,w._iconOnlyNav and -16 or -64)
+        for _,tab in ipairs(w.Tabs) do
+            if tab.NavButton then
+                if tab.NavTitle then tab.NavTitle.Visible=not w._iconOnlyNav end
+                if tab.NavIcon then
+                    tab.NavIcon.Position=w._iconOnlyNav and UDim2.new(.5,-9,.5,-9) or UDim2.fromOffset(13,12)
+                end
+            end
+        end
 
-        content.Position=UDim2.fromOffset(inset,contentY)
-        content.Size=UDim2.new(1,-2*inset,0,math.max(0,contentEnd-contentY))
+        content.Position=UDim2.fromOffset(inset+navWidth+11,contentY)
+        content.Size=UDim2.fromOffset(math.max(180,w.ContentWidth),math.max(0,contentEnd-contentY))
         -- El buscador vive en el encabezado, delante de minimizar/cerrar.
         if searchBox.Parent~=top then searchBox.Parent=top end
         local searchWidth=math.clamp(math.floor(width*.29),115,310)
@@ -1913,12 +1910,15 @@ function Nox:CreateWindow(options)
             end
             task.defer(function()
                 if self.Destroyed or self.CurrentTab~=target or not sidebar.Visible or not target.NavButton.Visible then return end
-                local left=nav.AbsolutePosition.X
-                local right=left+nav.AbsoluteWindowSize.X
-                local start=target.NavButton.AbsolutePosition.X
-                local finish=start+target.NavButton.AbsoluteSize.X
-                local delta=start<left and start-left or math.max(0,finish-right)
-                if delta~=0 then scrollTabs(delta) end
+                local topEdge=nav.AbsolutePosition.Y
+                local bottomEdge=topEdge+nav.AbsoluteWindowSize.Y
+                local first=target.NavButton.AbsolutePosition.Y
+                local last=first+target.NavButton.AbsoluteSize.Y
+                local delta=first<topEdge and first-topEdge or math.max(0,last-bottomEdge)
+                if delta~=0 then
+                    local maximum=math.max(0,nav.AbsoluteCanvasSize.Y-nav.AbsoluteWindowSize.Y)
+                    nav.CanvasPosition=Vector2.new(0,math.clamp(nav.CanvasPosition.Y+delta,0,maximum))
+                end
             end)
         end
         return target
@@ -2067,7 +2067,7 @@ function Nox:CreateWindow(options)
                 mainCard.Visible=true
                 quickCard.Visible=true
                 statsCard.Visible=true
-                if width>=860 then
+                if width>=705 then
                     local available=width-2*pad-2*gap
                     local a=math.floor(available*.48)
                     local b=math.floor(available*.25)
@@ -2144,28 +2144,32 @@ function Nox:CreateWindow(options)
         end)
         task.defer(fitConcept)
         local hasIcon=opt.Icon~=nil and tostring(opt.Icon)~=""
-        local labelX=hasIcon and 34 or 12
-        local titleWidth=math.ceil(TextService:GetTextSize(title,12,MEDIUM,Vector2.new(300,22)).X)
-        local navWidth=math.clamp(titleWidth+labelX+12,76,204)
+        local labelX=hasIcon and 42 or 14
         self._navOrder+=1
-        local navButton=button(holder or nav,"",{Name=title,Size=UDim2.fromOffset(navWidth,37),
-            BackgroundColor3=self.ThemeDef.Visuals.NavButtonIdle,BackgroundTransparency=Glass.NavIdle,LayoutOrder=self._navOrder})
-        round(navButton,15)
-        local selectionBar=new("Frame",{Name="Selected",Position=UDim2.new(0,10,1,-4),Size=UDim2.new(1,-20,0,2),
-            BackgroundColor3=C.White,BackgroundTransparency=0,Visible=false,ZIndex=3},navButton); round(selectionBar,2)
+        local navButton=button(holder or nav,"",{Name=title,Size=UDim2.new(1,-8,0,43),
+            BackgroundColor3=self.ThemeDef.Visuals.NavButtonIdle,
+            BackgroundTransparency=Glass.NavIdle,LayoutOrder=self._navOrder})
+        round(navButton,12)
+        -- Barra vertical menta como indicador activo, propia de Ryou.
+        local selectionBar=new("Frame",{Name="Selected",Position=UDim2.new(0,2,.5,-12),
+            Size=UDim2.fromOffset(3,24),BackgroundColor3=C.White,
+            BackgroundTransparency=0,Visible=false,ZIndex=3},navButton)
+        round(selectionBar,3)
         local navIcon
         local numberLabel=label(navButton,string.format("%02d",index),10,C.Faint,{
-            Position=UDim2.fromOffset(9,0),Size=UDim2.new(0,15,1,0),Visible=false})
+            Position=UDim2.fromOffset(10,0),Size=UDim2.new(0,15,1,0),Visible=false})
         if hasIcon then
-            local placeholder=label(navButton,"·",17,C.Faint,{Position=UDim2.fromOffset(9,0),Size=UDim2.new(0,15,1,0),
-                TextXAlignment=Enum.TextXAlignment.Center})
-            navIcon=remoteIcon(navButton,opt.Icon,16,C.Faint,function()
+            local placeholder=label(navButton,"•",14,C.Faint,{Position=UDim2.fromOffset(12,0),
+                Size=UDim2.fromOffset(18,43),TextXAlignment=Enum.TextXAlignment.Center})
+            navIcon=remoteIcon(navButton,opt.Icon,18,C.Faint,function()
                 if placeholder.Parent then placeholder.Visible=false end
             end)
-            navIcon.Position=UDim2.fromOffset(10,9)
+            navIcon.Position=UDim2.fromOffset(13,12)
         end
-        local titleLabel=label(navButton,title,12,C.Muted,{Position=UDim2.fromOffset(labelX,-1),Size=UDim2.new(1,-labelX-10,1,0),
+        local titleLabel=label(navButton,title,11,C.Muted,{
+            Position=UDim2.fromOffset(labelX,0),Size=UDim2.new(1,-labelX-6,1,0),
             Font=MEDIUM,TextTruncate=Enum.TextTruncate.AtEnd})
+        titleLabel.Visible=not self._iconOnlyNav
         tab.Page,tab.Content,tab.Empty=page,list,empty; tab.NavButton,tab.NavTitle=navButton,titleLabel
         tab.ConceptCards={mainCard,quickCard,statsCard}
         tab.Number=numberLabel; tab.NavIcon=navIcon; tab.SelectionBar=selectionBar
