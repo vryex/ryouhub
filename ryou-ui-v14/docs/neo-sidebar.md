@@ -16,7 +16,7 @@ El cargador dinámico sigue aceptando la URL con el SHA completo del repositorio
 
 ## Dimensiones y recursos
 
-El marco parte de 1040 × 615 px. La cabecera mide 70 px o 55 px en una ventana baja. El rail parte del 18.5 % del ancho, reserva espacio según la etiqueta más larga y usa 53 px para iconos bajo 560 px. Los componentes en columnas se apilan cuando su ancho disponible baja del mínimo. El launcher usa un disco de 70 px; aparece junto al marco cuando hay espacio y al cerrar. Arrastra el disco 9 px o más para moverlo sin alternar la ventana.
+El marco parte de 1040 × 615 px. La cabecera mide 70 px o 55 px en una ventana baja. El rail parte del 18.5 % del ancho y mide la etiqueta más larga con Gotham. Utiliza un rail de 53 px con iconos si el texto completo y el ancho mínimo del contenido no caben juntos. Los componentes en columnas se apilan cuando su ancho disponible baja del mínimo. El launcher usa un disco de 70 px; aparece junto al marco cuando hay espacio y al cerrar. Arrastra el disco 9 px o más para moverlo sin alternar la ventana.
 
 ## Arte de GitHub y caché
 

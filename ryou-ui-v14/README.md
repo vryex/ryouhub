@@ -30,10 +30,10 @@ end })
 
 ## Showcase Neo Sidebar V4
 
-Ejecuta este bloque en el cliente compatible. Abre el showcase con la revisión responsive V4 y el arte aprobado de V3.
+Ejecuta este bloque en el cliente compatible. Abre el showcase con las superficies, los controles compactos y el arte de Neo Sidebar V4.
 
 ```lua
-local base = "https://raw.githubusercontent.com/vryex/ryouhub/d8e639a8886f2f588d6a9087186696687906307f/ryou-ui-v14/"
+local base = "https://raw.githubusercontent.com/vryex/ryouhub/1d83ea02929281d67caf0aecd301376811656ea2/ryou-ui-v14/"
 local UI = assert(loadstring(game:HttpGet(base .. "RyouUI.lua")))()
 local mount = assert(loadstring(game:HttpGet(base .. "examples/NeoShowcase.lua")))()
 mount(UI, { Motion = "Full" })

@@ -15,3 +15,9 @@ w:Open()
 `SetSize(Vector2)` interpreta dimensiones en píxeles. También acepta el `UDim2.fromOffset` de V12. `GetSize()` devuelve el tamaño solicitado. La ventana se ajusta al área segura disponible. `SetPosition(Vector2)` fija el centro en coordenadas locales de esa área y `SetToTheCenter()` vuelve al centro automático.
 
 En móvil, arrastra el encabezado para mover la ventana o la esquina inferior derecha para redimensionarla. El botón flotante aparece al cerrar y puede permanecer visible junto al marco cuando hay espacio. Su umbral de 9 px distingue un toque de un arrastre. En PC, Shift derecho alterna el panel por defecto. Puedes cambiarlo con `SetToggleKey(Enum.KeyCode.F8)` o inhabilitarlo con `nil`. Si desactivas también el launcher, conserva algún camino en tu script para llamar `Open()`.
+
+## Minimizar y cerrar
+
+`w:Minimize()` oculta el panel con una animación hacia el launcher cuando está habilitado. El launcher reabre el panel. Con el launcher deshabilitado se puede volver con la tecla configurada o con `w:Open()`.
+
+La X llama a `w:Close()` y usa la transición corta de cierre de V14. Ambas acciones conservan la pestaña, los valores y las conexiones. `OnClose` se emite una vez por cierre de una ventana abierta. `w:Destroy()` elimina la ventana y libera sus conexiones.

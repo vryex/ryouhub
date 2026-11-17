@@ -46,6 +46,7 @@ Para `Banner`, `Columns`, `Stats`, `Gallery`, `Catalog` y las opciones de Neo Si
 | `group:Open()`, `group:Close()` | Muestra u oculta el encabezado del grupo. | Grupo. `group:Close():Open()` |
 | `w:SelectTab(which)` | Objeto, título, ID o índice desde 1. | `Tab?`. `w:SelectTab("Inicio")` |
 | `w:Open()`, `w:Close()`, `w:Toggle()` | Cambia el estado de la ventana. | `Window`. `w:Close():Open()` |
+| `w:Minimize()` | Oculta el panel con transición hacia el launcher si está habilitado. Conserva el estado. | `Window`. |
 | `w:SetTitle(text)` | Nuevo título; `nil` limpia el texto. | `Window`. `w:SetTitle("Archivo 2")` |
 | `w:SetAuthor(text)`, `w:SetSubtitle(text)` | Nuevo subtítulo; `nil` limpia el texto. | `Window`. `w:SetSubtitle("Preferencias")` |
 | `w:SetTheme(config)`, `w:GetTheme()` | Nombre o tabla de [tema](themes.md). El getter devuelve el nombre canónico. | `Window` / string. `w:SetTheme("Light"):GetTheme()` |

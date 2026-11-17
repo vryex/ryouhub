@@ -28,7 +28,7 @@ Las tres capturas de Roblox Android adjuntas al encargo son de 1536 × 709. Son 
 | Apariencia | La vista previa de muestra aplasta el avatar. El panel llega al borde inferior de la ventana. | Preview y miniaturas con proporción fija, altura calculada a partir del espacio disponible y Aplicar fijo. | Deslizar dentro de la cuadrícula y sobre la página. Probar miniatura y preview reales enviados por el consumidor, y pulsar Aplicar. |
 | Inicio, ventana desplazada | Botón y tarjeta altos. Estado queda cortado. Launcher visible junto a la ventana. | Cards y CTA más bajos, columnas de Inicio desde 334 px de contenido y launcher con feedback de toque y arrastre. | Comparar densidad con 01. Arrastrar el launcher, soltarlo sin cambiar el estado de la ventana, y abrir y cerrar con toques consecutivos. |
 
-En Luau CLI se verificó la exclusión entre fallback e imagen en los tres lugares incluso con `IsLoaded = false`, el registro alterno, la caché fría y caliente, títulos completos a 596 × 394, iconos solos a 525 × 394 y el pie de Skybox a 1672 × 941, 1536 × 709 y 853 × 394. La prueba de Outfits valida que la miniatura y la vista previa pueden ser distintas y que el callback recibe la entrada del consumidor. Las métricas del texto se verifican con un servicio simulado.
+En Luau CLI se verificó la exclusión entre fallback e imagen incluso con `IsLoaded = false`, el registro alterno, la caché y la adaptación del rail al añadir una etiqueta larga en un mismo viewport. Se probó minimizar, reabrir y cerrar conservando selección y conexiones. El pie de Skybox se comprobó a 1672 × 941, 1536 × 709 y 853 × 394. La prueba de Outfits valida que la miniatura y la vista previa pueden ser distintas y que el callback recibe la entrada del consumidor. Las métricas del texto se verifican con un servicio simulado.
 
 ## Sesión de validación en Android
 
@@ -38,3 +38,15 @@ En Luau CLI se verificó la exclusión entre fallback e imagen en los tres lugar
 4. Repite con caché caliente. Comprueba que la diagonal no invade el texto y que las órbitas y los avatares conservan su forma.
 
 Pendientes el render de V4, la medición con Gotham real, las zonas seguras del dispositivo y las capturas posteriores al cambio.
+
+## Acabados V4 frente al ZIP
+
+| Referencia | Cambio implementado | Comprobación pendiente en Roblox |
+| --- | --- | --- |
+| 01 Inicio | Hero con luz localizada; dos tarjetas y accesos rápidos; CTA con reflejo superior; rail con base carbón e iluminación asimétrica. | Comparar densidad, lectura del hero y caída de luz en las superficies. |
+| 01 Cabecera y launcher | Placas de 28 × 26 px centradas en zonas táctiles de 34 × 38 px. La R facetada viene del PNG original. | Revisar nitidez, alineación, gesto de minimizar y reaparición desde el disco. |
+| 02 Ajustes | Dropdown integrado, campo de búsqueda y opciones de menor altura; fila seleccionada iluminada. | Abrir el menú en horizontal y comprobar la lectura de las opciones al desplazarlo. |
+| 07 Controles | Encabezado sin hero alto, columnas compactas y selección múltiple con luz menta localizada. | Confirmar que las opciones y el campo de búsqueda responden al tacto. |
+| 05–06 Skybox | Modal con sombra exterior, cabecera y lista diferenciadas; Vista previa y Aplicar en el pie. | Comparar selección y contraste; probar scroll, teclado y cierre. |
+
+La comparación lado a lado disponible usa las referencias del ZIP y las capturas reales de V3. La igualdad de luminosidad, el rasterizado de transparencias y los estados táctiles de V4 requieren captura del cliente.
