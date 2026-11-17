@@ -71,3 +71,17 @@ Las capturas de V4 a 1536 × 709 se revisaron como evidencia previa. En claro, v
 4. Comprueba que el PNG quede nítido y sin duplicación en cabecera, hero y launcher. Compara la cabecera contra el master original. Repite con tamaño lógico cercano a 853 × 394 y con los modos Reducidas y Desactivadas.
 
 Quedan pendientes el render de V5, las capturas comparativas y la sensación del arrastre con el dedo en hardware Android. Las pruebas de estado ejercitan eventos simulados en Luau CLI.
+
+
+## Validación V6
+
+La captura Android de V5 del PR #21 muestra las tarjetas de Outfits con miniaturas recortadas y el módulo visual anterior. Esta revisión prueba la biblioteca y el showcase independiente. El adaptador del PR #21 sigue en su rama de origen.
+
+| Área | Comprobación |
+| --- | --- |
+| Desplegables | Anclaje interno arriba y dentro del panel, cierre exterior, cambio de pestaña y destrucción del control. La selección simple cierra. La múltiple mantiene el menú abierto mientras se eligen opciones. |
+| Búsqueda | Una consulta encuentra un control registrado y el resultado navega a su pestaña. |
+| Render | Se eliminaron composiciones intermedias en cabecera, rail y páginas. El grupo principal conserva la transición de apertura. El fondo cubre el área con `Crop`. |
+| Galería | API `Gallery` probada con contenido del consumidor y callbacks. Vista dividida desde 330 px lógicos y apilada por debajo. |
+
+Pendiente en Roblox Android y PC. Probar a escala 85, 100 y 120 % en ambos temas. Comparar nitidez durante y después de abrir, redimensionar y desplazar. Volver a medir el borde del fondo al estirar, abrir el teclado sobre la búsqueda de cabecera y probar el sentido de apertura de dropdowns cerca de ambos bordes. Validar miniaturas, scroll, Aplicar y cambios de pestaña con menú abierto.
