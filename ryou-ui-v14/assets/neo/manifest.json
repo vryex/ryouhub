@@ -38,7 +38,7 @@
         1024
       ],
       "cache": "RyouUI/Cache/be94fa3ecf37/R_HALO_SUAVE_RGBA_1024.png",
-      "component": "Halo debajo del monograma del hero"
+      "component": "Recurso V3 conservado. En V4 el hero usa el brillo integrado en el PNG principal."
     },
     {
       "key": "launcher",

@@ -1,5 +1,13 @@
 # Cambios
 
+## 14.0.0 · Neo Sidebar V4
+
+- La cabecera, el hero y el launcher muestran una sola marca por ubicación. Al registrarse el PNG local se oculta el placeholder. El hero usa el brillo integrado en su PNG original.
+- El rail mide las etiquetas, ajusta el ancho y baja el tamaño de texto cuando hace falta. En ventanas por debajo de 560 px, el rail muestra iconos.
+- Menos altura de banners, tarjetas y acciones. Inicio conserva dos columnas a partir de 334 px de ancho disponible en el showcase. La cabecera y las órbitas conservan la proporción de los PNG.
+- Ajusta el halo ambiental, el indicador menta y la profundidad del panel. Refina entrada, hover, toque y arrastre del launcher.
+- Outfits admite miniaturas y previews del consumidor y conserva Aplicar en el pie de la vista previa. PNG, rutas RAW y versión de caché se mantienen en el commit de arte V3.
+
 ## 14.0.0 · Neo Sidebar
 
 - Recompone la ventana con el marco horizontal y el rail de la referencia 01, R facetada, launcher circular y franjas de marca.
