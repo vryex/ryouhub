@@ -27,4 +27,4 @@ El archivo devuelve la biblioteca visual. Puede cargarse como ModuleScript o med
 
 La [prueba de estado](ryou-ui-v14/tests/) corre en Luau CLI. Las capturas y la verificación táctil quedan pendientes de ejecución en el cliente.
 
-[Contribuir](ryou-ui-v14/CONTRIBUTING.md) · [Historial de cambios](ryou-ui-v14/CHANGELOG.md) · [Procedencia y propuesta de licencia](ryou-ui-v14/docs/provenance.md) · [Contexto histórico del repositorio](PROJECT_CONTEXT.md)
+[Contribuir](ryou-ui-v14/CONTRIBUTING.md) · [Historial de cambios](ryou-ui-v14/CHANGELOG.md) · [Licencia MIT de Ryou UI](ryou-ui-v14/LICENSE) · [Contexto histórico del repositorio](PROJECT_CONTEXT.md)
