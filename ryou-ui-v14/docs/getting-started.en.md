@@ -18,3 +18,5 @@ Hosts that provide both authenticated HTTPS transport (server certificate verifi
 Set `Open = false` to register controls before opening. Call `window:Destroy()` when replacing the interface or unloading your client feature.
 
 See the Spanish [API reference](api-reference.md), [icons](icons.md), [themes](themes.md), and [motion](animations.md).
+
+To mount the Neo Sidebar reference layout, use [NeoShowcase.lua](../examples/NeoShowcase.lua) and its [client entry point](../examples/NeoShowcase.client.lua). The [QA matrix](neo-qa.md) distinguishes CLI checks from Roblox rendering and touch checks.

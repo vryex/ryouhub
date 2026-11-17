@@ -12,7 +12,7 @@ tab:ColorPicker({ Title = "Acento", Default = Color3.fromRGB(132, 241, 198), Cal
 enabled:Set(false, true)
 ```
 
-`Toggle:Set` espera un booleano. `Slider:Set` limita y redondea al paso más cercano a partir del mínimo. `Input` confirma al perder el foco o propaga cada edición con `Live = true`. `Colorpicker` acepta `Color3`, incluye barras HSV, entrada HEX de seis dígitos y tres muestras. `Paragraph:Set(text)` cambia la descripción. Para leer controles con estado usa `Get()`.
+`Toggle:Set` espera un booleano. `Slider:Set` limita y redondea al paso más cercano a partir del mínimo. `Input` confirma al perder el foco o propaga cada edición con `Live = true`. `Colorpicker` acepta `Color3`, abre una herramienta modal con superficie SV, barra de tono, entrada HEX y HSV numérica, y ocho muestras. Aplicar confirma el borrador y Cancelar lo descarta. `Paragraph:Set(text)` cambia la descripción. Para leer controles con estado usa `Get()`.
 
 `Lock()` deshabilita la interacción del usuario. Todavía puedes sincronizar el estado programáticamente. Usa `Hide()` y `Show()` para visibilidad, y `Destroy()` para retirar un control. Se recomienda mantener callbacks cortos y agregar manejo de errores en la capa que escribe datos o hace solicitudes.
 
