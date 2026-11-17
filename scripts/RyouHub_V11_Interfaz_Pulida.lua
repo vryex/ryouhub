@@ -7319,7 +7319,16 @@ local function mountRyouSkin(window,tab)
     local designerOpenOutfits
     tab:Section({Title="Skins guardadas"})
     tab:Button({Title="Ver skins del usuario",Desc="Galería de outfits con miniaturas y vista previa.",Callback=function()
-        if designerOpenOutfits then designerOpenOutfits() end
+        if type(designerOpenOutfits)~="function" then
+            warn("[Ryou] Galería no inicializada al pulsar Ver skins del usuario")
+            notify("Galería no disponible. Revisa consola.",4)
+            return
+        end
+        local ok,err=pcall(designerOpenOutfits)
+        if not ok then
+            warn("[Ryou] Error al abrir Outfits: "..tostring(err))
+            notify("Error abriendo Outfits: "..tostring(err),5)
+        end
     end})
     local keep=tab:Toggle({Title="Mantener clon al respawnear",Value=true,Callback=function(v)
         ryouSkin.KeepOnRespawn=v==true
@@ -7434,15 +7443,7 @@ local function mountRyouSkin(window,tab)
         BackgroundColor3=cardBg,BackgroundTransparency=.08,
         BorderSizePixel=0,ZIndex=16,ClipsDescendants=true}),14)
     edge(right,.30)
-    -- La vista previa tiene scroll propio, separado de la galería de outfits.
-    -- El botón Aplicar queda siempre visible en el pie.
-    local previewScroll=el("ScrollingFrame",right,{Name="PreviewScroll",
-        BackgroundTransparency=1,BorderSizePixel=0,Active=true,
-        ScrollingEnabled=true,ScrollingDirection=Enum.ScrollingDirection.Y,
-        ElasticBehavior=Enum.ElasticBehavior.Never,
-        AutomaticCanvasSize=Enum.AutomaticCanvasSize.None,CanvasSize=UDim2.new(),
-        ScrollBarThickness=3,ScrollBarImageColor3=mint,
-        ClipsDescendants=true,ZIndex=17})
+    -- Vista previa nativa, sin otro ScrollingFrame superpuesto.
     local userMode=action(left,"Usuario",true)
     local idMode=action(left,"Outfit ID",false)
     local username=curve(el("TextBox",left,{Name="OutfitUsername",Text="",
@@ -7472,14 +7473,14 @@ local function mountRyouSkin(window,tab)
     pageLabel.TextColor3=dim
     local nextPage=action(footer,"›",false)
 
-    local previewLabel=copy(previewScroll,"VISTA PREVIA",10,true)
+    local previewLabel=copy(right,"VISTA PREVIA",10,true)
     previewLabel.TextColor3=dim
-    local previewImage=curve(el("ImageLabel",previewScroll,{Name="OutfitPreview",
+    local previewImage=curve(el("ImageLabel",right,{Name="OutfitPreview",
         Image="",ScaleType=Enum.ScaleType.Fit,BackgroundColor3=fieldBg,
         BorderSizePixel=0,ZIndex=17}),12)
     local previewStroke=edge(previewImage,.47)
-    local previewName=copy(previewScroll,"Selecciona un outfit",12,true)
-    local previewId=copy(previewScroll,"",10,false)
+    local previewName=copy(right,"Selecciona un outfit",12,true)
+    local previewId=copy(right,"",10,false)
     previewId.TextColor3=dim
     local apply=action(right,"Aplicar outfit",true)
 
@@ -7602,8 +7603,12 @@ local function mountRyouSkin(window,tab)
     end
     back.Activated:Connect(closeGallery)
     designerOpenOutfits=function()
+        if not gallery or not gallery.Parent then
+            error("La galería no está disponible")
+        end
         if tab.ConceptShell then tab.ConceptShell.Visible=false end
         gallery.Visible=true
+        gallery.Active=true
         if ryouSkin.Username~="" and username.Text=="" then
             username.Text="@"..ryouSkin.Username
         end
@@ -7669,28 +7674,19 @@ local function mountRyouSkin(window,tab)
         local columns=listW>=345 and 3 or 2
         local cellW=math.max(70,math.floor((listW-8-(columns-1)*6)/columns))
         grid.CellSize=UDim2.fromOffset(cellW,math.clamp(math.floor(cellW*.88)+23,91,122))
-        -- Independiente del scroll de la galería, el panel de detalles se
-        -- desplaza cuando no cabe. Aplicar permanece accesible al pie.
-        local rightW,rightH=right.Size.X.Offset,right.Size.Y.Offset
-        local previewHeight=math.max(85,rightH-62)
-        previewScroll.Position=UDim2.fromOffset(7,7)
-        previewScroll.Size=UDim2.new(1,-14,0,previewHeight)
-        previewLabel.Position=UDim2.fromOffset(6,3)
-        previewLabel.Size=UDim2.new(1,-21,0,20)
-        local imageHeight=math.clamp(math.floor((rightW-35)*.83),115,245)
-        previewImage.Position=UDim2.fromOffset(6,29)
-        previewImage.Size=UDim2.new(1,-22,0,imageHeight)
-        previewName.Position=UDim2.fromOffset(7,39+imageHeight)
-        previewName.Size=UDim2.new(1,-22,0,22)
-        previewId.Position=UDim2.fromOffset(7,65+imageHeight)
-        previewId.Size=UDim2.new(1,-22,0,19)
-        local contentHeight=imageHeight+98
-        previewScroll.CanvasSize=UDim2.fromOffset(0,contentHeight)
-        previewScroll.ScrollingEnabled=contentHeight>previewHeight
-        previewScroll.CanvasPosition=Vector2.new(0,math.clamp(
-            previewScroll.CanvasPosition.Y,0,math.max(0,contentHeight-previewHeight)))
-        apply.Position=UDim2.new(0,11,1,-44)
-        apply.Size=UDim2.new(1,-22,0,34)
+        -- Aplicar outfit queda visible arriba, sin scroll necesario.
+        local rightH=right.Size.Y.Offset
+        previewLabel.Position=UDim2.fromOffset(12,8)
+        previewLabel.Size=UDim2.new(1,-24,0,18)
+        apply.Position=UDim2.fromOffset(12,34)
+        apply.Size=UDim2.new(1,-24,0,34)
+        local imageH=math.max(82,rightH-167)
+        previewImage.Position=UDim2.fromOffset(12,75)
+        previewImage.Size=UDim2.new(1,-24,0,imageH)
+        previewName.Position=UDim2.fromOffset(12,82+imageH)
+        previewName.Size=UDim2.new(1,-24,0,22)
+        previewId.Position=UDim2.fromOffset(12,106+imageH)
+        previewId.Size=UDim2.new(1,-24,0,20)
     end
     gallery:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutGallery)
     task.defer(layoutGallery)
