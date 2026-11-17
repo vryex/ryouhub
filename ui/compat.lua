@@ -164,7 +164,7 @@ local THEMES = {
 
 local CURRENT_THEME_NAME = canonicalThemeName(XeroEnv.XERO_THEME or "Xero")
 local CURRENT_THEME = THEMES[CURRENT_THEME_NAME] or THEMES.Xero
-local Nox = { Version = "10.0.0-vertical-concept-c", Brand = "Ryou", SupportsGameLabels = true, Creator = "Ryou", UIScale = 1 }
+local Nox = { Version = "11.0.0-editorial", Brand = "Ryou", SupportsGameLabels = true, Creator = "Ryou", UIScale = 1 }
 local C, Glass = {}, {}
 
 local function overwriteTable(target, source)
@@ -207,7 +207,7 @@ end
 -- PNGs live in /icons on GitHub. They are downloaded lazily once, cached locally
 -- and reused by every control/tab that declares Icon = "name".
 local XERO_ICON_BASE_URL = tostring(XeroEnv.XERO_ICON_BASE_URL or
-    "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/ryou-ui-v10-side-navigation/icons/")
+    "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/ryou-ui-v11-editorial/icons/")
 local XERO_ICON_CACHE_FOLDER = tostring(XeroEnv.XERO_ICON_CACHE_FOLDER or "Ryou/Icons/v2")
 
 local XERO_ICON_FILES = {
@@ -639,9 +639,9 @@ function Control:_resize(width)
     local copyOffsetX=self.CopyOffsetX or 0
     local copyWidth=math.max(30,headWidth-reserve-copyOffsetX)
     local titleHeight=textHeight(self.Title,self.TitleLabel.TextSize,self.TitleLabel.Font,copyWidth)
-    local descHeight=math.min(29,textHeight(self.Desc,self.DescLabel.TextSize,self.DescLabel.Font,copyWidth))
-    local copyHeight=titleHeight+(descHeight>0 and 4+descHeight or 0)
-    local headHeight=math.max(copyHeight,self.HeadMinimum or 0)
+    local descHeight=math.min(25,textHeight(self.Desc,self.DescLabel.TextSize,self.DescLabel.Font,copyWidth))
+    local copyHeight=titleHeight+(descHeight>0 and 2+descHeight or 0)
+    local headHeight=math.max(copyHeight,self.HeadMinimum or 0,self.CardIcon and 31 or 0)
     self.Head.Position=UDim2.fromOffset(px,py)
     self.Head.Size=UDim2.new(1,-px*2,0,headHeight)
     self.Copy.Position=UDim2.fromOffset(copyOffsetX,0)
@@ -663,8 +663,8 @@ function Control:_resize(width)
     end
     local y=py+headHeight
     if self.BodyField then
-        local fieldHeight=33
-        if self.ValueLabel then fieldHeight=math.max(33,textHeight(self.ValueLabel.Text,11,FONT,headWidth-36)+9) end
+        local fieldHeight=32
+        if self.ValueLabel then fieldHeight=math.clamp(textHeight(self.ValueLabel.Text,11,FONT,headWidth-36)+7,32,43) end
         self.BodyField.Position=UDim2.fromOffset(px,y+4)
         self.BodyField.Size=UDim2.new(1,-px*2,0,fieldHeight)
         y+=4+fieldHeight
@@ -845,18 +845,19 @@ function Tab:_control(kind, options)
         local iconKeys={Toggle="circle-dot",Button="zap",Input="keyboard",
             Slider="sliders-horizontal",Dropdown="folder-open",Colorpicker="palette",Paragraph="badge-info"}
         local chip=new("Frame",{Name="RyouCardIcon",BackgroundColor3=C.Field,BackgroundTransparency=.10,
-            Size=UDim2.fromOffset(34,34),Position=UDim2.fromOffset(0,0)},head)
-        round(chip,11)
+            Size=UDim2.fromOffset(29,29),Position=UDim2.fromOffset(0,0)},head)
+        round(chip,9)
         local chipStroke=stroke(chip,C.Border);chipStroke.Transparency=.38
         local fallback=label(chip,"•",20,C.White,{Font=BOLD,Size=UDim2.fromScale(1,1),
             TextXAlignment=Enum.TextXAlignment.Center})
-        local picture=remoteIcon(chip,iconKeys[kind] or "badge-info",20,C.White,function()
+        local picture=remoteIcon(chip,iconKeys[kind] or "badge-info",17,C.White,function()
             if fallback.Parent then fallback.Visible=false end
         end)
         picture.AnchorPoint=Vector2.new(.5,.5)
         picture.Position=UDim2.fromScale(.5,.5)
-        control.CopyOffsetX=45
+        control.CopyOffsetX=38
         control.CardIcon=chip
+        control.HeadMinimum=math.max(control.HeadMinimum or 0,31)
     end
     table.insert(self.Elements,control)
     if kind ~= "Section" then
@@ -1574,16 +1575,16 @@ function Nox:CreateWindow(options)
         BackgroundTransparency=Glass.Sidebar,ClipsDescendants=true,ZIndex=12},root)
     round(sidebar,18)
     local sidebarStroke=stroke(sidebar,w.ThemeDef.Visuals.SidebarStroke)
-    local railTitle=label(sidebar,"SECCIONES",10,C.Faint,{Name="RailTitle",Font=BOLD,
-        Position=UDim2.fromOffset(15,15),Size=UDim2.new(1,-30,0,18)})
+    local railTitle=label(sidebar,"SECCIONES",9,C.Faint,{Name="RailTitle",Font=BOLD,
+        Position=UDim2.fromOffset(13,10),Size=UDim2.new(1,-26,0,17)})
     local railDivider=new("Frame",{Name="RailDivider",BackgroundColor3=C.Border,
-        BackgroundTransparency=.52,Position=UDim2.fromOffset(12,43),
+        BackgroundTransparency=.62,Position=UDim2.fromOffset(11,33),
         Size=UDim2.new(1,-24,0,1)},sidebar)
-    local nav=scroll(sidebar,{Name="Tabs",Position=UDim2.fromOffset(6,53),
-        Size=UDim2.new(1,-12,1,-65),ScrollingDirection=Enum.ScrollingDirection.Y,
+    local nav=scroll(sidebar,{Name="Tabs",Position=UDim2.fromOffset(5,41),
+        Size=UDim2.new(1,-10,1,-48),ScrollingDirection=Enum.ScrollingDirection.Y,
         AutomaticCanvasSize=Enum.AutomaticSize.Y,ScrollBarThickness=2})
     local navLayout=new("UIListLayout",{FillDirection=Enum.FillDirection.Vertical,
-        SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,6)},nav)
+        SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,4)},nav)
     local function fitNavigation()
         nav.CanvasSize=UDim2.fromOffset(0,navLayout.AbsoluteContentSize.Y+10)
     end
@@ -1795,11 +1796,11 @@ function Nox:CreateWindow(options)
         local compact=width<680 or height<390
         local inset=compact and 10 or 14
         local topHeight=compact and 56 or 64
-        local navWidth=width<560 and 60 or (width<800 and 140 or 176)
+        local navWidth=width<510 and 52 or (width<850 and 118 or 138)
         local contentY=topHeight+10
         local contentEnd=height-inset
         w._compactNavigation=compact
-        w._iconOnlyNav=width<560
+        w._iconOnlyNav=width<510
 
         w.Short=height<435
         w.Narrow=width<500
@@ -1843,13 +1844,13 @@ function Nox:CreateWindow(options)
         sidebar.Visible=true
         railTitle.Visible=not w._iconOnlyNav
         railDivider.Visible=not w._iconOnlyNav
-        nav.Position=UDim2.fromOffset(5,w._iconOnlyNav and 9 or 53)
-        nav.Size=UDim2.new(1,-10,1,w._iconOnlyNav and -16 or -64)
+        nav.Position=UDim2.fromOffset(5,w._iconOnlyNav and 8 or 41)
+        nav.Size=UDim2.new(1,-10,1,w._iconOnlyNav and -15 or -47)
         for _,tab in ipairs(w.Tabs) do
             if tab.NavButton then
                 if tab.NavTitle then tab.NavTitle.Visible=not w._iconOnlyNav end
                 if tab.NavIcon then
-                    tab.NavIcon.Position=w._iconOnlyNav and UDim2.new(.5,-9,.5,-9) or UDim2.fromOffset(13,12)
+                    tab.NavIcon.Position=w._iconOnlyNav and UDim2.new(.5,-9,.5,-9) or UDim2.fromOffset(9,8)
                 end
             end
         end
@@ -1996,7 +1997,7 @@ function Nox:CreateWindow(options)
         local list=scroll(mainCard,{Name="Options",Position=UDim2.fromOffset(10,75),
             Size=UDim2.new(1,-20,1,-85),AutomaticCanvasSize=Enum.AutomaticSize.None,
             ScrollBarThickness=3,ScrollBarImageColor3=C.White})
-        vertical(list,6); padding(list,2,2)
+        vertical(list,5); padding(list,2,2)
         local empty=label(mainCard,"Sin coincidencias. Prueba otra búsqueda.",12,C.Muted,{
             Position=UDim2.fromOffset(18,89),Size=UDim2.new(1,-36,0,46),
             TextWrapped=true,Visible=false,ZIndex=5})
@@ -2163,15 +2164,15 @@ function Nox:CreateWindow(options)
         end)
         task.defer(fitConcept)
         local hasIcon=opt.Icon~=nil and tostring(opt.Icon)~=""
-        local labelX=hasIcon and 42 or 14
+        local labelX=hasIcon and 34 or 10
         self._navOrder+=1
-        local navButton=button(holder or nav,"",{Name=title,Size=UDim2.new(1,-8,0,43),
+        local navButton=button(holder or nav,"",{Name=title,Size=UDim2.new(1,-6,0,34),
             BackgroundColor3=self.ThemeDef.Visuals.NavButtonIdle,
-            BackgroundTransparency=Glass.NavIdle,LayoutOrder=self._navOrder})
-        round(navButton,12)
+            BackgroundTransparency=.78,LayoutOrder=self._navOrder})
+        round(navButton,10)
         -- Barra vertical menta como indicador activo, propia de Ryou.
-        local selectionBar=new("Frame",{Name="Selected",Position=UDim2.new(0,2,.5,-12),
-            Size=UDim2.fromOffset(3,24),BackgroundColor3=C.White,
+        local selectionBar=new("Frame",{Name="Selected",Position=UDim2.new(0,2,.5,-9),
+            Size=UDim2.fromOffset(3,18),BackgroundColor3=C.White,
             BackgroundTransparency=0,Visible=false,ZIndex=3},navButton)
         round(selectionBar,3)
         local navIcon
@@ -2179,13 +2180,13 @@ function Nox:CreateWindow(options)
             Position=UDim2.fromOffset(10,0),Size=UDim2.new(0,15,1,0),Visible=false})
         if hasIcon then
             local placeholder=label(navButton,"•",14,C.Faint,{Position=UDim2.fromOffset(12,0),
-                Size=UDim2.fromOffset(18,43),TextXAlignment=Enum.TextXAlignment.Center})
-            navIcon=remoteIcon(navButton,opt.Icon,18,C.Faint,function()
+                Size=UDim2.fromOffset(17,34),TextXAlignment=Enum.TextXAlignment.Center})
+            navIcon=remoteIcon(navButton,opt.Icon,17,C.Faint,function()
                 if placeholder.Parent then placeholder.Visible=false end
             end)
-            navIcon.Position=UDim2.fromOffset(13,12)
+            navIcon.Position=UDim2.fromOffset(9,8)
         end
-        local titleLabel=label(navButton,title,11,C.Muted,{
+        local titleLabel=label(navButton,title,10,C.Muted,{
             Position=UDim2.fromOffset(labelX,0),Size=UDim2.new(1,-labelX-6,1,0),
             Font=MEDIUM,TextTruncate=Enum.TextTruncate.AtEnd})
         titleLabel.Visible=not self._iconOnlyNav
