@@ -164,7 +164,7 @@ local THEMES = {
 
 local CURRENT_THEME_NAME = canonicalThemeName(XeroEnv.XERO_THEME or "Xero")
 local CURRENT_THEME = THEMES[CURRENT_THEME_NAME] or THEMES.Xero
-local Nox = { Version = "8.0.0-concept-c-compact", Brand = "Ryou", SupportsGameLabels = true, Creator = "Ryou", UIScale = 1 }
+local Nox = { Version = "9.0.0-concept-c-keyboard", Brand = "Ryou", SupportsGameLabels = true, Creator = "Ryou", UIScale = 1 }
 local C, Glass = {}, {}
 
 local function overwriteTable(target, source)
@@ -207,7 +207,7 @@ end
 -- PNGs live in /icons on GitHub. They are downloaded lazily once, cached locally
 -- and reused by every control/tab that declares Icon = "name".
 local XERO_ICON_BASE_URL = tostring(XeroEnv.XERO_ICON_BASE_URL or
-    "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/ryou-ui-v8-compact-home/icons/")
+    "https://raw.githubusercontent.com/vryex/ryouhub/refs/heads/ryou-ui-v9-mobile-textbox/icons/")
 local XERO_ICON_CACHE_FOLDER = tostring(XeroEnv.XERO_ICON_CACHE_FOLDER or "Ryou/Icons/v2")
 
 local XERO_ICON_FILES = {
@@ -1018,6 +1018,105 @@ function Tab:Toggle(options)
     connect(c.Window,target.Activated,function() if not c.Locked then c:Set(not c.Value) end end)
     return c
 end
+-- Entrada táctil independiente: el teclado usa un TextBox real en PlayerGui.
+-- Conserva TextBox nativo en escritorio y el contenido original en la UI.
+local nativeTextCommit = setmetatable({}, {__mode="k"})
+local nativeEditorOpen = false
+local function openNativeTextEditor(sourceBox)
+    if nativeEditorOpen or not sourceBox or not sourceBox.Parent then return end
+    local localPlayer = Players.LocalPlayer
+    if not localPlayer then return end
+    local playerGui=localPlayer:FindFirstChildOfClass("PlayerGui")
+        or localPlayer:WaitForChild("PlayerGui",5)
+    if not playerGui then return end
+
+    nativeEditorOpen=true
+    local window=Nox.Window
+    local mainGui=window and window.ScreenGui
+    local launcherGui=window and window.LauncherGui
+    local mainEnabled=mainGui and mainGui.Enabled
+    local launcherEnabled=launcherGui and launcherGui.Enabled
+    if mainGui then mainGui.Enabled=false end
+    if launcherGui then launcherGui.Enabled=false end
+
+    local mobileGui=new("ScreenGui",{Name="RyouMobileKeyboard",ResetOnSpawn=false,
+        IgnoreGuiInset=true,DisplayOrder=2147483600,ZIndexBehavior=Enum.ZIndexBehavior.Sibling},playerGui)
+    pcall(function()
+        mobileGui.ScreenInsets=Enum.ScreenInsets.None
+        mobileGui.ClipToDeviceSafeArea=false
+    end)
+    local backdrop=new("Frame",{Name="Darken",Size=UDim2.fromScale(1,1),
+        BackgroundColor3=Color3.fromRGB(4,9,14),BackgroundTransparency=.19,
+        BorderSizePixel=0,Active=true},mobileGui)
+    local card=new("Frame",{Name="TextEntry",AnchorPoint=Vector2.new(.5,0),
+        Position=UDim2.new(.5,0,0,30),Size=UDim2.new(.94,0,0,174),
+        BackgroundColor3=Color3.fromRGB(12,22,26),BorderSizePixel=0},backdrop)
+    round(card,20)
+    stroke(card,Color3.fromRGB(128,228,203))
+    new("UISizeConstraint",{MaxSize=Vector2.new(520,174)},card)
+    label(card,"Escribir ajuste",16,C.Text,{
+        Position=UDim2.fromOffset(16,12),Size=UDim2.new(1,-32,0,24),Font=BOLD})
+    local editor=new("TextBox",{Name="NativePlayerGuiTextBox",Text=tostring(sourceBox.Text or ""),
+        PlaceholderText=sourceBox.PlaceholderText~="" and sourceBox.PlaceholderText or "Escribe aquí...",
+        PlaceholderColor3=Color3.fromRGB(142,164,168),
+        TextColor3=Color3.fromRGB(240,255,249),TextSize=17,
+        Font=Enum.Font.Gotham,TextXAlignment=Enum.TextXAlignment.Left,
+        BackgroundColor3=Color3.fromRGB(21,37,42),BorderSizePixel=0,
+        ClearTextOnFocus=false,TextEditable=true,Active=true,Selectable=true,
+        MultiLine=false,Position=UDim2.fromOffset(15,45),
+        Size=UDim2.new(1,-30,0,49)},card)
+    round(editor,12)
+    local editorEdge=stroke(editor,Color3.fromRGB(80,132,134));editorEdge.Transparency=.2
+    padding(editor,12,0)
+    local cancel=button(card,"Cancelar",{Position=UDim2.new(0,15,0,109),
+        Size=UDim2.fromOffset(107,44),TextSize=13})
+    round(cancel,11)
+    local save=button(card,"Guardar",{Position=UDim2.new(1,-122,0,109),
+        Size=UDim2.fromOffset(107,44),TextSize=13,
+        BackgroundColor3=Color3.fromRGB(143,243,214),TextColor3=Color3.fromRGB(12,25,28)})
+    round(save,11)
+    local finished=false
+    local function finish(commit)
+        if finished then return end
+        finished=true
+        local value=editor.Text
+        pcall(function() editor:ReleaseFocus() end)
+        mobileGui:Destroy()
+        if mainGui and mainGui.Parent then mainGui.Enabled=mainEnabled end
+        if launcherGui and launcherGui.Parent then launcherGui.Enabled=launcherEnabled end
+        nativeEditorOpen=false
+        if commit and sourceBox.Parent then
+            sourceBox.Text=value
+            local callback=nativeTextCommit[sourceBox]
+            if callback then pcall(callback,value) end
+        end
+    end
+    cancel.Activated:Connect(function() finish(false) end)
+    save.Activated:Connect(function() finish(true) end)
+    editor.FocusLost:Connect(function(enter)
+        if enter then finish(true) end
+    end)
+    editor.ReturnPressedFromOnScreenKeyboard:Connect(function() finish(true) end)
+    task.defer(function()
+        if not finished and editor.Parent then
+            pcall(function() editor:CaptureFocus() end)
+        end
+    end)
+end
+
+local function bindNativeMobileTextBox(box)
+    if not Input.TouchEnabled or not box or not box:IsA("TextBox") then return end
+    if box:FindFirstChild("RyouMobileTextHit") then return end
+    local touchTarget=button(box,"",{Name="RyouMobileTextHit",BackgroundTransparency=1,
+        Size=UDim2.fromScale(1,1),ZIndex=math.max(4,box.ZIndex+2),
+        AutoButtonColor=false})
+    touchTarget.Activated:Connect(function()
+        if box.Parent and box.Visible and box.TextEditable then
+            openNativeTextEditor(box)
+        end
+    end)
+end
+
 local function field(parent, placeholder)
     local box=new("TextBox",{Name="Field",Text="",PlaceholderText=placeholder or "",
         PlaceholderColor3=C.Faint,BackgroundColor3=C.Field,BackgroundTransparency=Glass.Field,
@@ -1025,33 +1124,7 @@ local function field(parent, placeholder)
         TextXAlignment=Enum.TextXAlignment.Left,TextSize=12,Size=UDim2.new(1,0,0,34),
         ZIndex=6,LayoutOrder=2},parent)
     round(box,10); stroke(box,C.Border); padding(box,9,0)
-    -- Forzar foco táctil: algunos clientes no activan el teclado dentro
-    -- de un ScrollingFrame anidado sin CaptureFocus explícito.
-    box.InputBegan:Connect(function(input)
-        if input.UserInputType==Enum.UserInputType.Touch
-            or input.UserInputType==Enum.UserInputType.MouseButton1 then
-            task.defer(function()
-                if box.Parent and box.Visible and box.TextEditable
-                    and Input:GetFocusedTextBox()~=box then
-                    pcall(function() box:CaptureFocus() end)
-                end
-            end)
-        end
-    end)
-    -- Área táctil explícita: un TextBox dentro de ScrollingFrame puede
-    -- recibir el toque sin que el teclado virtual aparezca.
-    local focusHit=button(box,"",{Name="TextFocusHit",BackgroundTransparency=1,
-        Size=UDim2.fromScale(1,1),ZIndex=box.ZIndex+1})
-    focusHit.AutoButtonColor=false
-    focusHit.Activated:Connect(function()
-        task.defer(function()
-            if box.Parent and box.TextEditable then
-                pcall(function() box:CaptureFocus() end)
-            end
-        end)
-    end)
-    box.Focused:Connect(function() focusHit.Visible=false end)
-    box.FocusLost:Connect(function() focusHit.Visible=true end)
+    bindNativeMobileTextBox(box)
     return box
 end
 function Tab:Input(options)
@@ -1063,6 +1136,9 @@ function Tab:Input(options)
         self.Value=value; box.Text=value
         if changed and not silent then invoke(self.Callback,value) end
         return self
+    end
+    nativeTextCommit[box]=function(value)
+        if not c.Locked then c:Set(value) end
     end
     c:Set(o.Value or o.Default or "",true)
     local wasScrollable=true
@@ -1190,9 +1266,13 @@ function Tab:Slider(options)
             c.Window:_beginDrag(input,update,self.Content,c); update(input.Position)
         end
     end)
-    connect(c.Window,box.FocusLost,function()
-        if not c.Locked then c:Set(tonumber(box.Text)) end
+    local function acceptNumeric(value)
+        if not c.Locked then c:Set(tonumber(value)) end
         box.Text=format(c.Value)
+    end
+    nativeTextCommit[box]=acceptNumeric
+    connect(c.Window,box.FocusLost,function()
+        acceptNumeric(box.Text)
     end)
     c.Interactive=area
     c:Set(range.Default or (type(o.Value)=="number" and o.Value) or o.Default or low,true)
@@ -1523,6 +1603,18 @@ function Nox:CreateWindow(options)
     local launcherSurface=new("Frame",{Name="FullScreen",BackgroundTransparency=1,Size=UDim2.fromScale(1,1)},launcherGui)
     w.LauncherGui=launcherGui
     self.ScreenGui=gui; w.ScreenGui=gui
+    -- También cubre inputs creados después: búsqueda, dropdown y Outfits.
+    if Input.TouchEnabled then
+        connect(w,gui.DescendantAdded,function(descendant)
+            if descendant:IsA("TextBox") then
+                task.defer(function()
+                    if not w.Destroyed and descendant.Parent then
+                        bindNativeMobileTextBox(descendant)
+                    end
+                end)
+            end
+        end)
+    end
     -- Full-viewport bounds are shared by popups, dragging and responsive layout.
     local surface=new("Frame",{Name="Surface",BackgroundTransparency=1,Size=UDim2.fromScale(1,1)},gui)
     local mount=new("Frame",{Name="WindowMount",BackgroundTransparency=1,Size=UDim2.fromScale(1,1)},surface)
