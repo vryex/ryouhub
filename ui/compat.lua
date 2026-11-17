@@ -487,6 +487,7 @@ local function remoteIcon(parent, name, size, color, onReady)
     end)
     return image
 end
+local uiTween
 local function button(parent, text, props)
     local p = {
         Text = text or "",
@@ -495,7 +496,26 @@ local function button(parent, text, props)
         Size = UDim2.fromOffset(36,36)
     }
     for k,v in pairs(props or {}) do p[k] = v end
-    return new("TextButton", p, parent)
+    local surface=new("TextButton", p, parent)
+    -- Microinteracción sutil; no reescalar modales ni superficies de arrastre.
+    local excluded={ModalBackdrop=true,Modal=true,SVPlane=true,HueStrip=true,
+        ToggleHit=true,SliderArea=true}
+    if not excluded[tostring(p.Name or "")] then
+        local pressScale=new("UIScale",{Name="RyouPress",Scale=1},surface)
+        surface.InputBegan:Connect(function(input)
+            if input.UserInputType==Enum.UserInputType.Touch
+                or input.UserInputType==Enum.UserInputType.MouseButton1 then
+                uiTween(pressScale,{Scale=.976},.095,Enum.EasingStyle.Quad)
+            end
+        end)
+        surface.InputEnded:Connect(function(input)
+            if input.UserInputType==Enum.UserInputType.Touch
+                or input.UserInputType==Enum.UserInputType.MouseButton1 then
+                uiTween(pressScale,{Scale=1},.24,Enum.EasingStyle.Back)
+            end
+        end)
+    end
+    return surface
 end
 local function plain(text)
     return tostring(text or ""):gsub("<[^>]+>", "")
@@ -520,7 +540,7 @@ local function connect(window, signal, callback, bucket)
     table.insert(bucket or window._connections, connection)
     return connection
 end
-local function uiTween(object,goal,duration,easing)
+uiTween=function(object,goal,duration,easing)
     if not object or not object.Parent then return nil end
     local tween=TweenService:Create(object,
         TweenInfo.new(duration or .17,easing or Enum.EasingStyle.Quad,Enum.EasingDirection.Out),goal)
@@ -1047,7 +1067,18 @@ local function field(parent, placeholder)
         Active=true,TextEditable=true,Selectable=true,MultiLine=false,
         Size=UDim2.new(1,0,0,34),ZIndex=20,LayoutOrder=2
     },parent)
-    round(box,10);stroke(box,C.Border);padding(box,10,0)
+    round(box,10)
+    local focusStroke=stroke(box,C.Border)
+    focusStroke.Transparency=.28
+    padding(box,10,0)
+    box.Focused:Connect(function()
+        uiTween(focusStroke,{Color3=C.White,Transparency=.04},.20,Enum.EasingStyle.Quart)
+        uiTween(box,{BackgroundTransparency=.03},.17)
+    end)
+    box.FocusLost:Connect(function()
+        uiTween(focusStroke,{Color3=C.Border,Transparency=.28},.22)
+        uiTween(box,{BackgroundTransparency=Glass.Field},.24)
+    end)
     return box
 end
 function Tab:Input(options)
@@ -2091,13 +2122,24 @@ function Nox:CreateWindow(options)
                 BackgroundColor3=selected and C.Hover or self.ThemeDef.Visuals.NavButtonIdle,
                 BackgroundTransparency=selected and Glass.NavActive or Glass.NavIdle
             },.19)
-            tab.NavTitle.TextColor3=selected and C.Text or C.Muted
+            uiTween(tab.NavTitle,{TextColor3=selected and C.Text or C.Muted},.24)
+            if tab.NavScale then uiTween(tab.NavScale,{Scale=selected and 1.012 or 1},.24,Enum.EasingStyle.Quart) end
             if tab.Number then tab.Number.TextColor3=selected and C.Text or C.Faint end
             if tab.NavIcon then tab.NavIcon.ImageColor3=selected and C.Text or C.Faint end
             if tab.SelectionBar then
                 tab.SelectionBar.Visible=selected
                 tab.SelectionBar.BackgroundColor3=self.ThemeName=="Blanco" and C.Text or C.White
-                tab.SelectionBar.BackgroundTransparency=selected and 0 or 1
+                if selected then
+                    tab.SelectionBar.Size=UDim2.fromOffset(3,3)
+                    tab.SelectionBar.Position=UDim2.new(0,2,.5,-1)
+                    uiTween(tab.SelectionBar,{
+                        Size=UDim2.fromOffset(3,18),
+                        Position=UDim2.new(0,2,.5,-9),
+                        BackgroundTransparency=0
+                    },.30,Enum.EasingStyle.Back)
+                else
+                    tab.SelectionBar.BackgroundTransparency=1
+                end
             end
         end
         pageTitle.Text=target.Title; pageDesc.Text=target.Desc
@@ -2112,8 +2154,8 @@ function Nox:CreateWindow(options)
             if self._pageTween then self._pageTween:Cancel() end
             if previous then previous.Page.Position=UDim2.fromOffset(0,0) end
             if self.Opened then
-                target.Page.Position=UDim2.fromOffset(12,0)
-                self._pageTween=TweenService:Create(target.Page,TweenInfo.new(.23,Enum.EasingStyle.Quart),
+                target.Page.Position=UDim2.fromOffset(15,0)
+                self._pageTween=TweenService:Create(target.Page,TweenInfo.new(.31,Enum.EasingStyle.Quint),
                     {Position=UDim2.fromOffset(0,0)})
                 self._pageTween:Play()
             end
@@ -2150,7 +2192,7 @@ function Nox:CreateWindow(options)
             round(p,20)
             local edge=stroke(p,C.Border); edge.Transparency=.16
             local panelGradient=new("UIGradient",{Rotation=102,Color=ColorSequence.new(
-                Color3.fromRGB(22,43,45),Color3.fromRGB(9,19,23))},p)
+                Color3.fromRGB(20,37,41),Color3.fromRGB(9,17,22))},p)
             table.insert(conceptPanelSkins,{Panel=p,Edge=edge,Gradient=panelGradient})
             return p
         end
@@ -2359,6 +2401,8 @@ function Nox:CreateWindow(options)
             BackgroundColor3=self.ThemeDef.Visuals.NavButtonIdle,
             BackgroundTransparency=.78,LayoutOrder=self._navOrder})
         round(navButton,10)
+        local navScale=new("UIScale",{Scale=1},navButton)
+        tab.NavScale=navScale
         -- Barra vertical menta como indicador activo, propia de Ryou.
         local selectionBar=new("Frame",{Name="Selected",Position=UDim2.new(0,2,.5,-9),
             Size=UDim2.fromOffset(3,18),BackgroundColor3=C.White,
@@ -2385,12 +2429,14 @@ function Nox:CreateWindow(options)
         table.insert(self.Tabs,tab)
         connect(self,navButton.Activated,function() self:SelectTab(tab) end)
         connect(self,navButton.MouseEnter,function()
+            uiTween(navScale,{Scale=1.025},.19,Enum.EasingStyle.Quart)
             if self.CurrentTab~=tab then
                 navButton.BackgroundColor3=self.ThemeDef.Visuals.NavButtonHover
                 navButton.BackgroundTransparency=Glass.NavHover
             end
         end)
         connect(self,navButton.MouseLeave,function()
+            uiTween(navScale,{Scale=1},.24,Enum.EasingStyle.Quart)
             if self.CurrentTab~=tab then
                 navButton.BackgroundColor3=self.ThemeDef.Visuals.NavButtonIdle
                 navButton.BackgroundTransparency=Glass.NavIdle
