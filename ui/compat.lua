@@ -1344,8 +1344,15 @@ function Tab:Dropdown(options)
                             Size=UDim2.fromOffset(20,33),
                             TextXAlignment=Enum.TextXAlignment.Center
                         })
-                        hover(window,item,selected and C.Hover or C.Row,
-                            selected and .12 or .44,C.Hover,.05)
+                        -- Los listeners de opciones se eliminan al filtrar/cerrar.
+                        -- Evitar listeners globales acumulados en búsquedas largas.
+                        connect(window,item.MouseEnter,function()
+                            uiTween(item,{BackgroundColor3=C.Hover,BackgroundTransparency=.07},.15)
+                        end,optionConnections)
+                        connect(window,item.MouseLeave,function()
+                            uiTween(item,{BackgroundColor3=selected and C.Hover or C.Row,
+                                BackgroundTransparency=selected and .12 or .44},.19)
+                        end,optionConnections)
                         connect(window,item.Activated,function()
                             if c.Locked then return end
                             if c.Multi then
@@ -1353,7 +1360,6 @@ function Tab:Dropdown(options)
                                 local j=table.find(a,value)
                                 if j then table.remove(a,j) else table.insert(a,value) end
                                 c:Set(a)
-                                render()
                             else
                                 c:Set(value,false,true)
                                 c:Close()
@@ -1424,6 +1430,20 @@ function Tab:Dropdown(options)
             render()
             uiTween(triggerEdge,{Color3=C.White,Transparency=.08},.18)
             uiTween(indicator,{Rotation=180,TextColor3=C.White},.23,Enum.EasingStyle.Quart)
+            -- Si está al fondo del panel, desplazarse suavemente para
+            -- revelar las opciones, sin dejar la lista cortada.
+            task.delay(.26,function()
+                if not c._dropdownOpen or window.Destroyed or window.CurrentTab~=c.Tab then return end
+                local viewport=c.Tab.Content
+                local bottom=panel.AbsolutePosition.Y+panel.AbsoluteSize.Y
+                local visibleBottom=viewport.AbsolutePosition.Y+viewport.AbsoluteSize.Y-8
+                local delta=bottom-visibleBottom
+                if delta>0 then
+                    local maximum=math.max(0,viewport.AbsoluteCanvasSize.Y-viewport.AbsoluteWindowSize.Y)
+                    uiTween(viewport,{CanvasPosition=Vector2.new(0,math.clamp(
+                        viewport.CanvasPosition.Y+delta+9,0,maximum))},.22,Enum.EasingStyle.Quart)
+                end
+            end)
         else
             uiTween(triggerEdge,{Color3=C.Border,Transparency=.18},.19)
             uiTween(indicator,{Rotation=0,TextColor3=C.Muted},.20,Enum.EasingStyle.Quart)
@@ -1914,6 +1934,9 @@ function Nox:CreateWindow(options)
         if scroller then scroller.ScrollingEnabled=false end
     end
     function w:_closePopup()
+        if self._inlineOpen and self._inlineOpen.Close then
+            self._inlineOpen:Close(true)
+        end
         self:_endDrag(); disconnect(self._popupConnections)
         if self._popupCleanup then self._popupCleanup(); self._popupCleanup=nil end
         if self._popupLayer then self._popupLayer:Destroy(); self._popupLayer=nil end
