@@ -163,7 +163,6 @@ end
 
 -- Coordinates are on a 24 × 24 grid. Width is measured perpendicular to each segment.
 local icons = {
-    ryou = {{4,3,4,21,3},{4,4,15,4,3},{15,4,20,8,3},{20,8,15,12,3},{10,12,15,12,3},{13,15,20,21,3}},
     minimize = {{5,12,19,12}},
     cloud = {{5,18,19,18},{5,18,3,15},{3,15,4,11},{4,11,8,11},{8,11,10,6},{10,6,15,6},{15,6,18,11},{18,11,21,12},{21,12,21,16},{21,16,19,18}},
     bell = {{4,17,20,17},{6,17,8,13},{8,13,8,7},{8,7,12,4},{12,4,16,7},{16,7,16,13},{16,13,18,17},{10,20,14,20}},
@@ -195,7 +194,7 @@ local iconAliases = {
 
 function UI:RegisterIcon(name, asset)
     assert(type(name) == "string" and name ~= "", "Expected an icon name")
-    assert(not icons[name] and not iconAliases[name], "This built-in icon name is reserved")
+    assert(name ~= "ryou" and not icons[name] and not iconAliases[name], "This built-in icon name is reserved")
     assert(type(asset) == "string" and asset:match("^rbxassetid://%d+$"), "Expected an rbxassetid:// URL")
     self._assets = self._assets or {}
     self._assets[name] = asset
@@ -203,7 +202,7 @@ function UI:RegisterIcon(name, asset)
 end
 
 function UI:GetIcons()
-    local names = {}
+    local names = {"ryou"}
     for name in pairs(icons) do table.insert(names, name) end
     for name in pairs(iconAliases) do table.insert(names, name) end
     for name in pairs(self._assets or {}) do table.insert(names, name) end
@@ -211,105 +210,222 @@ function UI:GetIcons()
     return names
 end
 
--- Reconstructed from the master and the monogram close-up. The exported SVG uses the same points.
-local FACETS = {
-    { rgb(22, 151, 118), rgb(130, 255, 216), {6,9,58,6,72,11,94,32,79,53,61,55,93,82,68,76,43,50,69,48,76,38,62,24,21,25} },
-    { rgb(226, 255, 247), rgb(121, 255, 210), {6,9,58,6,49,12,15,16} },
-    { rgb(90, 237, 183), rgb(9, 113, 88), {15,16,49,12,58,6,72,11,94,32,80,37,62,24,21,25} },
-    { rgb(70, 240, 180), rgb(149, 255, 218), {94,32,79,53,61,55,51,50,69,48,76,38} },
-    { rgb(27, 146, 114), rgb(110, 255, 201), {51,50,61,55,93,82,69,75} },
-    { rgb(132, 255, 212), rgb(46, 198, 148), {27,33,43,32,24,71,4,82} },
-    { rgb(25, 144, 111), rgb(189, 255, 234), {27,33,31,37,13,76,4,82} },
-    { rgb(190, 255, 231), rgb(36, 185, 139), {27,33,43,32,40,36,31,37} },
+-- The artwork revision is separate from the library revision so each URL is immutable.
+local ASSET_REVISION = "be94fa3ecf37965ceae1e7e51f1449d178e6c642"
+local ASSET_URL = "https://raw.githubusercontent.com/vryex/ryouhub/" .. ASSET_REVISION .. "/ryou-ui-v14/assets/neo/"
+local CACHE_VERSION = ASSET_REVISION:sub(1, 12)
+local CACHE_DIR = "RyouUI/Cache/" .. CACHE_VERSION
+local PNG_SIGNATURE = "\137PNG\r\n\26\n"
+local AssetRegistry = {
+    logo_small = { file = "R_FACETADA_VECTOR_512.png", bytes = 34353 },
+    logo_hero = { file = "R_GENERADA_CON_BRILLO_RGBA_1254.png", bytes = 677407 },
+    logo_glow = { file = "R_HALO_SUAVE_RGBA_1024.png", bytes = 98888 },
+    launcher = { file = "LAUNCHER_GENERADO_RGBA_1254.png", bytes = 1379512 },
+    launcher_fallback = { file = "LAUNCHER_CIRCULAR_VECTOR_512.png", bytes = 91469 },
+    header_ribbon = { file = "HEADER_DIAGONAL_RGBA.png", bytes = 63746 },
+    hero_orbits = { file = "HERO_ORBITAS_RGBA.png", bytes = 160011 },
+    rail_glow = { file = "RAIL_INFERIOR_RGBA.png", bytes = 43775 },
+    background_artwork = { file = "FONDO_NEON_ARTWORK_1672x941.png", bytes = 1477520 },
+    logo_mono = { file = "R_FACETADA_MONO_512.png", bytes = 17839 },
 }
+
+local ImageAssets = { ready = {}, pending = {}, warned = {} }
+
+local function hostFunction(...)
+    for index = 1, select("#", ...) do
+        local fn = select(index, ...)
+        if type(fn) == "function" then return fn end
+    end
+end
+
+local registerImage = hostFunction(getcustomasset, getsynasset, syn and syn.getcustomasset)
+local sendRequest = hostFunction(request, http_request, syn and syn.request)
+
+local function assetWarning(key, message)
+    if ImageAssets.warned[key] then return end
+    ImageAssets.warned[key] = true
+    warn("[Ryou UI] " .. message)
+end
+
+local function validPng(data, asset)
+    return type(data) == "string" and #data == asset.bytes
+        and data:sub(1, 8) == PNG_SIGNATURE and data:sub(13, 16) == "IHDR"
+        and data:sub(-8, -5) == "IEND"
+end
+
+local function downloadPng(asset)
+    local url = ASSET_URL .. asset.file
+    local ok, data = pcall(function() return game:HttpGet(url) end)
+    if ok and validPng(data, asset) then return data end
+    if sendRequest then
+        local sent, result = pcall(sendRequest, { Url = url, Method = "GET" })
+        if sent and type(result) == "table" and result.StatusCode == 200 and validPng(result.Body, asset) then
+            return result.Body
+        end
+    end
+end
+
+local function localImage(path)
+    local ok, contentId = pcall(registerImage, path)
+    if ok and type(contentId) == "string" and contentId ~= "" then return contentId end
+end
+
+local function cacheContains(path, asset)
+    if type(isfile) == "function" then
+        local ok, exists = pcall(isfile, path)
+        if ok and not exists then return false end
+        if ok and type(readfile) ~= "function" then return exists end
+    end
+    if type(readfile) == "function" then
+        local ok, data = pcall(readfile, path)
+        return ok and validPng(data, asset)
+    end
+    return false
+end
+
+local function prepareCache()
+    if ImageAssets.cachePrefix then return ImageAssets.cachePrefix end
+    local prefix = "RyouUI-" .. CACHE_VERSION .. "-"
+    if type(makefolder) == "function" then
+        local available = true
+        for _, folder in ipairs({ "RyouUI", "RyouUI/Cache", CACHE_DIR }) do
+            local known, exists = false, false
+            if type(isfolder) == "function" then known, exists = pcall(isfolder, folder) end
+            if not (known and exists) then
+                local ok = pcall(makefolder, folder)
+                if known and not ok then available = false; break end
+            end
+        end
+        if available then prefix = CACHE_DIR .. "/" end
+    end
+    ImageAssets.cachePrefix = prefix
+    return prefix
+end
+
+local function resolveImage(asset)
+    local prefix = prepareCache()
+    local path = prefix .. asset.file
+    local flat = "RyouUI-" .. CACHE_VERSION .. "-" .. asset.file
+    for _, candidate in ipairs(path == flat and {path} or {path, flat}) do
+        if cacheContains(candidate, asset) then
+            local id = localImage(candidate)
+            if id then return id end
+        end
+    end
+
+    local data = downloadPng(asset)
+    if not data then
+        task.wait(.65)
+        data = downloadPng(asset)
+    end
+    if not data then return nil, "GitHub no devolvió el PNG esperado" end
+
+    local saved = pcall(writefile, path, data)
+    if not saved and path ~= flat then
+        path = flat
+        saved = pcall(writefile, path, data)
+    end
+    if not saved then return nil, "no se pudo guardar el PNG en la caché" end
+    local id = localImage(path)
+    if not id then return nil, "el cliente no pudo registrar el PNG local" end
+    return id
+end
+
+function ImageAssets:Get(name, done)
+    if not registerImage or type(writefile) ~= "function" then
+        assetWarning("host", "Arte Neo Sidebar no disponible. El cliente requiere writefile y getcustomasset/getsynasset. Se usa la interfaz de respaldo.")
+        return
+    end
+    if self.ready[name] then
+        if done then done(self.ready[name]) end
+        return
+    end
+    local queued = self.pending[name]
+    if queued then
+        if done then table.insert(queued, done) end
+        return
+    end
+    queued = done and {done} or {}
+    self.pending[name] = queued
+    task.defer(function()
+        local id, reason = resolveImage(AssetRegistry[name])
+        self.ready[name] = id
+        self.pending[name] = nil
+        if reason then assetWarning(name, AssetRegistry[name].file .. " · " .. reason) end
+        for _, notify in ipairs(queued) do notify(id) end
+    end)
+end
+
+function ImageAssets:Preload(...)
+    for index = 1, select("#", ...) do
+        self:Get((select(index, ...)))
+    end
+end
+
+local function assetImage(parent, name, props, fallback, alternate, alternateLayout)
+    local image = make("ImageLabel", parent, props)
+    image.Active = false
+    local function paint()
+        if fallback then fallback.Visible = not image.IsLoaded end
+    end
+    if fallback then image:GetPropertyChangedSignal("IsLoaded"):Connect(paint) end
+
+    local function apply(id)
+        if not image.Parent or not id then return end
+        image.Image = id
+        paint()
+    end
+    local function useAlternate()
+        if not alternate or not image.Parent then return end
+        ImageAssets:Get(alternate, function(replacement)
+            if not image.Parent or image.IsLoaded or not replacement then return end
+            if alternateLayout then image.Size = alternateLayout end
+            apply(replacement)
+        end)
+    end
+    ImageAssets:Get(name, function(id)
+        if not image.Parent then return end
+        if not id then
+            useAlternate()
+            return
+        end
+        apply(id)
+        if alternate and not image.IsLoaded then
+            task.delay(4, function()
+                if image.Parent and not image.IsLoaded then useAlternate() end
+            end)
+        end
+    end)
+    return image
+end
 
 local function gradient(parent, top, bottom, rotation)
     return make("UIGradient", parent, { Color = ColorSequence.new(top, bottom), Rotation = rotation or 90 })
 end
 
-local function polygon(parent, points, rows, top, bottom, alpha)
-    local crossings = table.create(6)
-    for row = 0, rows-1 do
-        local y = (row + .5) * 100 / rows
-        table.clear(crossings)
-        for index = 1, #points, 2 do
-            local nextIndex = index + 2 <= #points and index + 2 or 1
-            local x0, y0, x1, y1 = points[index], points[index+1], points[nextIndex], points[nextIndex+1]
-            if (y0 <= y and y < y1) or (y1 <= y and y < y0) then
-                table.insert(crossings, (x0 + (x1-x0)*(y-y0)/(y1-y0))/100)
-            end
-        end
-        table.sort(crossings)
-        for index = 1, #crossings-1, 2 do
-            make("Frame", parent, {
-                Position = UDim2.fromScale(crossings[index], row/rows),
-                Size = UDim2.new(crossings[index+1]-crossings[index], 0, 1/rows, 0),
-                BackgroundColor3 = top:Lerp(bottom, y/100),
-                BackgroundTransparency = alpha or 0,
-            })
-        end
-    end
-end
-
-local function mark(parent, size, position, large)
-    local node = make("Frame", parent, { Name = "RyouMark", Size = px(size, size*.91), Position = position })
-    for _, facet in ipairs(FACETS) do
-        polygon(node, facet[3], large and 78 or 39, facet[1], facet[2])
-    end
+local function mark(w, parent, size, position, large)
+    local node = make("Frame", parent, { Name = "RyouMark", Size = px(size, size), Position = position })
+    local fallback = label(w, node, "R", math.floor(size*.61), true, "Accent", {
+        Size = full, TextXAlignment = Enum.TextXAlignment.Center,
+    })
+    assetImage(node, large and "logo_hero" or "logo_small", {
+        Name = "Logo", AnchorPoint = Vector2.new(.5,.5), Position = UDim2.fromScale(.51,.46),
+        Size = large and full or UDim2.fromScale(1.15,1.15), ScaleType = Enum.ScaleType.Fit,
+    }, fallback, large and "logo_small" or "logo_mono")
     return node
 end
 
-local ribbonShapes = {
-    Header = {
-        {0,100, 37,100, 54,53, 72,45, 100,49, 100,0, 54,0, 47,36},
-        {34,100, 53,0, 59,0, 53,43, 48,64},
-    },
-    Hero = {
-        {19,100, 43,61, 74,54, 100,29, 100,100},
-        {47,100, 59,67, 68,29, 79,0, 64,0, 53,33, 43,82},
-        {78,100, 87,67, 94,32, 95,0, 100,0, 100,69, 91,100},
-    },
-    Rail = {
-        {0,0, 6,13, 16,30, 29,46, 45,63, 64,80, 83,93, 100,100, 0,100},
-        {0,0, 6,13, 16,30, 29,46, 45,63, 64,80, 83,93, 100,100, 80,94, 61,84, 42,69, 25,54, 12,39, 0,20},
-    },
-}
-
-local function ribbon(w, parent, variant, position, size)
-    local art = make("Frame", parent, { Name = variant .. "Ribbon", Position = position, Size = size, ClipsDescendants = true })
+local function artworkLayer(w, parent, asset, position, size, mode, alpha)
+    local art = assetImage(parent, asset, {
+        Name = asset, Position = position, Size = size, ScaleType = mode,
+        ImageTransparency = alpha or 0, Visible = w.ThemeName ~= "Light",
+    })
     w.art[art] = true
-    art.Visible = w.ThemeName ~= "Light"
-    local tones = {
-        {rgb(12, 99, 72), rgb(3, 25, 20), .32},
-        {rgb(76, 255, 186), rgb(10, 61, 48), .20},
-        {rgb(2, 31, 25), rgb(49, 205, 144), .25},
-    }
-    for i, shape in ipairs(ribbonShapes[variant]) do
-        local tint = tones[i]
-        polygon(art, shape, 29, tint[1], tint[2], tint[3])
-    end
     return art
 end
 
-local function orbit(parent)
-    local function point(index)
-        local angle = index * math.pi / 18
-        local x, y = math.cos(angle)*88, math.sin(angle)*25
-        return 93 + x*.96 + y*.28, 48 - x*.28 + y*.96
-    end
-    for index = 0, 35 do
-        local x,y = point(index)
-        local right,bottom = point(index+1)
-        local dx,dy = right-x,bottom-y
-        make("Frame", parent, { AnchorPoint = Vector2.new(.5,.5),
-            Position = px((x+right)/2,(y+bottom)/2), Size = px(math.sqrt(dx*dx+dy*dy)+1, 1),
-            Rotation = math.deg(math.atan2(dy,dx)), BackgroundColor3 = rgb(72, 245, 175),
-            BackgroundTransparency = .38 + (index % 18)/80 })
-    end
-end
-
 local function icon(w, parent, name, size, role, position)
-    if name == "ryou" then return mark(parent, size, position or UDim2.new(), false) end
+    if name == "ryou" then return mark(w, parent, size, position or UDim2.new(), false) end
     local slot = make("Frame", parent, { Size = px(size, size), Position = position or UDim2.new() })
     local asset = (w.library._assets or {})[name] or name
     if type(asset) == "string" and asset:match("^rbxassetid://%d+$") then
@@ -643,7 +759,9 @@ function Window:SetOpenButtonVisible(enabled)
     return self
 end
 function Window:SetOpenButtonGhosted(enabled)
-    self.launcherPlate.BackgroundTransparency = enabled == true and .38 or 0
+    local transparency = enabled == true and .38 or 0
+    self.launcherPlate.BackgroundTransparency = transparency
+    self.launcherImage.ImageTransparency = transparency
     return self
 end
 function Window:EditOpenButton(config)
@@ -695,6 +813,7 @@ function UI:CreateWindow(options)
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling, ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets,
     })
     w.gui:SetAttribute("RyouNeoSidebar",true)
+    ImageAssets:Preload("logo_small", "header_ribbon", "launcher")
     w.ScreenGui = w.gui
     w.screen = make("Frame", w.gui, { Size = full })
     w.frame = make("Frame", w.screen, { AnchorPoint = Vector2.new(.5, .5) })
@@ -716,13 +835,13 @@ function UI:CreateWindow(options)
 
     local header = surface(w, w.panel, "Rail", { Size = UDim2.new(1, 0, 0, 74), Active = true, ClipsDescendants = true })
     w.header = header
-    ribbon(w, header, "Header", UDim2.fromScale(.12,0), UDim2.fromScale(.54,1))
+    artworkLayer(w, header, "header_ribbon", UDim2.fromScale(.06,0), UDim2.fromScale(.82,1), Enum.ScaleType.Stretch)
     local rule = surface(w, header, "Edge", { Position = UDim2.new(0, 16, 1, -1), Size = UDim2.new(1, -32, 0, 1) })
     rule.Name = "HeaderRule"
     w.sweep = surface(w, header, "Accent", { Size = px(65, 2), Rotation = -26, Visible = false }, 2)
     w.brand = make("CanvasGroup", header, { Size = px(60, 55), Position = UDim2.new(0, 22, .5, -27) })
     w.brandScale = make("UIScale", w.brand, {})
-    mark(w.brand, 55, px(0, 3), false)
+    mark(w, w.brand, 62, px(-3, -4), false)
     w.titleGroup = make("CanvasGroup", header, { Position = UDim2.new(0, 91, .5, -23), Size = UDim2.new(1, -350, 0, 26) })
     w.subtitleGroup = make("CanvasGroup", header, { Position = UDim2.new(0, 92, .5, 3), Size = UDim2.new(1, -350, 0, 19) })
     w.title = label(w, w.titleGroup, copyText(o.Title, "Ryou UI"), 25, true, nil,
@@ -762,13 +881,14 @@ function UI:CreateWindow(options)
     w.rail = make("CanvasGroup", content, { Position = px(0, 0) })
     w.rail.BackgroundTransparency = 0
     w:_bind(w.rail, "BackgroundColor3", "Rail")
-    ribbon(w, w.rail, "Rail", UDim2.new(0,0,1,-119), UDim2.new(1,0,0,119))
+    artworkLayer(w, w.rail, "rail_glow", UDim2.fromScale(0,.18), UDim2.fromScale(1,.82), Enum.ScaleType.Stretch)
     w.nav = scroll(w, w.rail, { Size = full })
     pad(w.nav, 11, 15)
     stack(w.nav, 5)
-    w.body = make("Frame", content, {})
+    w.body = make("Frame", content, {ClipsDescendants=true})
+    artworkLayer(w, w.body, "background_artwork", UDim2.new(), full, Enum.ScaleType.Crop, .94)
     w.pages = make("CanvasGroup", w.body, { Size = full })
-    local divider = surface(w, w.body, "Edge", { Position = px(-1, 0), Size = UDim2.new(0, 1, 1, 0), BackgroundTransparency=.5 })
+    local divider = surface(w, w.body, "Edge", { Position = px(0, 0), Size = UDim2.new(0, 1, 1, 0), BackgroundTransparency=.5 })
     divider.Name = "RailRule"
     for _, group in ipairs({ w.brand, w.titleGroup, w.subtitleGroup, w.utilities, w.rail, w.pages }) do
         w.entrance[group] = group.Position
@@ -785,29 +905,25 @@ function UI:CreateWindow(options)
         Visible = false, ZIndex = 15,
     })
     w.launchScale = make("UIScale", w.launcher, {})
-    local shadow = make("Frame", w.launcher, {
-        Position = px(0, 4), Size = full, BackgroundColor3 = Color3.new(), BackgroundTransparency = .38,
-    })
-    corner(shadow, 36)
-    local halo = make("Frame", w.launcher, {
-        Position = px(0,0), Size = full, BackgroundColor3 = rgb(84,245,188), BackgroundTransparency = .80,
-    })
-    corner(halo,36)
-    local pod = make("Frame", w.launcher, {
-        Position = px(3,3), Size = px(64,64), BackgroundColor3 = rgb(9,22,21), BackgroundTransparency = 0,
-    })
-    corner(pod,32)
-    gradient(pod, rgb(216,255,243), rgb(71,112,102), 38)
-    local ring = make("UIStroke", pod, { Color = rgb(116,255,213), Thickness = 1.6 })
-    gradient(ring, rgb(235,255,248), rgb(69,245,180), 62)
+    local fallback = make("Frame", w.launcher, {Name="LauncherFallback", Size=full})
+    local pod = surface(w, fallback, "Rail", {Position=px(3,3), Size=px(64,64)}, 32)
+    edge(w, pod)
+    label(w, pod, "R", 28, true, "Accent", {Size=full, TextXAlignment=Enum.TextXAlignment.Center})
     w.launcherPlate, w.OpenButton = pod, w.launcher
+    w.launcherImage = assetImage(w.launcher, "launcher", {
+        Name="LauncherArt", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.51,.50),
+        Size=UDim2.fromScale(1.34,1.34), ScaleType=Enum.ScaleType.Fit,
+    }, fallback, "launcher_fallback", UDim2.fromScale(1.06,1.06))
     if type(o.OpenButton) == "table" then
         if o.OpenButton.Enabled ~= nil then w.launcherEnabled = o.OpenButton.Enabled ~= false end
         w:SetOpenButtonGhosted(o.OpenButton.Ghosted)
     end
-    mark(w.launcher, 38, px(16,18), false)
-    listen(w.owner, w.launcher.MouseEnter, function() w:_animate(halo,.14,{BackgroundTransparency=.62}) end)
-    listen(w.owner, w.launcher.MouseLeave, function() w:_animate(halo,.14,{BackgroundTransparency=.80}) end)
+    listen(w.owner, w.launcher.MouseEnter, function()
+        if not w.gesture then w:_animate(w.launchScale,.14,{Scale=1.04}) end
+    end)
+    listen(w.owner, w.launcher.MouseLeave, function()
+        if not w.gesture then w:_animate(w.launchScale,.14,{Scale=1}) end
+    end)
     listen(w.owner, w.launcher.Activated, function(event)
         if event and event.UserInputType == Enum.UserInputType.Gamepad1 then w:Toggle() end
     end)
@@ -957,8 +1073,16 @@ function Window:Tab(options)
     hit.BackgroundTransparency = 1
     t.hit = hit
     t.activeFill = surface(self, hit, "Selected", { Size = full, Visible = false }, 8)
-    edge(self,t.activeFill)
-    gradient(t.activeFill,rgb(153,192,179),rgb(255,255,255),22)
+    edge(self,t.activeFill).Transparency = .48
+    gradient(t.activeFill,rgb(155,192,181),rgb(255,255,255),22)
+    local spill = surface(self,t.activeFill,"Accent",{
+        Position=UDim2.fromScale(.15,0),Size=UDim2.fromScale(.85,1),BackgroundTransparency=.55,
+    },8)
+    make("UIGradient",spill,{
+        Transparency=NumberSequence.new({
+            NumberSequenceKeypoint.new(0,1), NumberSequenceKeypoint.new(.65,.85), NumberSequenceKeypoint.new(1,.12),
+        }),
+    })
     t.glyph = icon(self, hit, o.Icon or "grid", 18, "Muted", UDim2.new(0, 12, .5, -9))
     t.marker = surface(self, hit, "Accent", { AnchorPoint = Vector2.new(0, .5),
         Position = UDim2.new(0, 1, .5, 0), Size = px(3, 23), Visible = false }, 2)
@@ -1020,21 +1144,21 @@ end
 
 function Tab:Banner(options)
     local o, w = options or {}, self.Window
-    local height = math.clamp(o.Height or 144, 74, 200)
-    local banner = insertBlock(self, "Frame", {Size=UDim2.new(1,-3,0,height), ClipsDescendants=true})
+    local preferredHeight = math.clamp(o.Height or 153, 74, 200)
+    local large = preferredHeight >= 120
+    local banner = insertBlock(self, "Frame", {Size=UDim2.new(1,-3,0,preferredHeight), ClipsDescendants=true})
     banner.BackgroundTransparency=0
     w:_bind(banner,"BackgroundColor3","Rail")
     corner(banner,12)
-    edge(w,banner)
-    ribbon(w,banner,"Hero",UDim2.fromScale(.22,0), UDim2.fromScale(.78,1))
+    edge(w,banner).Transparency=.28
+    gradient(banner,rgb(179,205,199),rgb(255,255,255),15)
+    artworkLayer(w,banner,"hero_orbits",UDim2.fromScale(.07,0),UDim2.fromScale(.93,1),Enum.ScaleType.Stretch)
     local device = make("Frame", banner, {
-        Position=UDim2.new(1,-80,.52,0), AnchorPoint=Vector2.new(.5,.5), Size=px(188,104),
+        AnchorPoint=Vector2.new(.5,.5), Size=px(220,210),
     })
-    local large = height >= 120
-    device.Position = UDim2.new(1,large and -122 or -82,.53,0)
-    local scale = make("UIScale",device,{Scale=large and 1 or .68})
-    orbit(device)
-    mark(device,111,px(43,4),true)
+    local scale = make("UIScale",device,{})
+    artworkLayer(w,device,"logo_glow",px(8,0),px(201,210),Enum.ScaleType.Fit,.16)
+    mark(w,device,179,px(20,15),true)
     local title = label(w,banner,copyText(o.Title,"Ryou UI"),large and 34 or 21,true,"Text",{
         Position=UDim2.new(0,18,.5,large and -40 or -28),Size=UDim2.new(1,-200,0,large and 41 or 29),
         RichText=true,TextTruncate=Enum.TextTruncate.AtEnd})
@@ -1044,16 +1168,20 @@ function Tab:Banner(options)
     surface(w,banner,"Accent",{Position=UDim2.new(0,19,.5,large and 34 or 23),Size=px(37,3)},2)
     local function fit()
         local width = banner.AbsoluteSize.X
+        local short = w.frame.Size.Y.Offset > 0 and w.frame.Size.Y.Offset < 415
+        local height = short and math.min(preferredHeight,105) or preferredHeight
+        if banner.Size.Y.Offset ~= height then banner.Size = UDim2.new(1,-3,0,height) end
         local narrow = width < 485
         device.Visible = width >= 305
-        scale.Scale = narrow and .65 or (large and 1 or .68)
-        device.Position = UDim2.new(1,narrow and -64 or (large and -122 or -82),.55,0)
-        local reserve = width < 305 and 27 or (narrow and 126 or 218)
+        scale.Scale = math.min(height/145, narrow and .69 or 1.08)
+        device.Position = UDim2.new(1,narrow and -73 or (large and -137 or -92),.50,0)
+        local reserve = width < 305 and 27 or (narrow and 146 or (large and 245 or 170))
         title.Size = UDim2.new(1,-reserve,0,large and 41 or 29)
-        title.TextSize = large and (narrow and 25 or 34) or 21
+        title.TextSize = large and ((narrow or short) and 27 or 36) or 21
         subtitle.Size = UDim2.new(1,-reserve,0,22)
     end
     listen(w.owner,banner:GetPropertyChangedSignal("AbsoluteSize"),fit)
+    listen(w.owner,w.frame:GetPropertyChangedSignal("Size"),fit)
     fit()
     return banner
 end
@@ -1071,6 +1199,7 @@ function Tab:Columns(options)
             w:_bind(holder,"BackgroundColor3","Rail")
             corner(holder,12)
             edge(w,holder).Transparency=.35
+            gradient(holder,rgb(255,255,255),rgb(156,176,169),95)
             pad(holder,10,9)
         end
         stack(holder,7)
@@ -1328,13 +1457,13 @@ local function sameList(a, b)
     return true
 end
 
-local function expandable(w, c, height)
+local function expandable(w, c, height, onOpen)
     local panel = surface(w,c.row,"Base",{LayoutOrder=2,Size=UDim2.new(1,0,0,0),ClipsDescendants=true,Visible=false},8)
     function c:Open()
         if self.Locked or self.Destroyed or self.expanded then return self end
         self.expanded = true
         panel.Visible = true
-        w:_animate(panel, .21, { Size = UDim2.new(1, 0, 0, height) })
+        w:_animate(panel, .21, { Size = UDim2.new(1, 0, 0, height) }, 0, onOpen)
         return self
     end
     function c:Close(instant)
@@ -1363,7 +1492,22 @@ function Tab:Dropdown(options)
     icon(w, trigger, "chevron", 18, "Muted", UDim2.new(1, -26, .5, -9))
     c.targets[trigger] = true
     edge(w,trigger)
-    local panel = expandable(w, c, 195)
+    local panel
+    panel = expandable(w, c, 195, function()
+        task.defer(function()
+            if w.Destroyed or c.Destroyed or not c.expanded then return end
+            local scroller = c.tab.scrollHost or c.tab.scroller
+            local viewportTop = scroller.AbsolutePosition.Y
+            local viewportHeight = scroller.AbsoluteWindowSize.Y
+            local panelTop = panel.AbsolutePosition.Y
+            local visibleHeight = math.min(panel.Size.Y.Offset + 8, math.max(96, viewportHeight - 60))
+            local overflow = panelTop + visibleHeight - viewportTop - viewportHeight
+            if overflow <= 0 then return end
+            local limit = math.max(0, scroller.AbsoluteCanvasSize.Y - viewportHeight)
+            local current = scroller.CanvasPosition
+            w:_animate(scroller,.23,{CanvasPosition=Vector2.new(current.X,math.min(current.Y+overflow,limit))})
+        end)
+    end)
     local search = textBox(w, c.owner, panel, "Buscar opción…", { Position = px(2, 2), Size = UDim2.new(1, -4, 0, 42) })
     c.targets[search] = true
     local list = scroll(w, panel, { Position = px(0, 50), Size = UDim2.new(1, 0, 1, -50) })
@@ -1456,20 +1600,7 @@ function Tab:Dropdown(options)
         if self.expanded then return self:Close() end
         if w.openDropdown and w.openDropdown ~= self then w.openDropdown:Close(true) end
         open(self)
-        if self.expanded then
-            w.openDropdown = self
-            local scroller = c.tab.scrollHost or c.tab.scroller
-            local bottom = scroller.AbsolutePosition.Y+scroller.AbsoluteSize.Y
-            local top = panel.AbsolutePosition.Y
-            if top + 74 > bottom then
-                task.defer(function()
-                    if w.Destroyed or c.Destroyed or not c.expanded then return end
-                    local desired = math.max(0,scroller.CanvasPosition.Y + top + 96 - bottom)
-                    local maxHeight = math.max(0,scroller.AbsoluteCanvasSize.Y-scroller.AbsoluteWindowSize.Y)
-                    w:_animate(scroller,.23,{CanvasPosition=Vector2.new(0,math.min(desired,maxHeight))})
-                end)
-            end
-        end
+        if self.expanded then w.openDropdown = self end
         return self
     end
     c:Set(o.Value or o.Default, true)
@@ -1482,7 +1613,7 @@ function Tab:Dropdown(options)
     return c
 end
 
-local function dialog(w, owner, title, subtitle, width, height)
+local function dialog(w, owner, title, subtitle, width, height, alignToContent)
     if w.dismissModal then w.dismissModal() end
     if w.Destroyed or not w.Opened then return nil end
     local focused=Input:GetFocusedTextBox()
@@ -1496,17 +1627,17 @@ local function dialog(w, owner, title, subtitle, width, height)
         Active=true,ClipsDescendants=true},14)
     edge(w,card)
     local scope = childScope(owner)
-    local header = surface(w,card,"Rail",{Size=UDim2.new(1,0,0,53),ClipsDescendants=true})
-    ribbon(w,header,"Header",UDim2.fromScale(.24,0),UDim2.fromScale(.64,1))
-    mark(header,35,px(12,12),false)
+    local header = surface(w,card,"Rail",{ClipsDescendants=true})
+    artworkLayer(w,header,"header_ribbon",UDim2.fromScale(.18,0),UDim2.fromScale(.82,1),Enum.ScaleType.Stretch)
+    mark(w,header,43,UDim2.new(0,8,.5,-22),false)
     label(w,header,title,17,true,"Text",{Position=px(53,6),Size=UDim2.new(1,-102,0,23),
         TextTruncate=Enum.TextTruncate.AtEnd})
     label(w,header,subtitle,12,false,"Muted",{Position=px(53,28),Size=UDim2.new(1,-102,0,17),
         TextTruncate=Enum.TextTruncate.AtEnd})
     local close = action(w,scope,header,"",{Position=UDim2.new(1,-45,0,5),Size=px(38,42)})
     icon(w,close,"error",17,"Text",px(10,12))
-    local body = make("Frame",card,{Position=px(10,60),Size=UDim2.new(1,-20,1,-118),ClipsDescendants=true})
-    local footer = make("Frame",card,{Position=UDim2.new(0,10,1,-50),Size=UDim2.new(1,-20,0,42)})
+    local body = make("Frame",card,{ClipsDescendants=true})
+    local footer = make("Frame",card,{})
     local dead = false
     local function release()
         if dead then return end
@@ -1522,9 +1653,25 @@ local function dialog(w, owner, title, subtitle, width, height)
     end
     local function fit()
         local bounds = w.frame.AbsoluteSize
-        card.Size=px(math.max(1,math.min(width,bounds.X-18)),math.max(1,math.min(height,bounds.Y-14)))
+        local short = bounds.Y < 415
+        local cardHeight = math.max(1,math.min(height,bounds.Y-(short and 48 or 32)))
+        local cardWidth = math.max(1,math.min(width,bounds.X-32, short and 468 or width))
+        local top, bottom = short and 46 or 54, short and 36 or 42
+        card.Size=px(cardWidth,cardHeight)
+        local center = bounds.X/2
+        if alignToContent then
+            local margin = math.min(16,(bounds.X-cardWidth)/2)
+            center = math.min(center + w.body.Position.X.Offset/2, bounds.X-cardWidth/2-margin)
+        end
+        card.Position=UDim2.new(0,center,.5,0)
+        header.Size=UDim2.new(1,0,0,top)
+        body.Position=px(10,top+7)
+        body.Size=UDim2.new(1,-20,1,-top-bottom-22)
+        footer.Position=UDim2.new(0,10,1,-bottom-8)
+        footer.Size=UDim2.new(1,-20,0,bottom)
     end
     listen(scope,w.frame:GetPropertyChangedSignal("AbsoluteSize"),fit)
+    listen(scope,w.body:GetPropertyChangedSignal("Position"),fit)
     listen(scope,close.Activated,release)
     w.dismissModal = release
     fit()
@@ -1894,13 +2041,13 @@ function Tab:Catalog(options)
     function c:Open()
         if self.Locked or self.Destroyed then return self end
         local body,footer,release,owner=dialog(w,self.owner,copyText(o.DialogTitle,"Seleccionar elemento"),
-            copyText(o.DialogDesc,"Explora el catálogo y selecciona una opción."),490,392)
+            copyText(o.DialogDesc,"Explora el catálogo y selecciona una opción."),532,380,true)
         if not body then return self end
         self.closeCatalog=release
         local draft=self.Value
         local showing=false
-        local search=textBox(w,owner,body,"Buscar…",{Size=UDim2.new(1,0,0,36)})
-        local list=scroll(w,body,{Position=px(0,43),Size=UDim2.new(1,0,1,-43)})
+        local search=textBox(w,owner,body,"Buscar…",{Size=UDim2.new(1,0,0,34)})
+        local list=scroll(w,body,{Position=px(0,40),Size=UDim2.new(1,0,1,-40)})
         stack(list,4)
         local preview=surface(w,body,"Rail",{Position=px(0,0),Size=full,Visible=false},10)
         local previewButton=footerButton(w,owner,footer,"Vista previa",false,false)
@@ -1920,6 +2067,8 @@ function Tab:Catalog(options)
             previewButton.Text=showing and "Volver a la lista" or "Vista previa"
             apply.Active=item~=nil
             previewButton.Active=item~=nil
+            apply.TextTransparency=item and 0 or .55
+            previewButton.TextTransparency=item and 0 or .55
         end
         local function rebuild()
             if rowOwner then clean(rowOwner) end
@@ -1930,12 +2079,12 @@ function Tab:Catalog(options)
             local rows={}
             for index=1,math.min(#items,120) do
                 local item=items[index]
-                local hit=action(w,rowOwner,list,"",{LayoutOrder=index,Size=UDim2.new(1,-4,0,50)})
-                artwork(w,hit,item,px(5,5),px(64,40))
+                local hit=action(w,rowOwner,list,"",{LayoutOrder=index,Size=UDim2.new(1,-4,0,46)})
+                artwork(w,hit,item,px(5,4),px(64,38))
                 label(w,hit,copyText(item.Title,tostring(item.Id)),14,true,"Text",{
                     Position=px(78,4),Size=UDim2.new(1,-110,0,22),TextTruncate=Enum.TextTruncate.AtEnd})
                 label(w,hit,copyText(item.Desc),12,false,"Muted",{
-                    Position=px(78,25),Size=UDim2.new(1,-105,0,18),TextTruncate=Enum.TextTruncate.AtEnd})
+                    Position=px(78,23),Size=UDim2.new(1,-105,0,18),TextTruncate=Enum.TextTruncate.AtEnd})
                 local selection=icon(w,hit,"success",14,"Accent",UDim2.new(1,-25,.5,-7))
                 rows[item.Id]={Hit=hit,Selection=selection}
                 local function select()

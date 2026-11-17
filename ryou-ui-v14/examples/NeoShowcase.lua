@@ -2,7 +2,7 @@
 return function(UI, options)
     local config=table.clone(options or {})
     config.Title=config.Title or "Ryou UI"
-    config.Subtitle=config.Subtitle or "Biblioteca visual"
+    config.Subtitle=config.Subtitle or "Created by Ryou"
     local w=UI:CreateWindow(config)
     local function page(title, icon)
         return w:Tab({Title=title,Id=title,Icon=icon,ShowTitle=false})
@@ -18,9 +18,9 @@ return function(UI, options)
 
     home:Banner({Title='Ryou <font color="#62F6BB">UI</font>',Subtitle="Biblioteca visual para Luau"})
     local action,status=home:Columns({Split=.53})
-    action:Button({Title="Notificaciones",Desc="Muestra un aviso desde la biblioteca.",Icon="bell",
-        Action="Probar notificación",Primary=true,Callback=function() toast("Todo listo","La acción de prueba funciona.") end})
-    status:Section({Title="Estado · Listo"})
+    action:Button({Title="Demostración",Desc="Prueba los avisos de la biblioteca.",Icon="bell",
+        Action="Mostrar aviso",Primary=true,Callback=function() toast("Todo listo","La acción de prueba funciona.") end})
+    status:Section({Title="Estado · Listo",Icon="activity"})
     status:Stats({{Icon="layers",Value="V14",Text="Versión"},{Icon="activity",Value="Estable",Text="Estado"},
         {Icon="palette",Value="Neo",Text="Diseño"}})
     home:Section({Title="Accesos rápidos"})
@@ -83,7 +83,7 @@ return function(UI, options)
         toast("Outfit seleccionado",item.Title.." · "..item.Id)
     end})
 
-    sky:Banner({Title="Skybox",Subtitle="Catálogo de muestras cromáticas",Height=104})
+    sky:Banner({Title="Skybox",Subtitle="Catálogo de muestras cromáticas",Height=92})
     local chosen=sky:Paragraph({Title="Skybox actual",Desc="Cielo azul · muestra visual",Icon="image"})
     local samples={
         {Id="day",Title="Cielo azul",Desc="Azul profundo con reflejos fríos",Art="Swatch",Tint=swatch(0x48ADFF)},

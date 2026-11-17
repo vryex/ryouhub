@@ -1,0 +1,168 @@
+{
+  "revision": "be94fa3ecf37965ceae1e7e51f1449d178e6c642",
+  "assets": [
+    {
+      "key": "logo_small",
+      "path": "ryou-ui-v14/assets/neo/R_FACETADA_VECTOR_512.png",
+      "url": "https://raw.githubusercontent.com/vryex/ryouhub/be94fa3ecf37965ceae1e7e51f1449d178e6c642/ryou-ui-v14/assets/neo/R_FACETADA_VECTOR_512.png",
+      "bytes": 34353,
+      "sha256": "271059e9631f536a1b8af2fc3ce99b82764f6aa6616ca8a0594dad517deada2e",
+      "resolution": [
+        512,
+        512
+      ],
+      "cache": "RyouUI/Cache/be94fa3ecf37/R_FACETADA_VECTOR_512.png",
+      "component": "Cabecera, diálogos e icono ryou"
+    },
+    {
+      "key": "logo_hero",
+      "path": "ryou-ui-v14/assets/neo/R_GENERADA_CON_BRILLO_RGBA_1254.png",
+      "url": "https://raw.githubusercontent.com/vryex/ryouhub/be94fa3ecf37965ceae1e7e51f1449d178e6c642/ryou-ui-v14/assets/neo/R_GENERADA_CON_BRILLO_RGBA_1254.png",
+      "bytes": 677407,
+      "sha256": "36869381e937cfa480fc7e406324416c6a690a4a383fc28ded93dccf26de013d",
+      "resolution": [
+        1254,
+        1254
+      ],
+      "cache": "RyouUI/Cache/be94fa3ecf37/R_GENERADA_CON_BRILLO_RGBA_1254.png",
+      "component": "Monograma principal del hero"
+    },
+    {
+      "key": "logo_glow",
+      "path": "ryou-ui-v14/assets/neo/R_HALO_SUAVE_RGBA_1024.png",
+      "url": "https://raw.githubusercontent.com/vryex/ryouhub/be94fa3ecf37965ceae1e7e51f1449d178e6c642/ryou-ui-v14/assets/neo/R_HALO_SUAVE_RGBA_1024.png",
+      "bytes": 98888,
+      "sha256": "647bf43c245b72ca2f9edc0472c9b64c9e2fd707e227001258ba251fe068eb53",
+      "resolution": [
+        1024,
+        1024
+      ],
+      "cache": "RyouUI/Cache/be94fa3ecf37/R_HALO_SUAVE_RGBA_1024.png",
+      "component": "Halo debajo del monograma del hero"
+    },
+    {
+      "key": "launcher",
+      "path": "ryou-ui-v14/assets/neo/LAUNCHER_GENERADO_RGBA_1254.png",
+      "url": "https://raw.githubusercontent.com/vryex/ryouhub/be94fa3ecf37965ceae1e7e51f1449d178e6c642/ryou-ui-v14/assets/neo/LAUNCHER_GENERADO_RGBA_1254.png",
+      "bytes": 1379512,
+      "sha256": "33a24bff0d95196b62ba77138d3baff803642e011a4a669ef80b4bbe3a7d5c87",
+      "resolution": [
+        1254,
+        1254
+      ],
+      "cache": "RyouUI/Cache/be94fa3ecf37/LAUNCHER_GENERADO_RGBA_1254.png",
+      "component": "Launcher circular"
+    },
+    {
+      "key": "launcher_fallback",
+      "path": "ryou-ui-v14/assets/neo/LAUNCHER_CIRCULAR_VECTOR_512.png",
+      "url": "https://raw.githubusercontent.com/vryex/ryouhub/be94fa3ecf37965ceae1e7e51f1449d178e6c642/ryou-ui-v14/assets/neo/LAUNCHER_CIRCULAR_VECTOR_512.png",
+      "bytes": 91469,
+      "sha256": "aeb39f19b3f90b9d32191df2500e428b3d04c2d3bdaf9f8f645b7c1c9077ac96",
+      "resolution": [
+        512,
+        512
+      ],
+      "cache": "RyouUI/Cache/be94fa3ecf37/LAUNCHER_CIRCULAR_VECTOR_512.png",
+      "component": "Launcher si falla la imagen principal"
+    },
+    {
+      "key": "header_ribbon",
+      "path": "ryou-ui-v14/assets/neo/HEADER_DIAGONAL_RGBA.png",
+      "url": "https://raw.githubusercontent.com/vryex/ryouhub/be94fa3ecf37965ceae1e7e51f1449d178e6c642/ryou-ui-v14/assets/neo/HEADER_DIAGONAL_RGBA.png",
+      "bytes": 63746,
+      "sha256": "8455d28acac816f2633605cda54ff680e00c1f06b31cf32a49ac451931d514f7",
+      "resolution": [
+        1536,
+        220
+      ],
+      "cache": "RyouUI/Cache/be94fa3ecf37/HEADER_DIAGONAL_RGBA.png",
+      "component": "Cabecera de la ventana y de los modales"
+    },
+    {
+      "key": "hero_orbits",
+      "path": "ryou-ui-v14/assets/neo/HERO_ORBITAS_RGBA.png",
+      "url": "https://raw.githubusercontent.com/vryex/ryouhub/be94fa3ecf37965ceae1e7e51f1449d178e6c642/ryou-ui-v14/assets/neo/HERO_ORBITAS_RGBA.png",
+      "bytes": 160011,
+      "sha256": "30978d56f53a21094444062778d98b9aa407ee53e6dad93fe4789f1557ea301d",
+      "resolution": [
+        1536,
+        550
+      ],
+      "cache": "RyouUI/Cache/be94fa3ecf37/HERO_ORBITAS_RGBA.png",
+      "component": "Órbitas y diagonales del hero"
+    },
+    {
+      "key": "rail_glow",
+      "path": "ryou-ui-v14/assets/neo/RAIL_INFERIOR_RGBA.png",
+      "url": "https://raw.githubusercontent.com/vryex/ryouhub/be94fa3ecf37965ceae1e7e51f1449d178e6c642/ryou-ui-v14/assets/neo/RAIL_INFERIOR_RGBA.png",
+      "bytes": 43775,
+      "sha256": "fb038418cc8d0140bca2ee5309ce4b253786ff144c19473d596fc459f4eea996",
+      "resolution": [
+        440,
+        850
+      ],
+      "cache": "RyouUI/Cache/be94fa3ecf37/RAIL_INFERIOR_RGBA.png",
+      "component": "Curva inferior del rail"
+    },
+    {
+      "key": "background_artwork",
+      "path": "ryou-ui-v14/assets/neo/FONDO_NEON_ARTWORK_1672x941.png",
+      "url": "https://raw.githubusercontent.com/vryex/ryouhub/be94fa3ecf37965ceae1e7e51f1449d178e6c642/ryou-ui-v14/assets/neo/FONDO_NEON_ARTWORK_1672x941.png",
+      "bytes": 1477520,
+      "sha256": "517451808cc31fe87b6ef7d6906ee0acd1f9f71a371070bfe1f7f44d350b6655",
+      "resolution": [
+        1672,
+        941
+      ],
+      "cache": "RyouUI/Cache/be94fa3ecf37/FONDO_NEON_ARTWORK_1672x941.png",
+      "component": "Luz ambiental tras el contenido"
+    },
+    {
+      "key": "logo_mono",
+      "path": "ryou-ui-v14/assets/neo/R_FACETADA_MONO_512.png",
+      "url": "https://raw.githubusercontent.com/vryex/ryouhub/be94fa3ecf37965ceae1e7e51f1449d178e6c642/ryou-ui-v14/assets/neo/R_FACETADA_MONO_512.png",
+      "bytes": 17839,
+      "sha256": "bf771a998c0e8226c4003eb2541380c0a2b0ebecb012c3ef14ce7a9de779912e",
+      "resolution": [
+        512,
+        512
+      ],
+      "cache": "RyouUI/Cache/be94fa3ecf37/R_FACETADA_MONO_512.png",
+      "component": "Monograma alterno si falla la imagen principal"
+    }
+  ],
+  "editable_sources": [
+    {
+      "path": "ryou-ui-v14/assets/neo/source/HEADER_DIAGONAL.svg",
+      "url": "https://raw.githubusercontent.com/vryex/ryouhub/be94fa3ecf37965ceae1e7e51f1449d178e6c642/ryou-ui-v14/assets/neo/source/HEADER_DIAGONAL.svg",
+      "sha256": "8597ade3cc319b8129e52296ba79cc9bf0d4af70c4b566af02065f0245fe809e"
+    },
+    {
+      "path": "ryou-ui-v14/assets/neo/source/HERO_ORBITAS.svg",
+      "url": "https://raw.githubusercontent.com/vryex/ryouhub/be94fa3ecf37965ceae1e7e51f1449d178e6c642/ryou-ui-v14/assets/neo/source/HERO_ORBITAS.svg",
+      "sha256": "bea88a3507bfa30bdef7b0c90967132d058208a7eefbd91690e567472f4f45f2"
+    },
+    {
+      "path": "ryou-ui-v14/assets/neo/source/LAUNCHER_CIRCULAR_VECTOR.svg",
+      "url": "https://raw.githubusercontent.com/vryex/ryouhub/be94fa3ecf37965ceae1e7e51f1449d178e6c642/ryou-ui-v14/assets/neo/source/LAUNCHER_CIRCULAR_VECTOR.svg",
+      "sha256": "1ea1785dda813c421cc65df1b539202aec4a771e91daeefbf50f618417a076b5"
+    },
+    {
+      "path": "ryou-ui-v14/assets/neo/source/RAIL_INFERIOR.svg",
+      "url": "https://raw.githubusercontent.com/vryex/ryouhub/be94fa3ecf37965ceae1e7e51f1449d178e6c642/ryou-ui-v14/assets/neo/source/RAIL_INFERIOR.svg",
+      "sha256": "97723786ff269fdd6f4511206879114b089c88842ccb6f8af783fca69df9b35c"
+    },
+    {
+      "path": "ryou-ui-v14/assets/neo/source/R_FACETADA_MONO.svg",
+      "url": "https://raw.githubusercontent.com/vryex/ryouhub/be94fa3ecf37965ceae1e7e51f1449d178e6c642/ryou-ui-v14/assets/neo/source/R_FACETADA_MONO.svg",
+      "sha256": "e69fdebcbb4b0725702f28a019d490bcfc0c3c0bcd4b31912e781ff8047232ac"
+    },
+    {
+      "path": "ryou-ui-v14/assets/neo/source/R_FACETADA_VECTOR_APROXIMACION.svg",
+      "url": "https://raw.githubusercontent.com/vryex/ryouhub/be94fa3ecf37965ceae1e7e51f1449d178e6c642/ryou-ui-v14/assets/neo/source/R_FACETADA_VECTOR_APROXIMACION.svg",
+      "sha256": "42746491bcb71bac499559fbdc241818be6dcc12b8dad586320d6e6f66aa17d4"
+    }
+  ],
+  "flat_cache_prefix": "RyouUI-be94fa3ecf37-"
+}
