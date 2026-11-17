@@ -431,6 +431,7 @@ end
 local FONT = fontChoice("BuilderSans",Enum.Font.Gotham)
 local MEDIUM = fontChoice("BuilderSansMedium",Enum.Font.GothamMedium)
 local BOLD = fontChoice("BuilderSansBold",Enum.Font.GothamBold)
+local DISPLAY = fontChoice("Jura",Enum.Font.GothamBold)
 local function new(class, props, parent)
     local object = Instance.new(class)
     if object:IsA("GuiObject") then object.BorderSizePixel = 0 end
@@ -471,7 +472,7 @@ end
 local function remoteIcon(parent, name, size, color, onReady)
     local px = math.clamp(math.floor(tonumber(size) or 16), 10, 28)
     local image = new("ImageLabel", {
-        Name = "XeroIcon",
+        Name = "RyouIcon",
         BackgroundTransparency = 1,
         Size = UDim2.fromOffset(px,px),
         Image = "",
@@ -794,6 +795,7 @@ function Control:Destroy()
     if self.Destroyed then return end
     self.Destroyed = true
     if self.Window._popupOwner == self then self.Window:_closePopup() end
+    if self.Window._inlineOpen == self then self.Window._inlineOpen = nil end
     if self.Window._drag and self.Window._drag.Owner == self then self.Window:_endDrag() end
     self.Slot:Destroy(); self.Tab:_queueFilter()
 end
@@ -1270,6 +1272,15 @@ function Tab:Dropdown(options)
         Color=ColorSequence.new(Color3.fromRGB(18,33,38),Color3.fromRGB(12,24,30)),
         Rotation=88
     },panel)
+    c._applyThemeExtras=function(self,light)
+        panelTint.Color=light and ColorSequence.new(
+            Color3.fromRGB(250,252,253),Color3.fromRGB(230,239,242))
+            or ColorSequence.new(
+                Color3.fromRGB(18,33,38),Color3.fromRGB(12,24,30))
+        panelBorder.Color=C.Border
+        triggerEdge.Color=C.Border
+        valueLabel.TextColor3=C.Text
+    end
     local findBox=field(panel,"Filtrar opciones...")
     findBox.Name="InlineSearch"
     findBox.Position=UDim2.fromOffset(8,8)
@@ -1792,8 +1803,8 @@ function Nox:CreateWindow(options)
         Position=UDim2.fromOffset(50,9),Size=UDim2.fromOffset(290,24)},top)
     -- El título y el contador se posicionan manualmente para mantenerlos juntos
     -- en cualquier ancho; un UIListLayout con AutomaticSize dejaba huecos raros.
-    local brand=label(titleCluster,w._brandBaseTitle,16,C.Text,{Position=UDim2.fromOffset(0,0),
-        Size=UDim2.fromOffset(120,22),Font=BOLD})
+    local brand=label(titleCluster,w._brandBaseTitle,18,C.Text,{Position=UDim2.fromOffset(0,0),
+        Size=UDim2.fromOffset(134,23),Font=DISPLAY})
     local statusLabel=label(titleCluster,"",12,C.Muted,{Position=UDim2.fromOffset(126,0),
         Size=UDim2.fromOffset(96,22),Font=BOLD})
     local inferredGameLabel=w._brandBaseTitle:match("|%s*(.-)%s*$")
