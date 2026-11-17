@@ -16,13 +16,13 @@ El cargador dinámico sigue aceptando la URL con el SHA completo del repositorio
 
 ## Dimensiones y recursos
 
-El marco parte de 1040 × 615 px. La cabecera mide 74 px o 58 px en un viewport bajo. El rail usa aproximadamente el 18.5 % del ancho y pasa a 56 px bajo 560 px. Los componentes en columnas se apilan cuando su ancho disponible baja del mínimo. El launcher usa un disco de 70 px; aparece junto al marco cuando hay espacio y al cerrar. Arrastra el disco 9 px o más para moverlo sin alternar la ventana.
+El marco parte de 1040 × 615 px. La cabecera mide 70 px o 55 px en una ventana baja. El rail parte del 18.5 % del ancho y mide la etiqueta más larga con Gotham. Utiliza un rail de 53 px con iconos si el texto completo y el ancho mínimo del contenido no caben juntos. Los componentes en columnas se apilan cuando su ancho disponible baja del mínimo. El launcher usa un disco de 70 px; aparece junto al marco cuando hay espacio y al cerrar. Arrastra el disco 9 px o más para moverlo sin alternar la ventana.
 
 ## Arte de GitHub y caché
 
-El [manifiesto V3](../assets/neo/manifest.json) enlaza cada PNG a su URL RAW fijada, SHA-256, tamaño, ruta de caché y componente. Los detalles de la ventana usan la R vectorial de 512 px, el hero usa la R artística con un halo por detrás, y el launcher usa el disco de neón. La variante vectorial del disco queda disponible como respaldo. Las bandas de cabecera, órbitas y curva del rail son PNG independientes. El tema claro conserva la marca y oculta el arte ambiental oscuro.
+El [manifiesto V3](../assets/neo/manifest.json) enlaza cada PNG a su URL RAW fijada, SHA-256, tamaño, ruta de caché y componente. Los detalles de la ventana usan la R vectorial de 512 px, el hero usa la R artística con su brillo integrado, y el launcher usa el disco de neón. La variante vectorial del disco queda disponible como respaldo. Las bandas de cabecera, órbitas y curva del rail son PNG independientes. El tema claro conserva la marca y oculta el arte ambiental oscuro.
 
-`RyouUI.lua` solicita únicamente los archivos del manifiesto. Prueba `game:HttpGet` y, si hace falta, la API de solicitud del host. Valida tamaño y estructura básica del PNG antes de escribir. El identificador devuelto por `getcustomasset` o `getsynasset` se asigna al `ImageLabel`. La cabecera, el monograma y el launcher se programan primero. El estado de carga mantiene el botón y el texto utilizables.
+`RyouUI.lua` solicita únicamente los archivos del manifiesto. Prueba `game:HttpGet` y, si hace falta, la API de solicitud del host. Valida tamaño y estructura básica del PNG antes de escribir. El identificador devuelto por `getcustomasset` o `getsynasset` se asigna al `ImageLabel`. La cabecera, el monograma y el launcher se programan primero. Al registrarse el identificador local, se oculta el placeholder antes de mostrar el PNG. El botón y su interacción siguen disponibles mientras se resuelve la imagen.
 
 La caché de disco usa `RyouUI/Cache/be94fa3ecf37/`. Si el host impide crear carpetas, usa el prefijo `RyouUI-be94fa3ecf37-` en la raíz. Con `readfile` disponible, los archivos de caché se validan antes de registrarse. Con `isfile` como único método de consulta, se intenta reutilizar el archivo existente y se vuelve a descargar si falla el registro. Los identificadores se comparten entre las vistas del mismo módulo.
 
@@ -40,8 +40,23 @@ Si faltan `writefile` o las funciones de registro de imágenes locales, la libre
 | `tab:Catalog(options)` | `Items`, `Value`, `DialogTitle`, `DialogDesc`, `Callback(id)`, `OnPreview(item)` y `OnApply(item)`. Devuelve un control con `Open`, `Close`, `Refresh`, `Set` y `Get`. Seleccionar es provisional hasta Aplicar. |
 | `tab:Colorpicker(options)` | Conserva `Value`/`Default` como Color3, `Set` y el callback. Abre una herramienta HSV con campo HEX, entrada numérica, muestras y confirmación. Cancelar o cerrar descarta el borrador. |
 
-En galería y catálogo, cada entrada usa `Id` único numérico o de texto, `Title`, `Desc` opcional y `Thumbnail` opcional con URI de Roblox. `Tint` y `Art = "Avatar" | "Swatch"` son ilustraciones nativas opcionales. Los filtros comparan el título, identificador y descripción con el texto escrito. Se muestran hasta 120 resultados por filtro. `Refresh` conserva el ID seleccionado si sigue en la lista. El manejo de datos, red y efectos del juego pertenece al consumidor.
+En galería y catálogo, cada entrada usa `Id` único numérico o de texto, `Title`, `Desc` opcional y `Thumbnail` opcional con URI de Roblox. En la galería, `Preview` permite usar una imagen de mayor tamaño en la vista previa. Si falta, se reutiliza `Thumbnail`. Se aceptan URIs `rbxassetid://`, `rbxthumb://` y `rbxasset://` que el cliente pueda resolver. `Tint` y `Art = "Avatar" | "Swatch"` son ilustraciones nativas opcionales. Los filtros comparan el título, identificador y descripción con el texto escrito. Se muestran hasta 120 resultados por filtro. `Refresh` conserva el ID seleccionado si sigue en la lista. El manejo de datos, red y efectos del juego pertenece al consumidor.
 
 `CreateWindow` admite `Badge` (por defecto `V14 · Stable`) y `Utilities = { Cloud = fn, Notifications = fn }` opcional. Los callbacks reciben la ventana. `Tab({ ShowTitle = false })` oculta el título de página para usar un banner. `Button({ Primary = true, Compact = true })` ofrece CTA menta y accesos compactos. Las firmas previas siguen disponibles. Consulta la [referencia de API](api-reference.md) y la [migración](migration.md).
+
+### Imágenes de avatar en Outfits
+
+```lua
+local userId = 123456 -- Sustituye por el ID que resuelva tu script.
+local function avatar(size)
+    return string.format("rbxthumb://type=Avatar&id=%d&w=%d&h=%d", userId, size, size)
+end
+outfits:Gallery({
+    Title = "Outfits",
+    Items = {{ Id = userId, Title = "Avatar", Thumbnail = avatar(150), Preview = avatar(420) }},
+    Callback = function(id) print("Selección", id) end,
+    OnApply = function(item) print("Aplicar", item.Id) end,
+})
+```
 
 **Created by Ryou**

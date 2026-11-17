@@ -1,5 +1,20 @@
 # Cambios
 
+## 14.0.0 · Neo Sidebar V4, acabados
+
+- Superficies con iluminación diferenciada, contornos de opacidad variable, sombras escalonadas y reflejo en el CTA. La selección usa una base carbón con luz localizada.
+- Cabecera con placas de 28 × 26 px y zonas táctiles más amplias. Minimizar anima hacia el launcher. Cerrar mantiene el comportamiento de V14 y conserva el estado de la ventana.
+- El rail cambia a iconos según la medida de sus etiquetas y el espacio que necesita el panel de contenido.
+- Inicio ajusta hero, acción, indicadores y accesos. Ajustes, los dropdowns y el modal de Skybox comparten los acabados de la ventana y mantienen sus acciones.
+
+## 14.0.0 · Neo Sidebar V4
+
+- La cabecera, el hero y el launcher muestran una sola marca por ubicación. Al registrarse el PNG local se oculta el placeholder. El hero usa el brillo integrado en su PNG original.
+- El rail mide las etiquetas, ajusta el ancho y baja el tamaño de texto cuando hace falta. En ventanas por debajo de 560 px, el rail muestra iconos.
+- Menos altura de banners, tarjetas y acciones. Inicio conserva dos columnas a partir de 334 px de ancho disponible en el showcase. La cabecera y las órbitas conservan la proporción de los PNG.
+- Ajusta el halo ambiental, el indicador menta y la profundidad del panel. Refina entrada, hover, toque y arrastre del launcher.
+- Outfits admite miniaturas y previews del consumidor y conserva Aplicar en el pie de la vista previa. PNG, rutas RAW y versión de caché se mantienen en el commit de arte V3.
+
 ## 14.0.0 · Neo Sidebar
 
 - Recompone la ventana con el marco horizontal y el rail de la referencia 01, R facetada, launcher circular y franjas de marca.

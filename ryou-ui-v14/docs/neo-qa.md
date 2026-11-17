@@ -18,16 +18,35 @@
 python3 ryou-ui-v14/tests/run-cli.py /ruta/a/luau /ruta/a/luau-compile
 ```
 
-## Capturas para comparar en Roblox
+## Capturas Android de V3 y revisión V4
 
-1. Ejecuta el showcase con Play y captura en 1672 × 941. Abre Inicio y compáralo con 01. Luego repite en 1536 × 709, 853 × 394, con un viewport por debajo de 560 px y en un dispositivo Android horizontal.
-2. En frío, confirma que la R, la diagonal y el launcher aparecen al cargar. Abre y cierra la ventana, reinicia la biblioteca y confirma que reutiliza los PNG locales. Comprueba nitidez de cabecera y tamaño del hero al lado de 01.
-3. Abre Ajustes y despliega el selector. Captura con 02. Selecciona dos valores en Controles y usa 07 para revisar el menú y el toast.
-4. Abre Apariencia y selecciona una miniatura. Captura con 03. Desplaza la cuadrícula y comprueba que Aplicar sigue accesible en el panel de preview.
-5. Abre Visuales desde Controles. Captura con 04. Arrastra en el cuadro SV y en la barra de tono, prueba HEX, confirma y repite con Cancelar.
-6. Abre Skybox y captura la lista y la vista previa. Compara con 05–06. Prueba filtro vacío, retorno a la lista y confirmación.
-7. Prueba Full, Reduced, Off y cierre durante la entrada. Arrastra el launcher y verifica que soltar conserva el estado de la ventana.
+Las tres capturas de Roblox Android adjuntas al encargo son de 1536 × 709. Son evidencia anterior al cambio. Contrastar V4 con el master 01 y las pantallas 02 a 07 al tomar las siguientes capturas.
 
-Coloca cada captura renderizada junto a su mockup. Distingue resolución, escala y plataforma. Las imágenes del concepto no cuentan como resultados de ejecución.
+| Captura V3 | Defecto observado | Ajuste V4 | Prueba pendiente en Roblox |
+| --- | --- | --- | --- |
+| Inicio, ventana centrada | «Contro…» y «Aparie…». R tipográfica sobre el PNG en cabecera y hero. Diagonal sobre el subtítulo. | Ancho según texto, visibilidad exclusiva del logo y franja desplazada con proporción fija. | Con caché fría y caliente, comprobar que cada logo muestra una R limpia y que ambas etiquetas se leen completas. |
+| Apariencia | La vista previa de muestra aplasta el avatar. El panel llega al borde inferior de la ventana. | Preview y miniaturas con proporción fija, altura calculada a partir del espacio disponible y Aplicar fijo. | Deslizar dentro de la cuadrícula y sobre la página. Probar miniatura y preview reales enviados por el consumidor, y pulsar Aplicar. |
+| Inicio, ventana desplazada | Botón y tarjeta altos. Estado queda cortado. Launcher visible junto a la ventana. | Cards y CTA más bajos, columnas de Inicio desde 334 px de contenido y launcher con feedback de toque y arrastre. | Comparar densidad con 01. Arrastrar el launcher, soltarlo sin cambiar el estado de la ventana, y abrir y cerrar con toques consecutivos. |
 
-La galería y Skybox usan muestras ficticias. El texto, las miniaturas y el material del master corresponden al diseño de referencia. El render y la decodificación de PNG mayores de 1024 px quedan pendientes en el cliente real.
+En Luau CLI se verificó la exclusión entre fallback e imagen incluso con `IsLoaded = false`, el registro alterno, la caché y la adaptación del rail al añadir una etiqueta larga en un mismo viewport. Se probó minimizar, reabrir y cerrar conservando selección y conexiones. El pie de Skybox se comprobó a 1672 × 941, 1536 × 709 y 853 × 394. La prueba de Outfits valida que la miniatura y la vista previa pueden ser distintas y que el callback recibe la entrada del consumidor. Las métricas del texto se verifican con un servicio simulado.
+
+## Sesión de validación en Android
+
+1. Abre el showcase con el bloque del README. Captura Inicio y Apariencia en horizontal a 1536 × 709 y en un viewport lógico cercano a 853 × 394. Captura también 1672 × 941 en escritorio para comparar con el master.
+2. Abre el dropdown de Ajustes, Skybox y HSV. Usa touch para el scroll, el campo HEX y Aplicar. Verifica el pie de cada modal con el teclado Android abierto y cerrado.
+3. Reduce el ancho hasta que el rail pase a iconos. Aumenta el ancho y confirma que vuelven las etiquetas. Verifica los estados Full, Reduced y Off y el cierre durante la entrada.
+4. Repite con caché caliente. Comprueba que la diagonal no invade el texto y que las órbitas y los avatares conservan su forma.
+
+Pendientes el render de V4, la medición con Gotham real, las zonas seguras del dispositivo y las capturas posteriores al cambio.
+
+## Acabados V4 frente al ZIP
+
+| Referencia | Cambio implementado | Comprobación pendiente en Roblox |
+| --- | --- | --- |
+| 01 Inicio | Hero con luz localizada; dos tarjetas y accesos rápidos; CTA con reflejo superior; rail con base carbón e iluminación asimétrica. | Comparar densidad, lectura del hero y caída de luz en las superficies. |
+| 01 Cabecera y launcher | Placas de 28 × 26 px centradas en zonas táctiles de 34 × 38 px. La R facetada viene del PNG original. | Revisar nitidez, alineación, gesto de minimizar y reaparición desde el disco. |
+| 02 Ajustes | Dropdown integrado, campo de búsqueda y opciones de menor altura; fila seleccionada iluminada. | Abrir el menú en horizontal y comprobar la lectura de las opciones al desplazarlo. |
+| 07 Controles | Encabezado sin hero alto, columnas compactas y selección múltiple con luz menta localizada. | Confirmar que las opciones y el campo de búsqueda responden al tacto. |
+| 05–06 Skybox | Modal con sombra exterior, cabecera y lista diferenciadas; Vista previa y Aplicar en el pie. | Comparar selección y contraste; probar scroll, teclado y cierre. |
+
+La comparación lado a lado disponible usa las referencias del ZIP y las capturas reales de V3. La igualdad de luminosidad, el rasterizado de transparencias y los estados táctiles de V4 requieren captura del cliente.

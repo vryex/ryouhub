@@ -144,6 +144,10 @@ function input:GetFocusedTextBox() return nil end
 local services = {
     Players={LocalPlayer={WaitForChild=function() return playerGui end}},
     UserInputService=input,
+    TextService={GetTextSize=function(_,text,size,_,bounds)
+        local width=math.ceil((utf8.len(text) or #text)*size*.59)
+        return v2(math.min(width,bounds.X),math.max(1,math.ceil(width/bounds.X))*(size+2))
+    end},
     TweenService={Create=function(_,object,_,goal)
         local t={Completed=signal()}
         function t:Play() for k,v in pairs(goal) do object[k]=v end; self.Completed:Fire(enum.PlaybackState.Completed) end
