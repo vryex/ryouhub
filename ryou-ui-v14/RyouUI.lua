@@ -34,20 +34,24 @@ Window.__index, Tab.__index, Control.__index = Window, Tab, Control
 local rgb = Color3.fromRGB
 local px = UDim2.fromOffset
 local full = UDim2.fromScale(1, 1)
+local centerAnchor = UDim2.fromScale(.5, .5)
 local LEFT = Enum.TextXAlignment.Left
 local VERTICAL = Enum.AutomaticSize.Y
 local MOUSE, TOUCH = Enum.UserInputType.MouseButton1, Enum.UserInputType.Touch
 local DARK = {
     Base = rgb(9, 15, 18), Rail = rgb(15, 22, 25), Field = rgb(23, 33, 37),
     Hover = rgb(29, 46, 47), Edge = rgb(45, 69, 68), Text = rgb(243, 249, 248),
-    Muted = rgb(168, 183, 185), Accent = rgb(73, 245, 184), Ink = rgb(4, 23, 17),
-    Selected = rgb(16, 47, 41), Raised = rgb(26, 41, 42), AccentHover = rgb(124, 255, 207), LightMint = rgb(181, 255, 225), Rim = rgb(80, 113, 107), SelectedText = rgb(198,255,230),
+    Muted = rgb(168, 183, 185), Disabled = rgb(116,136,132), Accent = rgb(73, 245, 184), Ink = rgb(4, 23, 17),
+    Selected = rgb(16, 47, 41), Raised = rgb(26, 41, 42),
+    Primary = rgb(73,245,184), PrimaryHover = rgb(124,255,207), HeroAccent = rgb(111,231,183), LightMint = rgb(181, 255, 225), Rim = rgb(80, 113, 107), SelectedText = rgb(198,255,230),
 }
 local LIGHT = {
-    Base = rgb(247, 249, 248), Rail = rgb(235, 240, 238), Field = rgb(225, 232, 229),
-    Hover = rgb(214, 224, 220), Edge = rgb(182, 194, 189), Text = rgb(25, 39, 35),
-    Muted = rgb(66, 83, 77), Accent = rgb(0, 104, 77), Ink = rgb(255, 255, 255),
-    Selected = rgb(192, 232, 214), Raised = rgb(246, 250, 248), AccentHover = rgb(0, 76, 57), LightMint = rgb(127, 255, 206), Rim = rgb(101, 126, 117), SelectedText = rgb(0,76,57),
+    Base=rgb(231,239,237), Rail=rgb(220,232,228), Field=rgb(225,237,233),
+    Hover=rgb(203,222,216), Edge=rgb(132,155,147), Text=rgb(20,41,34),
+    Muted=rgb(63,87,78), Disabled=rgb(84,107,99), Accent=rgb(2,106,77), Ink=rgb(12,45,34),
+    Selected=rgb(191,226,213), Raised=rgb(249,252,250),
+    Primary=rgb(117,222,179), PrimaryHover=rgb(94,211,165), HeroAccent=rgb(3,108,77),
+    LightMint=rgb(61,144,116), Rim=rgb(95,126,114), SelectedText=rgb(0,78,56),
 }
 local MOTION = { Full = 1, Reduced = .34, Off = 0 }
 local KEYBOARD = Enum.KeyCode.RightShift
@@ -396,6 +400,7 @@ end
 local finishes = {
     Shell = {255,234,183,.77,.96,.54},
     Header = {255,224,175,.78,.98,.72},
+    Rail = {209,229,224,.8,.97,.8},
     Card = {255,224,178,.45,.84,.57},
     Raised = {255,214,164,.30,.83,.53},
     Field = {241,229,207,.57,.86,.73},
@@ -404,15 +409,26 @@ local finishes = {
     Selected = {230,211,163,.36,.68,.54},
 }
 
+local function faceColors(stops, light)
+    local points = {}
+    for index, position in ipairs({0,.49,1}) do
+        local tone = stops[index]
+        if light then tone = math.round(255-(255-tone)*.20) end
+        points[index] = ColorSequenceKeypoint.new(position,rgb(tone,tone,tone))
+    end
+    return ColorSequence.new(points)
+end
+
+local function faceGradient(w,node,name)
+    local stops = finishes[name]
+    local item = make("UIGradient",node,{Rotation=90,Color=faceColors(stops,w.ThemeName=="Light")})
+    w:_track(item)
+    w.faces[item] = stops
+end
+
 local function finish(w, node, name)
-    local top, mid, bottom, shine, dark, foot = table.unpack(finishes[name])
-    make("UIGradient",node,{
-        Rotation=90, Color=ColorSequence.new({
-            ColorSequenceKeypoint.new(0,rgb(top,top,top)),
-            ColorSequenceKeypoint.new(.49,rgb(mid,mid,mid)),
-            ColorSequenceKeypoint.new(1,rgb(bottom,bottom,bottom)),
-        }),
-    })
+    local _, _, _, shine, dark, foot = table.unpack(finishes[name])
+    faceGradient(w,node,name)
     local line = edge(w,node)
     w:_bind(line,"Color",name == "Primary" and "LightMint" or name == "Selected" and "Accent" or "Rim")
     make("UIGradient",line,{
@@ -437,6 +453,7 @@ local function selectionLight(w, parent)
             NumberSequenceKeypoint.new(1,.47),
         }),
     })
+    w:_effect(light,"BackgroundTransparency",.79,.94,1)
     return light
 end
 
@@ -453,7 +470,7 @@ local function depth(parent, radius, layers)
     return shade
 end
 
-local function mark(w, parent, size, position, large)
+local function mark(w, parent, size, position, large, exact)
     local node = make("Frame", parent, { Name = "RyouMark", Size = px(size, size), Position = position })
     local fallback = label(w, node, "R", math.floor(size*.61), true, "Accent", {
         Name = "LogoFallback", Size = full, TextXAlignment = Enum.TextXAlignment.Center,
@@ -461,16 +478,15 @@ local function mark(w, parent, size, position, large)
     assetImage(node, large and "logo_hero" or "logo_small", {
         Name = "Logo", AnchorPoint = Vector2.new(.5,.5), Position = UDim2.fromScale(.51,.46),
         Size = large and full or UDim2.fromScale(1.15,1.15), ScaleType = Enum.ScaleType.Fit,
-    }, fallback, large and "logo_small" or "logo_mono")
+    }, fallback, not exact and (large and "logo_small" or "logo_mono") or nil)
     return node
 end
 
-local function artworkLayer(w, parent, asset, position, size, mode, alpha)
-    local art = assetImage(parent, asset, {
-        Name = asset, Position = position, Size = size, ScaleType = mode,
-        ImageTransparency = alpha or 0, Visible = w.ThemeName ~= "Light",
-    })
-    w.art[art] = true
+local function artworkLayer(w,parent,asset,position,size,mode,alpha,lightAlpha)
+    local art = assetImage(parent,asset,{Name=asset,Position=position,Size=size,ScaleType=mode})
+    w:_track(art)
+    w.art[art] = { dark=alpha or 0, light=lightAlpha }
+    w:_paintArt(art)
     return art
 end
 
@@ -503,7 +519,7 @@ local function action(w, owner, parent, text, props, primary, style)
     b.BackgroundTransparency = 0
     corner(b, w.radius)
     w:_bind(b, "TextColor3", primary and "Ink" or "Text")
-    w:_bind(b, "BackgroundColor3", primary and "Accent" or "Field")
+    w:_bind(b, "BackgroundColor3", primary and "Primary" or "Field")
     local visual = b
     if style == "window" then
         b.BackgroundTransparency = 1
@@ -522,13 +538,14 @@ local function action(w, owner, parent, text, props, primary, style)
         })
         corner(glint,w.radius-1)
         make("UIGradient",glint,{Rotation=90,Transparency=NumberSequence.new(.35,1)})
+        w:_effect(glint,"BackgroundTransparency",.72,.90,1)
     end
     local scale = make("UIScale", b, {})
     local function rest()
         w:_animate(scale, .14, { Scale = 1 })
     end
     listen(owner, b.MouseEnter, function()
-        if b.Active then w:_animate(visual, .12, { BackgroundColor3 = w.theme[primary and "AccentHover" or "Hover"] }) end
+        if b.Active then w:_animate(visual, .12, { BackgroundColor3 = w.theme[primary and "PrimaryHover" or "Hover"] }) end
     end)
     listen(owner, b.MouseLeave, function()
         w:_animate(visual, .13, { BackgroundColor3 = w.theme[w.bindings[visual].BackgroundColor3] })
@@ -538,7 +555,7 @@ local function action(w, owner, parent, text, props, primary, style)
         if b.Active and (input.UserInputType == MOUSE or input.UserInputType == TOUCH) then
             w:_animate(scale, .09, { Scale = .975 })
             if style ~= "bare" then
-                w:_animate(visual,.09,{BackgroundColor3=w.theme[primary and "AccentHover" or "Hover"]})
+                w:_animate(visual,.09,{BackgroundColor3=w.theme[primary and "PrimaryHover" or "Hover"]})
             end
         end
     end)
@@ -552,7 +569,7 @@ end
 local function windowAction(w, owner, parent, glyph, right, pressed)
     local b = action(w,owner,parent,"",{
         Name=glyph == "minimize" and "Minimize" or "Close",
-        AnchorPoint=Vector2.new(1,.5), Position=UDim2.new(1,-right,.5,0), Size=px(34,38),
+        AnchorPoint=Vector2.new(1,.5), Position=UDim2.new(1,-right,.5,0), Size=px(34,38), ZIndex=4,
     },false,"window")
     icon(w,b,glyph,13,"Text",UDim2.new(.5,-6.5,.5,-6.5))
     listen(owner,b.Activated,pressed)
@@ -580,7 +597,64 @@ local function textBox(w, owner, parent, placeholder, props)
     return box
 end
 
+function Window:_track(item)
+    if self.tracked[item] then return end
+    self.tracked[item] = true
+    -- A parented Instance can outlive its Luau reference. Retain each binding until Destroying.
+    item.Destroying:Connect(function()
+        self.tracked[item],self.bindings[item],self.faces[item] = nil,nil,nil
+        self.art[item],self.effects[item],self.heroTitles[item] = nil,nil,nil
+        self:_cancel(item)
+    end)
+end
+
+function Window:_paintArt(item)
+    local art = self.art[item]
+    local alpha = art.dark
+    if self.ThemeName == "Light" then alpha = art.light end
+    item.Visible = self.neon and self.decorationIntensity>0 and alpha~=nil
+    if alpha then item.ImageTransparency = 1-(1-alpha)*self.decorationIntensity end
+end
+
+function Window:_paintEffect(item)
+    local effect = self.effects[item]
+    local on = self.ThemeName=="Light" and effect.light or effect.dark
+    local weight = self.neon and self.decorationIntensity or 0
+    item[effect.property] = effect.off+(on-effect.off)*weight
+end
+
+function Window:_effect(item,property,dark,light,off)
+    self:_track(item)
+    self.effects[item] = {property=property,dark=dark,light=light,off=off}
+    self:_paintEffect(item)
+end
+
+function Window:_launcherTint()
+    local value = self.neon and math.round(196+59*self.decorationIntensity) or 196
+    return rgb(value,value,value)
+end
+
+function Window:_refreshEffects()
+    for item in pairs(self.art) do self:_paintArt(item) end
+    for item in pairs(self.effects) do self:_paintEffect(item) end
+    if not self.neon or self.decorationIntensity==0 then
+        self:_cancel(self.sweep)
+        self.sweep.Visible = false
+    end
+    self:_cancel(self.launcherImage)
+    self.launcherImage.ImageColor3 = self:_launcherTint()
+end
+
+function Window:SetNeon(enabled)
+    self.neon = enabled == true
+    self:_refreshEffects()
+    return self
+end
+
+function Window:GetNeon() return self.neon end
+
 function Window:_bind(item, property, role)
+    self:_track(item)
     self.bindings[item] = self.bindings[item] or {}
     self.bindings[item][property] = role
     item[property] = self.theme[role]
@@ -634,18 +708,28 @@ function Window:_endGesture(complete)
     if complete and gesture.finish then gesture.finish(gesture) end
 end
 
+function Window:_moveFrame(position)
+    local bounds = self.screen.AbsoluteSize
+    local size = self.frame.Size
+    local halfX, halfY = size.X.Offset/2, size.Y.Offset/2
+    local center = Vector2.new(
+        math.clamp(position.X,halfX+8,math.max(halfX+8,bounds.X-halfX-8)),
+        math.clamp(position.Y,halfY+8,math.max(halfY+8,bounds.Y-halfY-8)))
+    self.frame.Position = px(center.X,center.Y)
+    self:_fitLauncher()
+    return center
+end
+
 function Window:_fit()
     local bounds = self.screen.AbsoluteSize
     if bounds.X <= 0 or bounds.Y <= 0 then return end
-    local maximum = Vector2.new(math.max(1, bounds.X - 16), math.max(1, bounds.Y - 16))
-    local width = math.clamp(self.desired.X, math.min(MIN_WIDTH, maximum.X), maximum.X)
-    local height = math.clamp(self.desired.Y, math.min(MIN_HEIGHT, maximum.Y), maximum.Y)
-    self.frame.Size = px(width, height)
-    local desired = self.position or bounds / 2
-    local center = Vector2.new(
-        math.clamp(desired.X, width/2+8, math.max(width/2+8, bounds.X-width/2-8)),
-        math.clamp(desired.Y, height/2+8, math.max(height/2+8, bounds.Y-height/2-8)))
-    self.frame.Position = px(center.X, center.Y)
+    local scale = self.interfaceScale
+    local maximum = Vector2.new(math.max(1,bounds.X-16)/scale,math.max(1,bounds.Y-16)/scale)
+    local width = math.clamp(self.desired.X,math.min(MIN_WIDTH,maximum.X),maximum.X)
+    local height = math.clamp(self.desired.Y,math.min(MIN_HEIGHT,maximum.Y),maximum.Y)
+    self.frame.Size = px(width*scale,height*scale)
+    self.panel.Size = px(width,height)
+    self:_moveFrame(self.position or bounds/2)
     local widest, minimum = 0, 0
     for _, tab in ipairs(self.Tabs) do
         widest = math.max(widest,tab.labelWidths[14])
@@ -665,12 +749,12 @@ function Window:_fit()
     self.content.Position = px(0, headerHeight)
     self.content.Size = UDim2.new(1, 0, 1, -headerHeight)
     self.utilities.Visible = width >= 660
+    for _, button in ipairs(self.headerTools) do button.Visible = self.utilities.Visible end
     self.titleGroup.Size = UDim2.new(1, -(width >= 660 and 347 or 176), 0, 26)
     self.subtitleGroup.Size = self.titleGroup.Size - px(0, 7)
     self.rail.Size = UDim2.new(0, railWidth, 1, 0)
     self.body.Position = px(railWidth + 1, 0)
     self.body.Size = UDim2.new(1, -railWidth-1, 1, 0)
-    self:_fitLauncher()
     for _, tab in ipairs(self.Tabs) do
         local textWidth = math.max(1, railWidth-58)
         local textSize = 14
@@ -717,6 +801,10 @@ function Window:_resetEntrance()
     end
     self:_cancel(self.brandScale)
     self.brandScale.Scale = 1
+    if self.Selected then
+        self:_cancel(self.Selected.marker)
+        self.Selected.marker.Size = px(3,23)
+    end
     self:_cancel(self.sweep)
     self.sweep.Visible = false
 end
@@ -728,20 +816,37 @@ function Window:_stage(group, time, delay, x, y)
     self:_animate(group, time, { GroupTransparency = 0, Position = endPosition }, delay)
 end
 
-function Window:Open()
+function Window:_launcherOffset(limitX,limitY)
+    local a,b = self.launcher.Position,self.frame.Position
+    return px(math.clamp((a.X.Offset-b.X.Offset)*.12,-limitX,limitX),
+        math.clamp((a.Y.Offset-b.Y.Offset)*.12,-limitY,limitY))
+end
+
+function Window:_pulseLauncher()
+    if not self.neon or self.decorationIntensity==0 or not self.launcher.Visible or self.motion=="Off" then return end
+    self.launcherImage.ImageColor3 = self:_launcherTint():Lerp(rgb(223,252,237),self.decorationIntensity)
+    self:_animate(self.launcherImage,.18,{ImageColor3=self:_launcherTint()})
+end
+
+function Window:_open(fromLauncher)
     if self.Destroyed or self.Opened then return self end
-    self.Opened = true
     local first = not self.hasOpened
-    self.hasOpened = true
     local visible = self.panel.Visible
-    self.panel.Visible = true
+    local start = fromLauncher and self:_launcherOffset(26,20) or px(0,9)
+    if fromLauncher then self:_pulseLauncher() end
+    self.Opened, self.hasOpened = true,true
+    self.panel.Visible, self.panel.Interactable = true,true
     self.shadow.Visible = true
     self:_fitLauncher()
     self:_resetEntrance()
     if not visible then
-        self.panel.GroupTransparency, self.panel.Position = 1, px(0, 11)
+        self.panel.GroupTransparency,self.panel.Position = 1,centerAnchor+start
+        local shrink = self.motion=="Full" and (first and .94 or .975) or .985
+        self.panelScale.Scale = self.interfaceScale*shrink
     end
-    self:_animate(self.panel, first and (self.motion == "Full" and .23 or .43) or .21, { GroupTransparency = 0, Position = px(0, 0) })
+    local duration = first and .27 or .21
+    self:_animate(self.panel,duration,{GroupTransparency=0,Position=centerAnchor})
+    self:_animate(self.panelScale,duration,{Scale=self.interfaceScale})
     if first and self.motion == "Full" then
         self:_stage(self.brand, .26, .11, -7, 0)
         self.brandScale.Scale = .95
@@ -750,40 +855,52 @@ function Window:Open()
         self:_stage(self.titleGroup, .34, .17, 0, 6)
         self:_stage(self.subtitleGroup, .29, .26, 0, 4)
         self:_stage(self.rail, .31, .23, -9, 0)
-        if self.Selected then self:_stage(self.pages, .40, .35, 0, 8) end
+        if self.Selected then
+            self:_stage(self.pages,.39,.35,0,8)
+            local marker = self.Selected.marker
+            marker.Size = px(3,6)
+            self:_animate(marker,.24,{Size=px(3,23)},.30)
+        end
         for index, tab in ipairs(self.Tabs) do
             if index > 10 then break end
             self:_stage(tab.shell, .27, .24 + (index-1)*.023, -4, 0)
         end
-        self.sweep.Visible = self.ThemeName ~= "Light"
-        self.sweep.BackgroundTransparency = .32
-        self.sweep.Position = UDim2.new(.33, -5, .62, 0)
-        self:_animate(self.sweep, .42, { Position = UDim2.new(.56, 0, .65, 0), BackgroundTransparency = 1 }, .17,
-            function() self.sweep.Visible = false end)
+        if self.neon and self.decorationIntensity>0 and self.ThemeName ~= "Light" then
+            self.sweep.Visible = true
+            self.sweep.BackgroundTransparency = 1-.68*self.decorationIntensity
+            self.sweep.Position = UDim2.new(.33,-5,.62,0)
+            self:_animate(self.sweep,.42,{Position=UDim2.new(.56,0,.65,0),BackgroundTransparency=1},.17,
+                function() self.sweep.Visible = false end)
+        end
     end
     for _, fn in ipairs(self.openedCallbacks) do callback(fn, self) end
     return self
 end
+
+function Window:Open() return self:_open(false) end
 
 function Window:_hide(minimized)
     if self.Destroyed then return self end
     self.initialCancelled = true
     if not self.Opened then return self:SetOpenButtonVisible(self.launcherEnabled) end
     self.Opened = false
+    self.panel.Interactable = false
     if self.dismissModal then self.dismissModal() end
+    if self.finishDialog then self.finishDialog() end
     self:_endGesture(false)
     self:_resetEntrance()
     local focused = Input:GetFocusedTextBox()
     if focused and focused:IsDescendantOf(self.panel) then focused:ReleaseFocus(false) end
     self:_fitLauncher()
-    local target = px(0,8)
-    if minimized and self.launcher.Visible then
-        local dx = self.launcher.Position.X.Offset-self.frame.Position.X.Offset
-        local dy = self.launcher.Position.Y.Offset-self.frame.Position.Y.Offset
-        target = px(math.clamp(dx*.12,-21,21),math.clamp(dy*.12,-17,17))
-    end
-    self:_animate(self.panel, .17, { GroupTransparency = 1, Position = target }, 0, function()
-        if not self.Opened then self.panel.Visible = false; self.shadow.Visible = false end
+    local towardLauncher = minimized and self.launcher.Visible
+    local target = towardLauncher and self:_launcherOffset(23,17) or px(0,8)
+    local duration = towardLauncher and .22 or .18
+    self:_animate(self.panelScale,duration,{Scale=self.interfaceScale*(towardLauncher and .95 or .985)})
+    self:_animate(self.panel,duration,{GroupTransparency=1,Position=centerAnchor+target},0,function()
+        if self.Opened then return end
+        self.panel.Visible = false
+        self.shadow.Visible = false
+        if towardLauncher then self:_pulseLauncher() end
     end)
     for _, fn in ipairs(self.closedCallbacks) do callback(fn, self) end
     return self
@@ -798,20 +915,30 @@ end
 
 function Window:SetMotion(mode)
     assert(MOTION[mode] ~= nil, "Motion must be Full, Reduced or Off")
+    if self.motion == mode then return self end
     self.motion = mode
-    if mode == "Off" then
-        for item, animation in pairs(table.clone(self.tweens)) do
-            if self.tweens[item] ~= animation then continue end
-            self:_cancel(item)
-            for property, value in pairs(animation.goal) do item[property] = value end
-            if animation.done then animation.done() end
-        end
-        self:_resetEntrance()
-        self:_cancel(self.panel)
-        self.panel.Visible = self.Opened
-        self.panel.GroupTransparency, self.panel.Position = self.Opened and 0 or 1, px(0, 0)
+    -- Settle in-flight transitions before using the new timing for every control.
+    for item, animation in pairs(table.clone(self.tweens)) do
+        if self.tweens[item] ~= animation then continue end
+        self:_cancel(item)
+        for property, value in pairs(animation.goal) do item[property] = value end
+        if animation.done then animation.done() end
     end
+    self:_resetEntrance()
+    self:_cancel(self.launcherImage)
+    self.launcherImage.ImageColor3 = self:_launcherTint()
     return self
+end
+
+function Window:GetMotion() return self.motion end
+
+function Window:_paintHeroTitle(label)
+    local item = self.heroTitles[label]
+    local color = self.theme.HeroAccent:ToHex()
+    local function escape(text)
+        return (text:gsub("&","&amp;"):gsub("<","&lt;"):gsub(">","&gt;"))
+    end
+    label.Text = escape(item.title) .. ' <font color="#' .. color .. '">' .. escape(item.accent) .. '</font>'
 end
 
 function Window:SetTheme(theme)
@@ -819,12 +946,27 @@ function Window:SetTheme(theme)
     local name = string.lower(tostring(config.Name or "Dark"))
     self.ThemeName = (name == "light" or name == "white" or name == "blanco") and "Light" or "Dark"
     self.theme = table.clone(self.ThemeName == "Light" and LIGHT or DARK)
-    for art in pairs(self.art) do art.Visible = self.ThemeName ~= "Light" end
+    local light = self.ThemeName == "Light"
+    if light then
+        self:_cancel(self.sweep)
+        self.sweep.Visible = false
+    end
+    for item, stops in pairs(self.faces) do item.Color = faceColors(stops,light) end
+    for item in pairs(self.art) do self:_paintArt(item) end
+    for item in pairs(self.effects) do self:_paintEffect(item) end
+    for item in pairs(self.heroTitles) do self:_paintHeroTitle(item) end
     if typeof(config.Background) == "Color3" then self.theme.Base = config.Background end
     if typeof(config.Accent) == "Color3" then
-        local brightness = config.Accent.R*.213 + config.Accent.G*.715 + config.Accent.B*.072
-        self.theme.Accent = config.Accent
-        self.theme.Ink = brightness > .55 and rgb(12, 18, 16) or rgb(255, 255, 255)
+        local color = config.Accent
+        local function linear(value)
+            return value <= .04045 and value/12.92 or ((value+.055)/1.055)^2.4
+        end
+        local shade = light and .945 or .718
+        local top = .2126*linear(color.R)+.7152*linear(color.G)+.0722*linear(color.B)
+        local bottom = .2126*linear(color.R*shade)+.7152*linear(color.G*shade)+.0722*linear(color.B*shade)
+        self.theme.Accent, self.theme.Primary = color,color
+        self.theme.PrimaryHover = color:Lerp(rgb(255,255,255),.10)
+        self.theme.Ink = (bottom+.05)/.05 >= 1.05/(top+.05) and rgb(0,0,0) or rgb(255,255,255)
     end
     for item, props in pairs(self.bindings) do
         if item.Parent then
@@ -857,6 +999,31 @@ local function sizeInPixels(size)
     assert(typeof(size) == "Vector2", "Expected Vector2 or UDim2 with offsets")
     return size
 end
+
+local function boundedValue(value,minimum,maximum)
+    local number = tonumber(value)
+    if not number or number~=number then return 1 end
+    return math.clamp(number,minimum,maximum)
+end
+
+function Window:SetDecorationIntensity(value)
+    self.decorationIntensity = boundedValue(value,0,1)
+    self:_refreshEffects()
+    return self
+end
+
+function Window:GetDecorationIntensity() return self.decorationIntensity end
+
+function Window:SetScale(value)
+    if self.gesture and (self.gesture.windowOrigin or self.gesture.resizing) then self:_endGesture(false) end
+    self.interfaceScale = boundedValue(value,.85,1.20)
+    self:_cancel(self.panelScale)
+    self.panelScale.Scale = self.interfaceScale
+    self:_fit()
+    return self
+end
+
+function Window:GetScale() return self.interfaceScale end
 
 function Window:SetSize(size)
     self.desired = sizeInPixels(size)
@@ -894,6 +1061,7 @@ function Window:Destroy()
     if self.Destroyed then return end
     self.Destroyed, self.Opened = true, false
     if self.dismissModal then self.dismissModal() end
+    if self.finishDialog then self.finishDialog() end
     self:_endGesture(false)
     clean(self.owner)
     while #self.notices > 0 do self.notices[#self.notices].Remove() end
@@ -922,8 +1090,10 @@ function UI:CreateWindow(options)
         font = o.Font or Enum.Font.Gotham, boldFont = o.BoldFont or Enum.Font.GothamBold,
         desired = sizeInPixels(o.Size or Vector2.new(1040, 615)), position = o.Position,
         key = o.ToggleKey or KEYBOARD, launcherEnabled = o.Launcher ~= false,
-        Tabs = {}, groups = {}, entrance = {}, notices = {}, art = setmetatable({}, {__mode = "k"}),
-        tweens = {}, bindings = setmetatable({}, { __mode = "k" }),
+        Tabs = {}, groups = {}, entrance = {}, notices = {},
+        art = {}, effects = {}, faces = {}, heroTitles = {}, tracked = {}, tweens = {}, bindings = {},
+        neon = o.Neon ~= false, interfaceScale = boundedValue(o.Scale,.85,1.2),
+        decorationIntensity = boundedValue(o.DecorationIntensity,0,1),
         openedCallbacks = {}, closedCallbacks = {}, destroyCallbacks = {},
     }, Window)
     assert(MOTION[w.motion] ~= nil, "Motion must be Full, Reduced or Off")
@@ -940,17 +1110,23 @@ function UI:CreateWindow(options)
     w.shadow = depth(w.frame,22,4)
     w.shadow.Position = px(0,4)
     w.shadow.Visible = false
-    w.panel = make("CanvasGroup", w.frame, { Size = full, Visible = false })
+    w.panel = make("CanvasGroup",w.frame,{
+        AnchorPoint=Vector2.new(.5,.5),Position=centerAnchor,Visible=false,Interactable=false,
+    })
+    w.panelScale = make("UIScale",w.panel,{Scale=w.interfaceScale})
     w.Root = w.panel
     w:_bind(w.panel, "BackgroundColor3", "Base")
-    w.panel.BackgroundTransparency = .035
+    w.panel.BackgroundTransparency = 0
     corner(w.panel, 22)
     finish(w,w.panel,"Shell")
 
     local header = surface(w, w.panel, "Rail", { Size = UDim2.new(1, 0, 0, 74), Active = true, ClipsDescendants = true })
     w.header = header
-    gradient(header,rgb(249,255,252),rgb(171,189,185),90)
-    w.headerRibbon = artworkLayer(w,header,"header_ribbon",UDim2.new(),px(488,70),Enum.ScaleType.Fit,.19)
+    w.dragZone = make("TextButton",header,{
+        Name="WindowDragArea",Size=full,ZIndex=3,Active=true,Selectable=false,Text="",AutoButtonColor=false,
+    })
+    faceGradient(w,header,"Header")
+    w.headerRibbon = artworkLayer(w,header,"header_ribbon",UDim2.new(),px(488,70),Enum.ScaleType.Fit,.19,.92)
     local rule = surface(w, header, "Edge", { Position = UDim2.new(0, 16, 1, -1), Size = UDim2.new(1, -32, 0, 1) })
     rule.Name = "HeaderRule"
     w.sweep = make("Frame",header,{Size=px(65,8),Rotation=-26,Visible=false})
@@ -958,9 +1134,10 @@ function UI:CreateWindow(options)
     make("UIGradient",w.sweep,{Rotation=90,Transparency=NumberSequence.new({
         NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(.5,.66),NumberSequenceKeypoint.new(1,1),
     })})
-    w.brand = make("CanvasGroup", header, { Size = px(60, 55), Position = UDim2.new(0, 22, .5, -27) })
-    w.brandScale = make("UIScale", w.brand, {})
-    mark(w, w.brand, 62, px(-3, -4), false)
+    w.brand = make("CanvasGroup",header,{Size=px(60,55),Position=UDim2.new(0,20,.5,-27)})
+    w.brandScale = make("UIScale",w.brand,{})
+    -- PNG alpha bounds are 391 × 289 of 512. A 50 px slot reduces the visible mark by 19%.
+    mark(w,w.brand,50,px(3,3),false,true)
     w.titleGroup = make("CanvasGroup", header, { Position = UDim2.new(0, 91, .5, -23), Size = UDim2.new(1, -350, 0, 26) })
     w.subtitleGroup = make("CanvasGroup", header, { Position = UDim2.new(0, 92, .5, 3), Size = UDim2.new(1, -350, 0, 19) })
     w.title = label(w, w.titleGroup, copyText(o.Title, "Ryou UI"), 25, true, nil,
@@ -972,7 +1149,7 @@ function UI:CreateWindow(options)
     windowAction(w,w.owner,header,"error",9,function() w:Close() end)
 
     w.utilities = make("CanvasGroup", header, {
-        Position = UDim2.new(1,-251,.5,-17), Size = px(164,34),
+        Position = UDim2.new(1,-251,.5,-17), Size = px(92,34), Active=false,
     })
     local badge = surface(w, w.utilities, "Field", { Size = px(92,26), Position = px(0,4) }, 7)
     finish(w,badge,"Raised")
@@ -980,8 +1157,9 @@ function UI:CreateWindow(options)
     label(w,badge,copyText(o.Badge, "V14 · Stable"),12,true,"Text",{Position=px(19,0),Size=UDim2.new(1,-22,1,0),
         TextTruncate=Enum.TextTruncate.AtEnd})
     local util = type(o.Utilities) == "table" and o.Utilities or {}
-    local cloud = action(w, w.owner, w.utilities, "", { Position = px(96,1), Size = px(31,32) })
-    local bell = action(w, w.owner, w.utilities, "", { Position = px(131,1), Size = px(31,32) })
+    local cloud = action(w,w.owner,header,"",{Position=UDim2.new(1,-155,.5,-16),Size=px(31,32),ZIndex=4})
+    local bell = action(w,w.owner,header,"",{Position=UDim2.new(1,-120,.5,-16),Size=px(31,32),ZIndex=4})
+    w.headerTools = {cloud,bell}
     icon(w,cloud,"cloud",15,"Text",px(8,8))
     icon(w,bell,"bell",15,"Text",px(8,8))
     surface(w,bell,"Accent",{ Size=px(5,5), Position=px(23,6) },3)
@@ -996,14 +1174,14 @@ function UI:CreateWindow(options)
     w.rail = make("CanvasGroup", content, { Position = px(0, 0) })
     w.rail.BackgroundTransparency = 0
     w:_bind(w.rail, "BackgroundColor3", "Rail")
-    gradient(w.rail,rgb(204,225,220),rgb(249,255,252),100)
-    local railGlow = artworkLayer(w,w.rail,"rail_glow",UDim2.fromScale(0,1),UDim2.fromScale(1,.84),Enum.ScaleType.Fit,.12)
+    faceGradient(w,w.rail,"Rail")
+    local railGlow = artworkLayer(w,w.rail,"rail_glow",UDim2.fromScale(0,1),UDim2.fromScale(1,.84),Enum.ScaleType.Fit,.12,.94)
     railGlow.AnchorPoint = Vector2.new(0,1)
     w.nav = scroll(w, w.rail, { Size = full })
     pad(w.nav, 6, 9)
     stack(w.nav, 4)
     w.body = make("Frame", content, {ClipsDescendants=true})
-    artworkLayer(w,w.body,"background_artwork",UDim2.fromScale(0,-.12),UDim2.fromScale(1,1.27),Enum.ScaleType.Crop,.78)
+    artworkLayer(w,w.body,"background_artwork",UDim2.fromScale(0,-.12),UDim2.fromScale(1,1.27),Enum.ScaleType.Crop,.78,nil)
     w.pages = make("CanvasGroup", w.body, { Size = full })
     local divider = surface(w, w.body, "Edge", { Position = px(0, 0), Size = UDim2.new(0, 1, 1, 0), BackgroundTransparency=.5 })
     divider.Name = "RailRule"
@@ -1042,7 +1220,9 @@ function UI:CreateWindow(options)
         if not w.gesture then w:_animate(w.launchScale,.14,{Scale=1}) end
     end)
     listen(w.owner, w.launcher.Activated, function(event)
-        if event and event.UserInputType == Enum.UserInputType.Gamepad1 then w:Toggle() end
+        if event and event.UserInputType == Enum.UserInputType.Gamepad1 then
+            if w.Opened then w:Close() else w:_open(true) end
+        end
     end)
     w.tray = make("Frame", w.screen, { AnchorPoint = Vector2.new(0, 1),
         Position = UDim2.new(0, 10, 1, -10), Size = UDim2.new(1, -20, 0, 0),
@@ -1062,7 +1242,7 @@ function UI:CreateWindow(options)
         if gesture.moved then
             w:_fitLauncher()
         elseif gesture.event.UserInputState ~= Enum.UserInputState.Cancel then
-            w:Toggle()
+            if w.Opened then w:Close() else w:_open(true) end
         end
     end, function()
         if not w.launcherEnabled then return false end
@@ -1072,17 +1252,21 @@ function UI:CreateWindow(options)
             w:_animate(w.launchScale,.17,{Scale=1})
         end
         launchStart = Vector2.new(w.launcher.Position.X.Offset, w.launcher.Position.Y.Offset)
-        w:_animate(w.launchScale, .09, { Scale = .93 })
+        w:_animate(w.launchScale,.09,{Scale=.93})
+        w:_pulseLauncher()
         return true
     end)
 
-    local dragStart
-    w:_gesture(w.owner, header, function(point, gesture)
-        w:SetPosition(dragStart + point - gesture.origin)
-    end, nil, function(point)
-        local controls = w.utilities.Visible and w.utilities or minimize
-        if point.X >= controls.AbsolutePosition.X then return false end
-        dragStart = Vector2.new(w.frame.Position.X.Offset, w.frame.Position.Y.Offset)
+    w:_gesture(w.owner,w.dragZone,function(point,gesture)
+        w.position = w:_moveFrame(gesture.windowOrigin+point-gesture.origin)
+    end,nil,function()
+        if not w.Opened or w.dismissModal then return false end
+        local position, drawn = w.frame.Position, w.panel.Position
+        local center = Vector2.new(position.X.Offset+drawn.X.Offset,position.Y.Offset+drawn.Y.Offset)
+        w:_cancel(w.panel)
+        w.panel.Position,w.panel.GroupTransparency = centerAnchor,0
+        w.position = w:_moveFrame(center)
+        w.gesture.windowOrigin = w.position
         return true
     end)
     local sizeStart, resizeOrigin
@@ -1091,27 +1275,34 @@ function UI:CreateWindow(options)
         local bounds = w.screen.AbsoluteSize
         local maximum = Vector2.new(math.max(1, bounds.X-resizeOrigin.X-8), math.max(1, bounds.Y-resizeOrigin.Y-8))
         local final = Vector2.new(
-            math.clamp(sizeStart.X + delta.X, math.min(MIN_WIDTH, maximum.X), maximum.X),
-            math.clamp(sizeStart.Y + delta.Y, math.min(MIN_HEIGHT, maximum.Y), maximum.Y))
+            math.clamp(sizeStart.X + delta.X, math.min(MIN_WIDTH*w.interfaceScale, maximum.X), maximum.X),
+            math.clamp(sizeStart.Y + delta.Y, math.min(MIN_HEIGHT*w.interfaceScale, maximum.Y), maximum.Y))
         w.position = resizeOrigin + final/2
-        w:SetSize(final)
+        w:SetSize(final/w.interfaceScale)
     end, nil, function()
-        sizeStart = w.frame.AbsoluteSize
-        resizeOrigin = w.frame.AbsolutePosition - w.screen.AbsolutePosition
-        return w.resize.Visible
+        if not w.Opened or not w.resize.Visible or w.dismissModal then return false end
+        local size,position = w.frame.Size,w.frame.Position
+        sizeStart = Vector2.new(size.X.Offset,size.Y.Offset)
+        resizeOrigin = Vector2.new(position.X.Offset,position.Y.Offset)-sizeStart/2
+        w.gesture.resizing = true
+        return true
     end)
 
     listen(w.owner, Input.InputChanged, function(event)
         local gesture = w.gesture
         if not gesture then return end
         if event == gesture.event or (gesture.event.UserInputType == MOUSE and event.UserInputType == Enum.UserInputType.MouseMovement) then
-            gesture.update(Vector2.new(event.Position.X, event.Position.Y), gesture)
+            if event.UserInputState == Enum.UserInputState.Cancel then
+                w:_endGesture(false)
+            else
+                gesture.update(Vector2.new(event.Position.X,event.Position.Y),gesture)
+            end
         end
     end)
     listen(w.owner, Input.InputEnded, function(event)
         local gesture = w.gesture
         if gesture and (event == gesture.event or (event.UserInputType == MOUSE and gesture.event.UserInputType == MOUSE)) then
-            w:_endGesture(true)
+            w:_endGesture(event.UserInputState ~= Enum.UserInputState.Cancel)
         end
     end)
     listen(w.owner, Input.WindowFocusReleased, function()
@@ -1123,7 +1314,10 @@ function UI:CreateWindow(options)
         if event.KeyCode == Enum.KeyCode.Escape and w.dismissModal then w.dismissModal(); return end
         if event.KeyCode == w.key then w:Toggle() end
     end)
-    listen(w.owner, w.screen:GetPropertyChangedSignal("AbsoluteSize"), function() w:_fit() end)
+    listen(w.owner,w.screen:GetPropertyChangedSignal("AbsoluteSize"),function()
+        w:_endGesture(false)
+        w:_fit()
+    end)
     listen(w.owner, w.gui.Destroying, function()
         if not w.Destroyed then
             w.guiDestroying = true
@@ -1131,6 +1325,7 @@ function UI:CreateWindow(options)
         end
     end)
     w:SetTheme(o.Theme or self._defaultTheme or "Dark")
+    w:SetNeon(w.neon)
     w:_fit()
     if o.Open == false then
         w:SetOpenButtonVisible(w.launcherEnabled)
@@ -1285,11 +1480,11 @@ function Tab:Banner(options)
     w:_bind(banner,"BackgroundColor3","Rail")
     corner(banner,12)
     finish(w,banner,"Raised")
-    local halo = artworkLayer(w,banner,"background_artwork",UDim2.fromScale(.15,-.12),UDim2.fromScale(.85,1.24),Enum.ScaleType.Crop,.70)
+    local halo = artworkLayer(w,banner,"background_artwork",UDim2.fromScale(.15,-.12),UDim2.fromScale(.85,1.24),Enum.ScaleType.Crop,.70,nil)
     make("UIGradient",halo,{Transparency=NumberSequence.new({
         NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(.40,.75),NumberSequenceKeypoint.new(1,0),
     })})
-    local orbits = artworkLayer(w,banner,"hero_orbits",UDim2.new(1,0,0,0),full,Enum.ScaleType.Fit,.22)
+    local orbits = artworkLayer(w,banner,"hero_orbits",UDim2.new(1,0,0,0),full,Enum.ScaleType.Fit,.22,.89)
     orbits.AnchorPoint = Vector2.new(1,0)
     local device = make("Frame", banner, {
         AnchorPoint=Vector2.new(.5,.5), Size=px(220,210),
@@ -1298,12 +1493,17 @@ function Tab:Banner(options)
     mark(w,device,179,px(20,15),true)
     local title = label(w,banner,copyText(o.Title,"Ryou UI"),large and 34 or 21,true,"Text",{
         RichText=true,TextTruncate=Enum.TextTruncate.AtEnd})
+    if o.AccentText then
+        w:_track(title)
+        w.heroTitles[title] = {title=title.Text,accent=copyText(o.AccentText)}
+        w:_paintHeroTitle(title)
+    end
     local subtitle = label(w,banner,copyText(o.Subtitle),large and 16 or 13,false,"Muted",{
         TextTruncate=Enum.TextTruncate.AtEnd})
     local underline = surface(w,banner,"Accent",{Size=px(29,2)},2)
     local function fit()
-        local width = banner.AbsoluteSize.X
-        local short = w.frame.Size.Y.Offset > 0 and w.frame.Size.Y.Offset < 415
+        local width = banner.AbsoluteSize.X/w.interfaceScale
+        local short = w.frame.Size.Y.Offset > 0 and w.panel.Size.Y.Offset < 415
         local height = short and math.min(preferredHeight,large and 96 or 74) or preferredHeight
         if banner.Size.Y.Offset ~= height then banner.Size = UDim2.new(1,-3,0,height) end
         orbits.Size = px(height*(1536/550),height)
@@ -1347,7 +1547,7 @@ function Tab:Columns(options)
         columns[index] = setmetatable({Window=w,scroller=holder,Elements=self.Elements,scrollHost=self.scrollHost or self.scroller,cardColumn=o.Cards ~= false},Tab)
     end
     local function fit()
-        local compact = wrapper.AbsoluteSize.X < (o.MinWidth or (count == 3 and 570 or 455))
+        local compact = wrapper.AbsoluteSize.X/w.interfaceScale < (o.MinWidth or (count == 3 and 570 or 455))
         layout.FillDirection = compact and Enum.FillDirection.Vertical or Enum.FillDirection.Horizontal
         for index, column in ipairs(columns) do
             local ratio = count == 2 and math.clamp(o.Split or .53,.32,.68) or 1/count
@@ -1378,7 +1578,7 @@ function Tab:Stats(options)
         cells[index] = { glyph, caption, detail }
     end
     local function fit()
-        local narrow = row.AbsoluteSize.X/count < 77
+        local narrow = row.AbsoluteSize.X/(count*w.interfaceScale) < 77
         for _, cell in ipairs(cells) do
             local glyph, caption, detail = table.unpack(cell)
             glyph.Visible = not narrow
@@ -1449,7 +1649,7 @@ function Control:_locked(locked)
     self.Locked = locked
     if self.window.gesture and self.window.gesture.owner == self.owner then self.window:_endGesture(false) end
     if locked and self.Close then self:Close(true) end
-    self.title.TextTransparency = locked and .35 or 0
+    self.window:_bind(self.title,"TextColor3",locked and "Disabled" or "Text")
     for target in pairs(self.targets) do
         target.Active, target.Selectable = not locked, not locked
         if target:IsA("TextBox") then
@@ -1554,12 +1754,13 @@ local function valueBar(w, c, parent, order, name, update)
     local fill = surface(w, rail, "Accent", { Size = UDim2.fromScale(0, 1) }, 2)
     local thumb = surface(w, rail, "Text", { AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(0, .5), Size = px(10, 10) }, 5)
     c.targets[area] = true
+    local origin,width
     local function slide(point)
-        local width = rail.AbsoluteSize.X
-        if width > 0 and not c.Locked then update(math.clamp((point.X - rail.AbsolutePosition.X)/width, 0, 1)) end
+        if width>0 and not c.Locked then update(math.clamp((point.X-origin)/width,0,1)) end
     end
     w:_gesture(c.owner, area, slide, nil, function(point)
         if c.Locked then return false end
+        origin,width = rail.AbsolutePosition.X,rail.AbsoluteSize.X
         local scroller = c.tab.scrollHost or c.tab.scroller
         local previous = scroller.ScrollingEnabled
         scroller.ScrollingEnabled = false
@@ -1652,14 +1853,15 @@ function Tab:Dropdown(options)
             if w.Destroyed or c.Destroyed or not c.expanded then return end
             local scroller = c.tab.scrollHost or c.tab.scroller
             local viewportTop = scroller.AbsolutePosition.Y
+            local scale = w.interfaceScale
             local viewportHeight = scroller.AbsoluteWindowSize.Y
             local panelTop = panel.AbsolutePosition.Y
-            local visibleHeight = math.min(panel.Size.Y.Offset + 8, math.max(96, viewportHeight - 60))
+            local visibleHeight = math.min((panel.Size.Y.Offset+8)*scale,math.max(96*scale,viewportHeight-60*scale))
             local overflow = panelTop + visibleHeight - viewportTop - viewportHeight
             if overflow <= 0 then return end
-            local limit = math.max(0, scroller.AbsoluteCanvasSize.Y - viewportHeight)
+            local limit = math.max(0,(scroller.AbsoluteCanvasSize.Y-viewportHeight)/scale)
             local current = scroller.CanvasPosition
-            w:_animate(scroller,.23,{CanvasPosition=Vector2.new(current.X,math.min(current.Y+overflow,limit))})
+            w:_animate(scroller,.23,{CanvasPosition=Vector2.new(current.X,math.min(current.Y+overflow/scale,limit))})
         end)
     end)
     local search = textBox(w, c.owner, panel, "Buscar opción…", { Position = px(4,4), Size = UDim2.new(1,-8,0,30) })
@@ -1771,6 +1973,7 @@ end
 
 local function dialog(w, owner, title, subtitle, width, height, alignToContent)
     if w.dismissModal then w.dismissModal() end
+    if w.finishDialog then w.finishDialog() end
     if w.Destroyed or not w.Opened then return nil end
     local focused=Input:GetFocusedTextBox()
     if focused and focused:IsDescendantOf(w.panel) then focused:ReleaseFocus(false) end
@@ -1781,7 +1984,8 @@ local function dialog(w, owner, title, subtitle, width, height, alignToContent)
         BackgroundColor3=rgb(0,0,0),BackgroundTransparency=.37})
     local shell = make("Frame",layer,{AnchorPoint=Vector2.new(.5,.5)})
     depth(shell,14,3)
-    local card = surface(w,shell,"Base",{Name="ToolDialog",Size=full,Active=true,ClipsDescendants=true},14)
+    local dialogFace = make("CanvasGroup",shell,{Size=full,GroupTransparency=.28})
+    local card = surface(w,dialogFace,"Base",{Name="ToolDialog",Size=full,Active=true,ClipsDescendants=true},14)
     finish(w,card,"Raised")
     local scope = childScope(owner)
     local header = surface(w,card,"Raised",{ClipsDescendants=true})
@@ -1803,12 +2007,23 @@ local function dialog(w, owner, title, subtitle, width, height, alignToContent)
         if box and box:IsDescendantOf(layer) then box:ReleaseFocus(false) end
         clean(scope)
         for _, descendant in ipairs(layer:GetDescendants()) do w:_cancel(descendant) end
-        w:_cancel(layer)
-        layer:Destroy()
         if w.dismissModal == release then w.dismissModal = nil end
+        layer.Active,layer.Interactable = false,false
+        local function finalize()
+            w:_cancel(dialogFace)
+            layer:Destroy()
+            if w.finishDialog == finalize then w.finishDialog = nil end
+        end
+        w.finishDialog = finalize
+        if w.Opened and not w.Destroyed then
+            w:_animate(dialogFace,.13,{GroupTransparency=1},0,finalize)
+        else
+            finalize()
+        end
     end
     local function fit()
-        local bounds = w.frame.AbsoluteSize
+        local size = w.panel.Size
+        local bounds = Vector2.new(size.X.Offset,size.Y.Offset)
         local short = bounds.Y < 415
         local cardHeight = math.max(1,math.min(height,bounds.Y-(short and 48 or 32)))
         local cardWidth = math.max(1,math.min(width,bounds.X-32, short and 468 or width))
@@ -1826,13 +2041,14 @@ local function dialog(w, owner, title, subtitle, width, height, alignToContent)
         footer.Position=UDim2.new(0,10,1,-bottom-8)
         footer.Size=UDim2.new(1,-20,0,bottom)
     end
-    listen(scope,w.frame:GetPropertyChangedSignal("AbsoluteSize"),fit)
+    listen(scope,w.panel:GetPropertyChangedSignal("Size"),fit)
     listen(scope,w.body:GetPropertyChangedSignal("Position"),fit)
     windowAction(w,scope,header,"error",7,release)
     w.dismissModal = release
     fit()
     local scale=make("UIScale",shell,{Scale=.975})
     w:_animate(scale,.18,{Scale=1})
+    w:_animate(dialogFace,.18,{GroupTransparency=0})
     return body,footer,release,scope
 end
 
@@ -2100,7 +2316,7 @@ function Tab:Gallery(options)
         end
         previewName.Text=current and copyText(current.Title,tostring(current.Id)) or "Sin selección"
         apply.Active=current~=nil and not c.Locked and not c.statusText
-        apply.TextTransparency=apply.Active and 0 or .55
+        apply.TextTransparency=apply.Active and 0 or .33
         for id, row in pairs(rows) do
             row.Hint.Visible=id==c.Value
             w:_bind(row.Hit,"BackgroundColor3",id==c.Value and "Selected" or "Field")
@@ -2151,10 +2367,11 @@ function Tab:Gallery(options)
         return self
     end
     local function fit()
-        local width = pane.AbsoluteSize.X
-        -- CanvasPosition cancels the parent's scroll offset in the pane's absolute position.
-        local top = pane.AbsolutePosition.Y-scrollHost.AbsolutePosition.Y+scrollHost.CanvasPosition.Y
-        local height = math.clamp(scrollHost.AbsoluteSize.Y-math.max(0,top)-16,120,280)
+        local scale = w.interfaceScale
+        local width = pane.AbsoluteSize.X/scale
+        -- CanvasPosition is expressed in layout pixels.
+        local top = (pane.AbsolutePosition.Y-scrollHost.AbsolutePosition.Y)/scale+scrollHost.CanvasPosition.Y
+        local height = math.clamp(scrollHost.AbsoluteSize.Y/scale-math.max(0,top)-16,120,280)
         local split = width < 360 and .58 or .64
         local gridWidth = math.max(1,math.floor(width*split)-6)
         local columns = math.clamp(math.floor((gridWidth+5)/65),1,4)
@@ -2244,8 +2461,8 @@ function Tab:Catalog(options)
             previewButton.Text=showing and "Volver a la lista" or "Vista previa"
             apply.Active=item~=nil
             previewButton.Active=item~=nil
-            apply.TextTransparency=item and 0 or .55
-            previewButton.TextTransparency=item and 0 or .55
+            apply.TextTransparency=item and 0 or .33
+            previewButton.TextTransparency=item and 0 or .33
         end
         local function rebuild()
             if rowOwner then clean(rowOwner) end

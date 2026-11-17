@@ -3,6 +3,7 @@ return function(UI, options)
     local config=table.clone(options or {})
     config.Title=config.Title or "Ryou UI"
     config.Subtitle=config.Subtitle or "Created by Ryou"
+    if config.Open == nil then config.Open = false end
     local w=UI:CreateWindow(config)
     local function page(title, icon)
         return w:Tab({Title=title,Id=title,Icon=icon,ShowTitle=title=="Controles",
@@ -17,7 +18,7 @@ return function(UI, options)
         w:Notify({Title=title,Content=text,Type="success"})
     end
 
-    home:Banner({Title='Ryou <font color="#62F6BB">UI</font>',Subtitle="Biblioteca visual para Luau"})
+    home:Banner({Title="Ryou",AccentText="UI",Subtitle="Biblioteca visual para Luau"})
     local action,status=home:Columns({Split=.53,MinWidth=334})
     action:Button({Title="Acción de prueba",Desc="Muestra un aviso de Neo Sidebar.",Icon="bell",
         Action="Mostrar aviso",Primary=true,Callback=function() toast("Todo listo","El showcase está activo.") end})
@@ -32,23 +33,34 @@ return function(UI, options)
 
     prefs:Banner({Title="Ajustes",Subtitle="Configuración y preferencias",Height=83})
     local presets,settings=prefs:Columns({Split=.43,MinWidth=405})
+    settings:Section({Title="Apariencia de interfaz",Icon="sliders"})
+    local theme = settings:Dropdown({Title="Tema",Values={"Oscuro","Claro"},
+        Value=w:GetTheme()=="Light" and "Claro" or "Oscuro",
+        Callback=function(value) w:SetTheme(value=="Claro" and "Light" or "Dark") end})
+    local neon = settings:Toggle({Title="Efectos neón",Value=w:GetNeon(),
+        Callback=function(value) w:SetNeon(value) end})
+    local motionModes = {Completas="Full",Reducidas="Reduced",Desactivadas="Off"}
+    local motionLabels = {Full="Completas",Reduced="Reducidas",Off="Desactivadas"}
+    local motion = settings:Dropdown({Title="Animaciones",Values={"Completas","Reducidas","Desactivadas"},
+        Value=motionLabels[w:GetMotion()],Callback=function(value) w:SetMotion(motionModes[value]) end})
+    local scale = settings:Slider({Title="Escala de interfaz (%)",Min=85,Max=120,Step=5,
+        Default=w:GetScale()*100,Callback=function(value) w:SetScale(value/100) end})
+    local intensity = settings:Slider({Title="Intensidad de decoración (%)",Min=0,Max=100,Step=5,
+        Default=w:GetDecorationIntensity()*100,Callback=function(value) w:SetDecorationIntensity(value/100) end})
     presets:Section({Title="Presets",Icon="layers"})
-    presets:Dropdown({Title="Perfil visual",Values={"Por defecto","Rendimiento","Seguro","Personalizado"},
-        Value="Por defecto",Callback=function(value)
-            w:SetMotion(value=="Rendimiento" and "Reduced" or value=="Seguro" and "Off" or "Full")
-        end})
-    presets:Section({Title="Configuración"})
-    presets:Button({Title="Guardar configuración de muestra",Icon="success",Compact=true,Primary=true,
-        Callback=function() toast("Configuración guardada","El perfil queda activo durante esta sesión.") end})
-    settings:Section({Title="Configuración",Icon="sliders"})
-    settings:Dropdown({Title="Modo de movimiento",Values={"Full","Reduced","Off"},Value="Full",
-        Callback=function(value) w:SetMotion(value) end})
-    settings:Toggle({Title="Tema claro",Desc="Alterna el tema de toda la ventana.",Value=false,
-        Callback=function(value) w:SetTheme(value and "Light" or "Dark") end})
+    presets:Button({Title="Restablecer apariencia",Icon="success",Compact=true,Callback=function()
+        theme:Set("Oscuro")
+        neon:Set(true)
+        motion:Set("Completas")
+        scale:Set(100)
+        intensity:Set(100)
+        w:SetTheme("Dark"):SetNeon(true):SetMotion("Full"):SetScale(1):SetDecorationIntensity(1)
+    end})
+    presets:Section({Title="Preferencias de muestra"})
     local notifications=true
-    settings:Toggle({Title="Notificaciones",Desc="Muestra avisos de preferencias.",Value=notifications,
+    presets:Toggle({Title="Notificaciones",Desc="Muestra avisos de preferencias.",Value=notifications,
         Callback=function(value) notifications=value end})
-    settings:Input({Title="Nombre del perfil",Placeholder="Mi perfil",Callback=function(value)
+    presets:Input({Title="Nombre del perfil",Placeholder="Mi perfil",Callback=function(value)
         if notifications then toast("Perfil actualizado",value) end
     end})
 
@@ -56,10 +68,10 @@ return function(UI, options)
     basics:Section({Title="Básicos",Icon="info"})
     basics:Toggle({Title="Activar prueba",Desc="Cambia el estado de este control.",Value=true})
     basics:Toggle({Title="Alternar selección",Value=false})
-    local intensity=basics:Slider({Title="Intensidad",Min=0,Max=100,Default=75,Step=1})
+    local demoIntensity=basics:Slider({Title="Intensidad",Min=0,Max=100,Default=75,Step=1})
     basics:Slider({Title="Velocidad",Min=0,Max=3,Default=1.5,Step=.05})
     basics:Button({Title="Restablecer",Icon="activity",Compact=true,Primary=true,Callback=function()
-        intensity:Set(75)
+        demoIntensity:Set(75)
         toast("Valores restablecidos","Intensidad: 75")
     end})
     selection:Section({Title="Entrada y selección",Icon="sliders"})
