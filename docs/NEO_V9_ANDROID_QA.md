@@ -2,7 +2,7 @@
 
 **Creador:** Ryou  
 **Base:** hub integrado V8 del PR #27  
-**Biblioteca independiente:** `ryou-ui-v14-neo-v9-polish`, versión `14.3.0` fijada al commit `87064381b58d4783b7f0209bf9c528c9415d5583`
+**Biblioteca independiente:** `ryou-ui-v14-neo-v9-polish`, versión `14.3.0` fijada al commit `87b8898aeba7d8e8b9e75e0dd17de52c43b643f8`
 
 ## Correcciones concretas
 
@@ -14,7 +14,7 @@
 - **Cabecera:** sin R duplicada. El título «RyouHub» usa el color actual de tema en «Hub», y los logos aprobados siguen en Inicio y launcher.
 - **Controles de iluminación innecesarios:** se eliminan de Configuración Efectos neón, Intensidad de decoración y Modo ahorro. El motor sigue conservando esas API para compatibilidad; el hub fuerza iluminación activa al recuperar configs antiguas.
 - **Reapertura:** la misma ventana se restaura de inmediato con sus pestañas, opciones y scroll; la primera ejecución mantiene la animación original.
-- **Caché de biblioteca:** la biblioteca se reutiliza en memoria durante la sesión y puede leerse desde `RyouUI-14.3.0-87064381b5.lua` si existe acceso a archivos. Se valida tamaño y Adler-32 contra el código fijado antes de ejecutarla. Si falta o no pasa la validación se obtiene del RAW inmutable de GitHub. Las imágenes conservan la caché de PNG ya existente.
+- **Caché de biblioteca:** la biblioteca se reutiliza en memoria durante la sesión y puede leerse desde `RyouUI-14.3.0-87b8898aeb.lua` si existe acceso a archivos. Se valida tamaño y Adler-32 contra el código fijado antes de ejecutarla. Si falta o no pasa la validación se obtiene del RAW inmutable de GitHub. Las imágenes conservan la caché de PNG ya existente.
 
 ## Regresión Android obligatoria
 
