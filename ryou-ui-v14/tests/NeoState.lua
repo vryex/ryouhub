@@ -403,3 +403,38 @@ assert(not v11:HasWallpaper() and not v11.wallpaper.Visible)
 assert(v11.headerRibbon.Visible)
 v11:Destroy()
 print("Neo Sidebar V11 full wallpaper, glass and pill: OK")
+
+
+-- V12: Glass por defecto, branding propio, miniatura del juego y efectos.
+local w12=UI:CreateWindow({Title="RyouHub",Open=false,Motion="Off"})
+assert(w12:GetGlassMode()==true)
+assert(w12:GetVisualEffects()=="Suave")
+local t12=w12:Tab("Inicio V12")
+t12:Banner({Title="Ryou",AccentText="Hub"})
+local oldLogo
+for logo in pairs(w12.heroLogoNodes) do oldLogo=logo end
+assert(oldLogo and oldLogo.Parent)
+w12:SetBrandLogo("rbxassetid://123456")
+assert(w12:GetBrandLogo()=="rbxassetid://123456")
+assert(oldLogo.Image=="rbxassetid://123456")
+w12:SetBrandLogo(nil)
+assert(w12:GetBrandLogo()==nil)
+local cards=t12:Stats({
+    {Value="Duels",Text="Juego",Thumbnail="rbxthumb://type=GameIcon&id=1&w=150&h=150"},
+    {Value="Violeta",Text="Tema",Icon="palette"},
+    {Value="V14.6",Text="Versión",Icon="layers"},
+})
+local gameCard=cards:FindFirstChild("Stat1")
+assert(gameCard and gameCard:FindFirstChild("GameThumbnail"))
+assert(cards:FindFirstChild("Stat2"):FindFirstChild("Value"))
+w12:SetVisualEffects("Destellos")
+assert(w12:GetVisualEffects()=="Destellos")
+w12:SetVisualEffects("Desactivados")
+assert(w12:GetVisualEffects()=="Desactivados" and not w12.visualGlow.Visible)
+local data=w12:ExportAppearance()
+assert(data.VisualEffects=="Desactivados" and data.LiquidGlass==true)
+w12:SetVisualEffects("Suave")
+w12:ImportAppearance(data)
+assert(w12:GetVisualEffects()=="Desactivados")
+w12:Destroy()
+print("Neo Sidebar V12 default glass, logo, game stats and visual effects: OK")
