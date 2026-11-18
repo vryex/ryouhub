@@ -8316,6 +8316,7 @@ visualBackground = PersonalizeTab:Colorpicker({
     Value=Window:GetBackgroundColor(),
     Callback=function(color)
         Window:SetBackgroundColor(color)
+        if homeThemeValue then homeThemeValue.Text="Personalizado" end
         requestAppearancePersist()
     end,
 })
@@ -8413,6 +8414,7 @@ PersonalizeTab:Button({
         Window:SetVisualEffects("Suave")
         Window:SetScale(1)
         syncAppearanceControls()
+        visualEffects:Set("Suave",true)
         Window:SetNeon(true)
         Window:SetDecorationIntensity(1)
         visualMotion:Set("Completas")
