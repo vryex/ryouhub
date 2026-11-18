@@ -33,7 +33,7 @@ end })
 Ejecuta el bloque en el cliente compatible. El showcase abre desde el launcher con `Open = true`. Usa la lupa junto a Minimizar para navegar a las pestañas y controles de la ventana.
 
 ```lua
-local base = "https://raw.githubusercontent.com/vryex/ryouhub/6981ea350676008f661c9964ed27df3902c9452f/ryou-ui-v14/"
+local base = "https://raw.githubusercontent.com/vryex/ryouhub/ryou-ui-v14-neo-v7-personalization/ryou-ui-v14/"
 local UI = assert(loadstring(game:HttpGet(base .. "RyouUI.lua")))()
 local mount = assert(loadstring(game:HttpGet(base .. "examples/NeoShowcase.lua")))()
 mount(UI, { Motion = "Full", Open = true })
@@ -59,7 +59,7 @@ En Studio y en clientes sin esas API, abre la misma interfaz con una R tipográf
 
 ## Compatibilidad y pruebas
 
-La biblioteca requiere servicios del cliente Roblox y acceso a `PlayerGui`. Luau CLI sirve para compilación y simulación de estado. La [prueba para Roblox](tests/Smoke.client.lua) se incluye para ejecutarla en **Play**. La revisión V5 parte de las capturas reales de V4 en Roblox Android, tema claro y oscuro. Se verificaron la identidad del PNG, el contraste nominal de la paleta y las transiciones y gestos simulados. Consulta la [matriz V6](docs/neo-qa.md#validación-v6) para reproducir las pruebas en el cliente.
+La biblioteca requiere servicios del cliente Roblox y acceso a `PlayerGui`. Luau CLI sirve para compilación y simulación de estado. La [prueba para Roblox](tests/Smoke.client.lua) se incluye para ejecutarla en **Play**. La revisión V7 conserva las verificaciones visuales iniciadas en V4 en Roblox Android, tema claro y oscuro. Se verificaron la identidad del PNG, el contraste nominal de la paleta y las transiciones y gestos simulados. Consulta la [matriz V6](docs/neo-qa.md#validación-v6) para reproducir las pruebas en el cliente.
 
 Consulta [cómo contribuir](CONTRIBUTING.md) y la [revisión de procedencia](docs/provenance.md) antes de enviar recursos nuevos. El código original de la biblioteca, los ejemplos y las pruebas se distribuye bajo [MIT](LICENSE).
 
