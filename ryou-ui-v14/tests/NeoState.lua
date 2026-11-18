@@ -313,3 +313,25 @@ assert(customWindow:GetSurfaceTransparency()==.35)
 assert(customWindow.CurrentTab==customTab)
 customWindow:Destroy()
 print("Neo Sidebar V7 personalization state: OK")
+
+
+-- V8: botónes compactos, cabecera minimal y contenedor de texto sin raster global.
+local v8=UI:CreateWindow({Open=false,Motion="Off",Size=Vector2.new(1000,600),SafeTopInset=60})
+local t=v8:Tab("Controles V8")
+assert(v8.panel.ClassName=="Frame")
+assert(not v8.utilities.Visible)
+local row=t:Button({Title="Restaurar cielo original",Desc="Vuelve al cielo normal del juego."})
+local actionButton=row.head:FindFirstChild("Action")
+assert(actionButton and actionButton.Text~="Abrir")
+assert(row.title.Text=="Restaurar cielo original")
+local tiles=t:Gallery({Items={{Id=4,Title="Outfit",Preview="rbxthumb://type=Outfit&id=4&w=420&h=420"}}})
+local galleryFrame=tiles.ElementFrame:FindFirstChild("OutfitPane")
+assert(galleryFrame and galleryFrame.Size.Y.Offset>=385)
+v8:SetThemePreset("Violeta")
+local logo
+for _,node in ipairs(v8.brand:GetDescendants()) do
+    if node.Name=="Logo" then logo=node; break end
+end
+assert(logo and logo.ImageColor3==v8:GetAccent())
+v8:Destroy()
+print("Neo Sidebar V8 roots, buttons, gallery, logo: OK")
