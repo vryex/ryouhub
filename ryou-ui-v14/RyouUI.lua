@@ -575,6 +575,9 @@ local function action(w, owner, parent, text, props, primary, style)
     end
     if style ~= "bare" then
         finish(w,visual,primary and "Primary" or "Secondary")
+        if not primary and style ~= "window" then
+            w.surfaceNodes[visual]="Field"
+        end
     end
     if primary then
         local glint = make("Frame",b,{
@@ -689,8 +692,11 @@ function Window:_refreshEffects()
         self:_cancel(self.sweep)
         self.sweep.Visible = false
     end
-    self:_cancel(self.launcherImage)
-    self.launcherImage.ImageColor3 = self:_launcherTint()
+    if self.launcherDot then
+        self:_cancel(self.launcherDot)
+        self.launcherDot.BackgroundColor3 = self.theme.Accent
+    end
+    self:_refreshWallpaperAppearance()
 end
 
 function Window:SetNeon(enabled)
