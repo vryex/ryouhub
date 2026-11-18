@@ -1,4 +1,4 @@
--- Ryou UI 14.2.0 | Neo Sidebar V8 | Created by Ryou
+-- Ryou UI 14.3.0 | Neo Sidebar V9 | Created by Ryou
 --[[
 MIT License
 
@@ -27,7 +27,7 @@ local Input = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local TextService = game:GetService("TextService")
 
-local UI = { Version = "14.2.0", Variant = "Neo Sidebar V8" }
+local UI = { Version = "14.3.0", Variant = "Neo Sidebar V9" }
 local Window, Tab, Control = {}, {}, {}
 Window.__index, Tab.__index, Control.__index = Window, Tab, Control
 
@@ -793,8 +793,8 @@ function Window:_fit()
     self.utilities.Visible = self.showStatus and width >= 920
     self.headerTools[1].Visible = self.showUtilities and width >= 1060 and self.hasCloud
     self.headerTools[2].Visible = self.showUtilities and width >= 1060 and self.hasNotifications
-    self.titleGroup.Size = UDim2.new(1,-245,0,26)
-    self.subtitleGroup.Size = UDim2.new(1,-245,0,19)
+    self.titleGroup.Size = UDim2.new(1,-205,0,27)
+    self.subtitleGroup.Size = UDim2.new(1,-205,0,19)
     self.title.TextSize = width < 510 and 18 or 23
     self.subtitle.Visible = width >= 485
     self.rail.Size = UDim2.new(0, railWidth, 1, 0)
@@ -888,6 +888,16 @@ function Window:_open(fromLauncher)
     self.panel.Visible, self.panel.Interactable = true,true
     self.shadow.Visible = true
     self:_fitLauncher()
+    if not first then
+        -- El panel ya tiene toda su UI montada y assets asignados.
+        -- Reabrir instantáneamente sin recalcular ni animar sus hijos.
+        self:_cancel(self.panel)
+        self:_cancel(self.panelScale)
+        self.panel.Position = centerAnchor
+        self.panelScale.Scale = self.interfaceScale
+        for _, fn in ipairs(self.openedCallbacks) do callback(fn,self) end
+        return self
+    end
     self:_resetEntrance()
     if not visible then
         self.panel.Position = centerAnchor+start
@@ -983,6 +993,20 @@ end
 
 function Window:GetMotion() return self.motion end
 
+-- Título propio del hub con acento dinámico solo en "Hub".
+function Window:_paintWindowTitle()
+    if not self.title then return end
+    local value = copyText(self.Title,"Ryou UI")
+    local function esc(text)
+        return (text:gsub("&","&amp;"):gsub("<","&lt;"):gsub(">","&gt;"))
+    end
+    if value=="RyouHub" or value=="Ryou Hub" then
+        self.title.Text = 'Ryou<font color="#'..self.theme.Accent:ToHex()..'">Hub</font>'
+    else
+        self.title.Text = esc(value)
+    end
+end
+
 function Window:_paintHeroTitle(label)
     local item = self.heroTitles[label]
     local color = self.theme.HeroAccent:ToHex()
@@ -1036,6 +1060,7 @@ function Window:SetTheme(theme)
     self.customAccent = typeof(config.Accent) == "Color3" and config.Accent or nil
     self.customBackground = typeof(config.Background) == "Color3" and config.Background or nil
     for item in pairs(self.heroTitles) do self:_paintHeroTitle(item) end
+    self:_paintWindowTitle()
     for item, props in pairs(self.bindings) do
         if item.Parent then
             for property, role in pairs(props) do
@@ -1145,7 +1170,7 @@ function Window:ImportAppearance(data)
     if data.Decoration ~= nil then self:SetDecorationIntensity(data.Decoration) end
     return self
 end
-function Window:SetTitle(str) self.Title = copyText(str); self.title.Text = self.Title; return self end
+function Window:SetTitle(str) self.Title = copyText(str); self:_paintWindowTitle(); return self end
 function Window:SetAuthor(str) self.Author = copyText(str); self.subtitle.Text = self.Author; return self end
 Window.SetSubtitle = Window.SetAuthor
 function Window:OnOpen(fn) table.insert(self.openedCallbacks, fn); return self end
@@ -1409,12 +1434,16 @@ function UI:CreateWindow(options)
     listen(w.owner,dismiss.Activated,function() w:_closePopup() end)
     w:_bind(w.panel, "BackgroundColor3", "Base")
     w.panel.BackgroundTransparency = 0
-    w.panel.ClipsDescendants = true
-    corner(w.panel, 22)
+    -- ClipsDescendants recorta en rectángulo, no sigue el radio de UICorner.
+    -- El panel principal conserva sus esquinas con las capas de fondo
+    -- redondeadas por separado, sin componer el texto en CanvasGroup.
+    w.panel.ClipsDescendants = false
+    corner(w.panel,22)
     finish(w,w.panel,"Shell")
 
     local header = surface(w, w.panel, "Rail", { Size = UDim2.new(1, 0, 0, 74), Active = true, ClipsDescendants = true })
     w.header = header
+    corner(header,20)
     w.dragZone = make("TextButton",header,{
         Name="WindowDragArea",Size=full,ZIndex=3,Active=true,Selectable=false,Text="",AutoButtonColor=false,
     })
@@ -1427,17 +1456,19 @@ function UI:CreateWindow(options)
     make("UIGradient",w.sweep,{Rotation=90,Transparency=NumberSequence.new({
         NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(.5,.66),NumberSequenceKeypoint.new(1,1),
     })})
-    w.brand = make("CanvasGroup",header,{Size=px(60,55),Position=UDim2.new(0,20,.5,-27)})
+    -- Sin monograma duplicado en la cabecera. Hero y launcher mantienen la R.
+    w.brand = make("Frame",header,{Size=px(1,1),Visible=false})
     w.brandScale = make("UIScale",w.brand,{})
-    -- PNG alpha bounds are 391 × 289 of 512. A 50 px slot reduces the visible mark by 19%.
-    mark(w,w.brand,50,px(3,3),false,true)
-    w.titleGroup = make("Frame", header, { Position = UDim2.new(0, 91, .5, -23), Size = UDim2.new(1, -350, 0, 26) })
-    w.subtitleGroup = make("Frame", header, { Position = UDim2.new(0, 92, .5, 3), Size = UDim2.new(1, -350, 0, 19) })
-    w.title = label(w, w.titleGroup, copyText(o.Title, "Ryou UI"), 25, true, nil,
-        { Size = full, TextTruncate = Enum.TextTruncate.AtEnd })
-    w.subtitle = label(w, w.subtitleGroup, copyText(o.Subtitle or o.Author, "Created by Ryou"), 13, false, "Muted",
-        { Size = full, TextTruncate = Enum.TextTruncate.AtEnd })
-    w.Title, w.Author = w.title.Text, w.subtitle.Text
+    w.titleGroup = make("Frame",header,{Position=UDim2.new(0,23,.5,-23),Size=UDim2.new(1,-205,0,27)})
+    w.subtitleGroup = make("Frame",header,{Position=UDim2.new(0,24,.5,3),Size=UDim2.new(1,-205,0,19)})
+    w.title = label(w,w.titleGroup,copyText(o.Title,"Ryou UI"),23,true,nil,{
+        RichText=true,Size=full,TextTruncate=Enum.TextTruncate.AtEnd,
+    })
+    w.subtitle = label(w,w.subtitleGroup,copyText(o.Subtitle or o.Author,"Created by Ryou"),13,false,"Muted",{
+        Size=full,TextTruncate=Enum.TextTruncate.AtEnd,
+    })
+    w.Title, w.Author = copyText(o.Title,"Ryou UI"),w.subtitle.Text
+    w:_paintWindowTitle()
     windowAction(w,w.owner,header,"minimize",43,function() w:Minimize() end)
     windowAction(w,w.owner,header,"error",9,function() w:Close() end)
 
@@ -1469,14 +1500,27 @@ function UI:CreateWindow(options)
     w.rail = make("Frame", content, { Position = px(0, 0) })
     w.rail.BackgroundTransparency = 0
     w:_bind(w.rail, "BackgroundColor3", "Rail")
+    corner(w.rail,20)
     faceGradient(w,w.rail,"Rail")
     local railGlow = artworkLayer(w,w.rail,"rail_glow",UDim2.fromScale(0,1),UDim2.fromScale(1,.84),Enum.ScaleType.Fit,.12,.94)
     railGlow.AnchorPoint = Vector2.new(0,1)
+    corner(railGlow,19)
     w.nav = scroll(w, w.rail, { Size = full })
     pad(w.nav, 6, 9)
     stack(w.nav, 4)
     w.body = make("Frame", content, {ClipsDescendants=true})
-    artworkLayer(w,w.body,"background_artwork",UDim2.new(),full,Enum.ScaleType.Crop,.78,nil)
+    -- Suaviza el corte de la imagen en el límite de la sidebar.
+    local bodyArt = artworkLayer(w,w.body,"background_artwork",UDim2.new(),full,Enum.ScaleType.Crop,.68,nil)
+    corner(bodyArt,19)
+    make("UIGradient",bodyArt,{
+        Rotation=0,
+        Transparency=NumberSequence.new({
+            NumberSequenceKeypoint.new(0,1),
+            NumberSequenceKeypoint.new(.22,.60),
+            NumberSequenceKeypoint.new(.68,0),
+            NumberSequenceKeypoint.new(1,.06),
+        }),
+    })
     w.pages = make("Frame", w.body, { Size = full })
     local divider = surface(w, w.body, "Edge", { Position = px(0, 0), Size = UDim2.new(0, 1, 1, 0), BackgroundTransparency=.5 })
     divider.Name = "RailRule"
@@ -2012,20 +2056,28 @@ function Tab:Button(options)
     else
         -- Una fila: título + explicación a la izquierda, botón de acción
         -- a la derecha. Sin un segundo botón enorme que repita "Abrir".
-        c.copy.Size=UDim2.new(1,-58,0,0)
-        c.head.Size=UDim2.new(1,0,0,61)
+        -- Altura real fija: 1 título + máximo 2 líneas de descripción.
+        -- No depender de AbsoluteSize para evitar tarjetas de 130px en Android.
+        local hasDesc = c.desc.Text ~= ""
+        c.copy.AutomaticSize=Enum.AutomaticSize.None
+        c.copy.Size=UDim2.new(1,-52,1,0)
         c.head.AutomaticSize=Enum.AutomaticSize.None
+        c.head.Size=UDim2.new(1,0,0,hasDesc and 53 or 37)
+        c.title.AutomaticSize=Enum.AutomaticSize.None
+        c.title.Size=UDim2.new(1,0,0,19)
+        c.title.TextWrapped=false
+        c.title.TextTruncate=Enum.TextTruncate.AtEnd
+        c.desc.AutomaticSize=Enum.AutomaticSize.None
+        c.desc.Size=UDim2.new(1,0,0,28)
+        c.desc.TextWrapped=true
+        c.desc.TextTruncate=Enum.TextTruncate.AtEnd
         hit=action(w,c.owner,c.head,"",{
             Name="Action",AnchorPoint=Vector2.new(1,.5),
-            Position=UDim2.new(1,-2,.5,0),Size=px(40,40),
+            Position=UDim2.new(1,-2,.5,0),Size=px(35,35),
         },false,"bare")
         hit.Text=""
         hit.BackgroundTransparency=.12
-        icon(w,hit,"arrow",17,"Accent",UDim2.new(.5,-8,.5,-8))
-        listen(c.owner,c.copy:GetPropertyChangedSignal("AbsoluteSize"),function()
-            local height=math.clamp(math.ceil(c.copy.AbsoluteSize.Y/w.interfaceScale)+8,61,140)
-            if c.head.Size.Y.Offset~=height then c.head.Size=UDim2.new(1,0,0,height) end
-        end)
+        icon(w,hit,"arrow",16,"Accent",UDim2.new(.5,-8,.5,-8))
     end
     c.targets[hit]=true
     listen(c.owner,hit.Activated,function()
