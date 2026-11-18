@@ -37,7 +37,7 @@ end
 local WindUI
 
 local RYOU_UI_URL =
-    "https://raw.githubusercontent.com/vryex/ryouhub/eafaaa210f6810342b42d59d504e52323d68561a/ryou-ui-v14/RyouUI.lua"
+    "https://raw.githubusercontent.com/vryex/ryouhub/45b530badadf8c8bdef4ab422f7600302e394492/ryou-ui-v14/RyouUI.lua"
 
 local ATTACK_Y_OFFSET = -4.60
 local SLASH_RETRY_DELAY = 0.16
