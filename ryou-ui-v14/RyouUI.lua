@@ -1,4 +1,4 @@
--- Ryou UI 14.5.0 | Neo Sidebar V11 | Created by Ryou
+-- Ryou UI 14.6.0 | Neo Sidebar V12 | Created by Ryou
 --[[
 MIT License
 
@@ -27,7 +27,7 @@ local Input = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local TextService = game:GetService("TextService")
 
-local UI = { Version = "14.5.0", Variant = "Neo Sidebar V11" }
+local UI = { Version = "14.6.0", Variant = "Neo Sidebar V12" }
 local Window, Tab, Control = {}, {}, {}
 Window.__index, Tab.__index, Control.__index = Window, Tab, Control
 
@@ -506,7 +506,16 @@ local function mark(w, parent, size, position, large, exact)
         Name = "Logo", AnchorPoint = Vector2.new(.5,.5), Position = UDim2.fromScale(.51,.46),
         Size = large and full or UDim2.fromScale(1.15,1.15), ScaleType = Enum.ScaleType.Fit,
     }, fallback, "logo_small")
-    if not large then w:_bind(logo,"ImageColor3","Accent") end
+    if not large then
+        w:_bind(logo,"ImageColor3","Accent")
+    else
+        w.heroLogoNodes[logo]=true
+        if w.brandLogo then logo.Image=w.brandLogo end
+        listen(w.owner,logo:GetPropertyChangedSignal("Image"),function()
+            -- La carga diferida de la R original no debe sobrescribir el logo de usuario.
+            if w.brandLogo and logo.Image~=w.brandLogo then logo.Image=w.brandLogo end
+        end)
+    end
     return node
 end
 
@@ -1198,6 +1207,54 @@ function Window:SetGlassIntensity(value)
 end
 function Window:GetGlassIntensity() return self.glassIntensity or .5 end
 
+-- Logo alternativo para banners: requiere un ContentId PNG/JPG válido.
+-- El hub registra las URLs públicas mediante su caché local.
+function Window:SetBrandLogo(assetId)
+    local asset=type(assetId)=="string" and assetId or nil
+    self.brandLogo=asset and asset~="" and asset or nil
+    for logo in pairs(self.heroLogoNodes) do
+        if logo.Parent then
+            if self.brandLogo then
+                logo.ImageColor3=rgb(255,255,255)
+                logo.Image=self.brandLogo
+            else
+                logo.ImageColor3=rgb(255,255,255)
+                ImageAssets:Get("logo_hero",function(id)
+                    if logo.Parent and not self.brandLogo and id then logo.Image=id end
+                end)
+            end
+        end
+    end
+    return self
+end
+function Window:GetBrandLogo() return self.brandLogo end
+
+-- Efectos visuales baratos: un degradado animado, sin RenderStepped ni blur global.
+function Window:SetVisualEffects(mode)
+    local selected=tostring(mode or "Suave")
+    if selected~="Suave" and selected~="Destellos" and selected~="Desactivados" then
+        selected="Suave"
+    end
+    self.visualEffectsMode=selected
+    if self.visualEffectTween then
+        self.visualEffectTween:Cancel()
+        self.visualEffectTween:Destroy()
+        self.visualEffectTween=nil
+    end
+    if self.visualGlow then self.visualGlow.Visible=selected~="Desactivados" end
+    if self.visualGlowGradient then
+        self.visualGlowGradient.Offset=Vector2.new(-.3,0)
+        if selected=="Destellos" then
+            self.visualEffectTween=TweenService:Create(self.visualGlowGradient,
+                TweenInfo.new(5,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut,-1,true),
+                {Offset=Vector2.new(.38,0)})
+            self.visualEffectTween:Play()
+        end
+    end
+    return self
+end
+function Window:GetVisualEffects() return self.visualEffectsMode or "Suave" end
+
 function Window:SetFontStyle(name)
     local fonts = FONT_STYLES[tostring(name or "")]
     if not fonts then return self end
@@ -1234,6 +1291,7 @@ function Window:ExportAppearance()
         Scale=self:GetScale(), Neon=self:GetNeon(),
         Decoration=self:GetDecorationIntensity(),
         LiquidGlass=self:GetGlassMode(), GlassIntensity=self:GetGlassIntensity(),
+        VisualEffects=self:GetVisualEffects(),
     }
 end
 function Window:ImportAppearance(data)
@@ -1258,6 +1316,7 @@ function Window:ImportAppearance(data)
     if data.Transparency ~= nil then self:SetSurfaceTransparency(data.Transparency) end
     if data.LiquidGlass ~= nil then self:SetGlassMode(data.LiquidGlass == true) end
     if data.GlassIntensity ~= nil then self:SetGlassIntensity(data.GlassIntensity) end
+    if data.VisualEffects ~= nil then self:SetVisualEffects(data.VisualEffects) end
     if data.Scale ~= nil then self:SetScale(data.Scale) end
     if data.Neon ~= nil then self:SetNeon(data.Neon==true) end
     if data.Decoration ~= nil then self:SetDecorationIntensity(data.Decoration) end
@@ -1345,6 +1404,11 @@ function Window:Destroy()
     clean(self.owner)
     while #self.notices > 0 do self.notices[#self.notices].Remove() end
     for item in pairs(self.tweens) do self:_cancel(item) end
+    if self.visualEffectTween then
+        self.visualEffectTween:Cancel()
+        self.visualEffectTween:Destroy()
+        self.visualEffectTween=nil
+    end
     if not self.guiDestroying then self.gui:Destroy() end
     if self.library.Window == self then self.library.Window = nil end
     for _, fn in ipairs(self.destroyCallbacks) do callback(fn, self) end
@@ -1498,7 +1562,9 @@ function UI:CreateWindow(options)
         Tabs = {}, groups = {}, entrance = {}, notices = {},
         art = {}, effects = {}, faces = {}, heroTitles = {}, tracked = {}, tweens = {}, bindings = {},
         fontNodes = {}, surfaceNodes = {}, wallpaperDecorations = {},
-        wallpaperActive=false,glassMode=o.LiquidGlass==true,
+        heroLogoNodes = {}, brandLogo=nil,
+        wallpaperActive=false,glassMode=o.LiquidGlass~=false,
+        visualEffectsMode=o.VisualEffects or "Suave",
         glassIntensity=math.clamp(tonumber(o.GlassIntensity) or .5,0,1),
         neon = o.Neon ~= false, interfaceScale = boundedValue(o.Scale,.85,1.2),
         decorationIntensity = boundedValue(o.DecorationIntensity,0,1),
@@ -1565,6 +1631,21 @@ function UI:CreateWindow(options)
         Name="GlassHeaderHighlight",Position=UDim2.new(0,15,0,2),
         Size=UDim2.new(1,-30,0,1),BackgroundTransparency=.75,
         BackgroundColor3=rgb(255,255,255),Visible=false,
+    })
+    w.visualGlow=make("Frame",w.panel,{
+        Name="AmbientGlow",BackgroundTransparency=.90,
+        BackgroundColor3=rgb(255,255,255),
+        Position=UDim2.new(.2,0,0,1),Size=UDim2.new(.62,0,0,2),
+        Visible=false,ZIndex=2,
+    })
+    w:_bind(w.visualGlow,"BackgroundColor3","Accent")
+    w.visualGlowGradient=make("UIGradient",w.visualGlow,{
+        Offset=Vector2.new(-.3,0),
+        Transparency=NumberSequence.new({
+            NumberSequenceKeypoint.new(0,1),
+            NumberSequenceKeypoint.new(.5,.14),
+            NumberSequenceKeypoint.new(1,1),
+        }),
     })
     w.sweep = make("Frame",header,{Size=px(65,8),Rotation=-26,Visible=false})
     w:_bind(w.sweep,"BackgroundColor3","Accent")
@@ -1793,6 +1874,7 @@ function UI:CreateWindow(options)
     if o.AnimationSpeed then w:SetAnimationSpeed(o.AnimationSpeed) end
     if o.SurfaceTransparency then w:SetSurfaceTransparency(o.SurfaceTransparency) end
     w:SetNeon(w.neon)
+    w:SetVisualEffects(w.visualEffectsMode)
     w:_fit()
     if o.Open == false then
         w:SetOpenButtonVisible(w.launcherEnabled)
@@ -2044,11 +2126,21 @@ function Tab:Stats(options)
     local cells = {}
     for index=1,count do
         local value = values[index]
-        local cell = surface(w,row,"Field",{Size=UDim2.new(1/count,-math.ceil(4*(count-1)/count),1,0),LayoutOrder=index},8)
+        local cell = surface(w,row,"Field",{Name="Stat"..index,Size=UDim2.new(1/count,-math.ceil(4*(count-1)/count),1,0),LayoutOrder=index},8)
         finish(w,cell,"Field")
-        local glyph = icon(w,cell,value.Icon or "activity",14,"Accent",UDim2.new(0,6,.5,-7))
-        local caption = label(w,cell,copyText(value.Value),12,true,"Text",{TextTruncate=Enum.TextTruncate.AtEnd})
-        local detail = label(w,cell,copyText(value.Text),10,false,"Muted",{TextTruncate=Enum.TextTruncate.AtEnd})
+        local glyph
+        if value.Thumbnail then
+            glyph=make("ImageLabel",cell,{
+                Name="GameThumbnail",Image=tostring(value.Thumbnail),
+                Position=UDim2.new(0,5,.5,-11),Size=px(22,22),
+                BackgroundTransparency=1,ScaleType=Enum.ScaleType.Crop,
+            })
+            corner(glyph,5)
+        else
+            glyph=icon(w,cell,value.Icon or "activity",14,"Accent",UDim2.new(0,6,.5,-7))
+        end
+        local caption = label(w,cell,copyText(value.Value),12,true,"Text",{Name="Value",TextTruncate=Enum.TextTruncate.AtEnd})
+        local detail = label(w,cell,copyText(value.Text),10,false,"Muted",{Name="Caption",TextTruncate=Enum.TextTruncate.AtEnd})
         cells[index] = { glyph, caption, detail }
     end
     local function fit()
