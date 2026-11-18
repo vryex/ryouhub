@@ -7811,7 +7811,7 @@ local gameThumb="rbxthumb://type=GameIcon&id="..tostring(universeId>0 and univer
 local homeStatusRow=homeStatus:Stats({
     {Thumbnail=gameThumb,Value=currentGameName,Text="Juego"},
     {Icon="palette",Value=Window:GetThemePreset(),Text="Tema"},
-    {Icon="layers",Value="V14 · 14.6",Text="Versión"},
+    {Icon="layers",Value="V14 · V12",Text="Versión"},
 })
 local homeThemeValue=homeStatusRow and homeStatusRow:FindFirstChild("Stat2")
 homeThemeValue=homeThemeValue and homeThemeValue:FindFirstChild("Value")
