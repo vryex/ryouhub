@@ -1,5 +1,15 @@
 # Cambios
 
+## 14.3.0 · Neo Sidebar V9 · Bordes y limpieza
+
+- Botones normales de altura estable (37/53 px de contenido, 35 px de acción), sin expansión basada en AbsoluteSize.
+- Título de cabecera `RyouHub` con `Hub` coloreado por el acento; se elimina la R duplicada junto al título, pero se conserva el logo original en Inicio y el launcher.
+- Esquinas coherentes: se elimina el recorte rectangular de la raíz y se redondean el encabezado, la barra lateral y la imagen decorativa.
+- El fondo de contenido se atenúa gradualmente al llegar al límite con la barra lateral para evitar cortes visuales.
+- Las reaperturas reutilizan la ventana y sus estados, sin animaciones ni reconstrucción de controles.
+- Sigue existiendo `SafeTopInset` como opción de biblioteca. El hub V9 usa valor 0 para permitir arrastrar hacia arriba en el área segura.
+
+
 ## 14.2.0 · Neo Sidebar V8 · Rediseño responsive
 
 - La ventana raíz usa `Frame` en lugar de un `CanvasGroup` de pantalla completa; elimina esa pasada de composición que podía suavizar el texto. La apertura mantiene movimiento y escala, sin opacidad global.
