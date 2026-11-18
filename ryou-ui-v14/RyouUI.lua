@@ -1,4 +1,4 @@
--- Ryou UI 14.4.0 | Neo Sidebar V10 | Created by Ryou
+-- Ryou UI 14.5.0 | Neo Sidebar V11 | Created by Ryou
 --[[
 MIT License
 
@@ -27,7 +27,7 @@ local Input = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local TextService = game:GetService("TextService")
 
-local UI = { Version = "14.4.0", Variant = "Neo Sidebar V10" }
+local UI = { Version = "14.5.0", Variant = "Neo Sidebar V11" }
 local Window, Tab, Control = {}, {}, {}
 Window.__index, Tab.__index, Control.__index = Window, Tab, Control
 
@@ -168,8 +168,9 @@ local function surface(w, parent, role, props, radius)
     local frame = make("Frame", parent, props)
     frame.BackgroundTransparency = 0
     w:_bind(frame, "BackgroundColor3", role)
-    if role == "Base" or role == "Rail" or role == "Field" or role == "Raised" then
-        w.surfaceNodes[frame] = true
+    if role == "Base" or role == "Rail" or role == "Field" or role == "Raised"
+        or role == "Selected" then
+        w.surfaceNodes[frame] = role
         frame.BackgroundTransparency = w.surfaceTransparency or 0
     end
     if radius then corner(frame, radius) end
@@ -574,6 +575,9 @@ local function action(w, owner, parent, text, props, primary, style)
     end
     if style ~= "bare" then
         finish(w,visual,primary and "Primary" or "Secondary")
+        if not primary and style ~= "window" then
+            w.surfaceNodes[visual]="Field"
+        end
     end
     if primary then
         local glint = make("Frame",b,{
@@ -658,7 +662,8 @@ function Window:_paintArt(item)
     local art = self.art[item]
     local alpha = art.dark
     if self.ThemeName == "Light" then alpha = art.light end
-    item.Visible = self.neon and self.decorationIntensity>0 and alpha~=nil
+    local wallpaperBlocked = self.wallpaperActive and self.wallpaperDecorations[item] == true
+    item.Visible = not wallpaperBlocked and self.neon and self.decorationIntensity>0 and alpha~=nil
     if alpha then item.ImageTransparency = 1-(1-alpha)*self.decorationIntensity end
 end
 
@@ -687,8 +692,11 @@ function Window:_refreshEffects()
         self:_cancel(self.sweep)
         self.sweep.Visible = false
     end
-    self:_cancel(self.launcherImage)
-    self.launcherImage.ImageColor3 = self:_launcherTint()
+    if self.launcherDot then
+        self:_cancel(self.launcherDot)
+        self.launcherDot.BackgroundColor3 = self.theme.Accent
+    end
+    self:_refreshWallpaperAppearance()
 end
 
 function Window:SetNeon(enabled)
@@ -838,15 +846,13 @@ end
 
 function Window:_fitLauncher()
     local bounds = self.screen.AbsoluteSize
-    local anchor = self.launcherPosition or Vector2.new(bounds.X - 55, bounds.Y - 54)
-    local x = math.clamp(anchor.X, 37, math.max(37, bounds.X - 37))
-    local y = math.clamp(anchor.Y, 37, math.max(37, bounds.Y - 37))
-    self.launcher.Position = px(x, y)
-    local center = self.frame.Position
-    local size = self.frame.Size
-    local outside = math.abs(x-center.X.Offset) >= size.X.Offset/2+36
-        or math.abs(y-center.Y.Offset) >= size.Y.Offset/2+36
-    local visible = self.launcherEnabled and (not self.Opened or outside or self.draggingLauncher == true)
+    -- Pastilla centrada arriba por defecto, siempre dentro del área segura.
+    local anchor = self.launcherPosition or Vector2.new(bounds.X/2, 29)
+    local x = math.clamp(anchor.X, 82, math.max(82,bounds.X-82))
+    local y = math.clamp(anchor.Y, 28, math.max(28,bounds.Y-28))
+    self.launcher.Position = px(x,y)
+    -- No dejar la pastilla flotando sobre los botones cuando el menú esté abierto.
+    local visible = self.launcherEnabled and (not self.Opened or self.draggingLauncher == true)
     local appearing = visible and not self.launcher.Visible
     self.launcher.Visible, self.launcher.Active = visible, visible
     if appearing and not self.draggingLauncher then
@@ -890,9 +896,10 @@ function Window:_launcherOffset(limitX,limitY)
 end
 
 function Window:_pulseLauncher()
-    if not self.neon or self.decorationIntensity==0 or not self.launcher.Visible or self.motion=="Off" then return end
-    self.launcherImage.ImageColor3 = self:_launcherTint():Lerp(rgb(223,252,237),self.decorationIntensity)
-    self:_animate(self.launcherImage,.18,{ImageColor3=self:_launcherTint()})
+    if not self.launcherDot or not self.launcher.Visible or self.motion=="Off" then return end
+    self:_cancel(self.launcherDot)
+    self.launcherDot.BackgroundColor3 = self.theme.Accent:Lerp(rgb(255,255,255),.34)
+    self:_animate(self.launcherDot,.18,{BackgroundColor3=self.theme.Accent})
 end
 
 function Window:_open(fromLauncher)
@@ -1003,8 +1010,10 @@ function Window:SetMotion(mode)
         if animation.done then animation.done() end
     end
     self:_resetEntrance()
-    self:_cancel(self.launcherImage)
-    self.launcherImage.ImageColor3 = self:_launcherTint()
+    if self.launcherDot then
+        self:_cancel(self.launcherDot)
+        self.launcherDot.BackgroundColor3 = self.theme.Accent
+    end
     return self
 end
 
@@ -1021,6 +1030,11 @@ function Window:_paintWindowTitle()
         self.title.Text = 'Ryou<font color="#'..self.theme.Accent:ToHex()..'">Hub</font>'
     else
         self.title.Text = esc(value)
+    end
+    if self.launcherWordmark then
+        self.launcherWordmark.Text = value=="RyouHub" and
+            ('Ryou<font color="#'..self.theme.Accent:ToHex()..'">Hub</font>')
+            or esc(value)
     end
 end
 
@@ -1078,6 +1092,7 @@ function Window:SetTheme(theme)
     self.customBackground = typeof(config.Background) == "Color3" and config.Background or nil
     for item in pairs(self.heroTitles) do self:_paintHeroTitle(item) end
     self:_paintWindowTitle()
+    self:_refreshWallpaperAppearance()
     for item, props in pairs(self.bindings) do
         if item.Parent then
             for property, role in pairs(props) do
@@ -1092,6 +1107,7 @@ function Window:SetTheme(theme)
             if control.paint then control.paint() end
         end
     end
+    self:_refreshWallpaperAppearance()
     return self
 end
 
@@ -1123,6 +1139,65 @@ end
 function Window:GetBackgroundColor() return self.theme.Base end
 function Window:GetWallpaperLayer() return self.wallpaper end
 
+-- El wallpaper se aplica a toda la ventana: cabecera, sidebar y contenido.
+-- El render usa solo GUI nativa; no se agrega BlurEffect al juego.
+function Window:_refreshWallpaperAppearance()
+    if not self.panel then return self end
+    local active = self.wallpaperActive == true
+    if self.wallpaperShade then
+        self.wallpaperShade.Visible = active
+        self.wallpaperShade.BackgroundColor3 = self.ThemeName == "Light"
+            and rgb(244,248,250) or rgb(7,12,18)
+        self.wallpaperShade.BackgroundTransparency = self.ThemeName == "Light" and .74 or .70
+    end
+    for item, role in pairs(self.surfaceNodes) do
+        if item.Parent then
+            local alpha = self.surfaceTransparency or 0
+            if active then alpha = math.max(alpha, .25) end
+            if self.glassMode then
+                local intensity = self.glassIntensity or .5
+                alpha = math.max(alpha, .15 + intensity*.40)
+                if role == "Selected" then alpha = math.min(alpha,.36) end
+            end
+            item.BackgroundTransparency = math.clamp(alpha,0,.64)
+        end
+    end
+    if self.header then self.header.BackgroundTransparency =
+        active and (self.glassMode and .53 or .27) or 0 end
+    if self.rail then self.rail.BackgroundTransparency =
+        active and (self.glassMode and .57 or .29) or 0 end
+    if self.panel then self.panel.BackgroundTransparency = 0 end
+    if self.glassHighlight then self.glassHighlight.Visible = self.glassMode end
+    for item in pairs(self.wallpaperDecorations) do
+        if item.Parent and self.art[item] then self:_paintArt(item) end
+    end
+    return self
+end
+function Window:SetWallpaper(image,transparency)
+    local enabled=type(image)=="string" and image~=""
+    self.wallpaperActive=enabled
+    if self.wallpaper then
+        self.wallpaper.Image=enabled and image or ""
+        self.wallpaper.ImageTransparency=math.clamp(tonumber(transparency) or .12,0,.95)
+        self.wallpaper.Visible=enabled
+    end
+    self:_refreshWallpaperAppearance()
+    return self
+end
+function Window:HasWallpaper() return self.wallpaperActive == true end
+function Window:SetGlassMode(enabled)
+    self.glassMode = enabled==true
+    self:_refreshWallpaperAppearance()
+    return self
+end
+function Window:GetGlassMode() return self.glassMode == true end
+function Window:SetGlassIntensity(value)
+    self.glassIntensity = math.clamp(tonumber(value) or .5,0,1)
+    self:_refreshWallpaperAppearance()
+    return self
+end
+function Window:GetGlassIntensity() return self.glassIntensity or .5 end
+
 function Window:SetFontStyle(name)
     local fonts = FONT_STYLES[tostring(name or "")]
     if not fonts then return self end
@@ -1137,10 +1212,7 @@ function Window:GetFontStyle() return self.fontStyle or "Gotham" end
 
 function Window:SetSurfaceTransparency(value)
     self.surfaceTransparency = math.clamp(tonumber(value) or 0,0,.35)
-    for item in pairs(self.surfaceNodes) do
-        if item.Parent then item.BackgroundTransparency = self.surfaceTransparency end
-    end
-    if self.panel then self.panel.BackgroundTransparency = self.surfaceTransparency*.6 end
+    self:_refreshWallpaperAppearance()
     return self
 end
 function Window:GetSurfaceTransparency() return self.surfaceTransparency or 0 end
@@ -1161,6 +1233,7 @@ function Window:ExportAppearance()
         Speed=self:GetAnimationSpeed(), Transparency=self:GetSurfaceTransparency(),
         Scale=self:GetScale(), Neon=self:GetNeon(),
         Decoration=self:GetDecorationIntensity(),
+        LiquidGlass=self:GetGlassMode(), GlassIntensity=self:GetGlassIntensity(),
     }
 end
 function Window:ImportAppearance(data)
@@ -1183,6 +1256,8 @@ function Window:ImportAppearance(data)
     if MOTION[data.Motion] then self:SetMotion(data.Motion) end
     if data.Speed ~= nil then self:SetAnimationSpeed(data.Speed) end
     if data.Transparency ~= nil then self:SetSurfaceTransparency(data.Transparency) end
+    if data.LiquidGlass ~= nil then self:SetGlassMode(data.LiquidGlass == true) end
+    if data.GlassIntensity ~= nil then self:SetGlassIntensity(data.GlassIntensity) end
     if data.Scale ~= nil then self:SetScale(data.Scale) end
     if data.Neon ~= nil then self:SetNeon(data.Neon==true) end
     if data.Decoration ~= nil then self:SetDecorationIntensity(data.Decoration) end
@@ -1248,9 +1323,10 @@ function Window:SetOpenButtonVisible(enabled)
     return self
 end
 function Window:SetOpenButtonGhosted(enabled)
-    local transparency = enabled == true and .38 or 0
+    local transparency = enabled == true and .42 or .06
     self.launcherPlate.BackgroundTransparency = transparency
-    self.launcherImage.ImageTransparency = transparency
+    if self.launcherWordmark then self.launcherWordmark.TextTransparency = enabled and .28 or 0 end
+    if self.launcherDot then self.launcherDot.BackgroundTransparency = enabled and .3 or 0 end
     return self
 end
 function Window:EditOpenButton(config)
@@ -1421,7 +1497,9 @@ function UI:CreateWindow(options)
         key = o.ToggleKey or KEYBOARD, launcherEnabled = o.Launcher ~= false,
         Tabs = {}, groups = {}, entrance = {}, notices = {},
         art = {}, effects = {}, faces = {}, heroTitles = {}, tracked = {}, tweens = {}, bindings = {},
-        fontNodes = {}, surfaceNodes = {},
+        fontNodes = {}, surfaceNodes = {}, wallpaperDecorations = {},
+        wallpaperActive=false,glassMode=o.LiquidGlass==true,
+        glassIntensity=math.clamp(tonumber(o.GlassIntensity) or .5,0,1),
         neon = o.Neon ~= false, interfaceScale = boundedValue(o.Scale,.85,1.2),
         decorationIntensity = boundedValue(o.DecorationIntensity,0,1),
         openedCallbacks = {}, closedCallbacks = {}, destroyCallbacks = {},
@@ -1433,7 +1511,7 @@ function UI:CreateWindow(options)
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling, ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets,
     })
     w.gui:SetAttribute("RyouNeoSidebar",true)
-    ImageAssets:Preload("logo_hero", "logo_mono", "logo_small", "header_ribbon", "launcher")
+    ImageAssets:Preload("logo_hero", "logo_mono", "logo_small", "header_ribbon")
     w.ScreenGui = w.gui
     w.screen = make("Frame", w.gui, { Size = full })
     w.frame = make("Frame", w.screen, { AnchorPoint = Vector2.new(.5, .5) })
@@ -1459,6 +1537,19 @@ function UI:CreateWindow(options)
     corner(w.panel,22)
     finish(w,w.panel,"Shell")
 
+    -- Fondo de usuario de borde a borde, antes del header y del rail.
+    -- Se dibuja por debajo de todos los controles y popups.
+    w.wallpaper = make("ImageLabel",w.panel,{
+        Name="RyouHubWallpaper",Size=full,ScaleType=Enum.ScaleType.Crop,
+        BackgroundTransparency=1,ImageTransparency=.12,Visible=false,
+    })
+    corner(w.wallpaper,22)
+    w.wallpaperShade=make("Frame",w.panel,{
+        Name="WallpaperContrast",Size=full,Visible=false,
+        BackgroundColor3=rgb(7,12,18),BackgroundTransparency=.70,
+    })
+    corner(w.wallpaperShade,22)
+
     local header = surface(w, w.panel, "Rail", { Size = UDim2.new(1, 0, 0, 74), Active = true, ClipsDescendants = true })
     w.header = header
     corner(header,20)
@@ -1467,8 +1558,14 @@ function UI:CreateWindow(options)
     })
     faceGradient(w,header,"Header")
     w.headerRibbon = artworkLayer(w,header,"header_ribbon",UDim2.new(),px(488,70),Enum.ScaleType.Fit,.19,.92)
+    w.wallpaperDecorations[w.headerRibbon]=true
     local rule = surface(w, header, "Edge", { Position = UDim2.new(0, 16, 1, -1), Size = UDim2.new(1, -32, 0, 1) })
     rule.Name = "HeaderRule"
+    w.glassHighlight=make("Frame",header,{
+        Name="GlassHeaderHighlight",Position=UDim2.new(0,15,0,2),
+        Size=UDim2.new(1,-30,0,1),BackgroundTransparency=.75,
+        BackgroundColor3=rgb(255,255,255),Visible=false,
+    })
     w.sweep = make("Frame",header,{Size=px(65,8),Rotation=-26,Visible=false})
     w:_bind(w.sweep,"BackgroundColor3","Accent")
     make("UIGradient",w.sweep,{Rotation=90,Transparency=NumberSequence.new({
@@ -1525,6 +1622,7 @@ function UI:CreateWindow(options)
     local railGlow = artworkLayer(w,railArtClip,"rail_glow",
         px(0,225),px(230,275),Enum.ScaleType.Fit,.12,.94)
     corner(railGlow,19)
+    w.wallpaperDecorations[railGlow]=true
     w.nav = scroll(w, w.rail, { Size = UDim2.new(1,0,1,-9) })
     pad(w.nav, 6, 9)
     stack(w.nav, 4)
@@ -1535,6 +1633,7 @@ function UI:CreateWindow(options)
     local bodyArt = artworkLayer(w,w.body,"background_artwork",
         px(0,0),px(1040,585),Enum.ScaleType.Fit,.68,nil)
     corner(bodyArt,19)
+    w.wallpaperDecorations[bodyArt]=true
     make("UIGradient",bodyArt,{
         Rotation=0,
         Transparency=NumberSequence.new({
@@ -1544,14 +1643,7 @@ function UI:CreateWindow(options)
             NumberSequenceKeypoint.new(1,.06),
         }),
     })
-    -- Capa de wallpaper para fondos personalizados. Debajo de las páginas,
-    -- por encima del arte decorativo, sin superponer botones ni texto.
-    w.wallpaper = make("ImageLabel",w.body,{
-        Name="RyouHubWallpaper",Size=full,ScaleType=Enum.ScaleType.Crop,
-        BackgroundTransparency=1,ImageTransparency=.12,Visible=false,
-    })
-    corner(w.wallpaper,19)
-    w.UIElements = {Main=w.body,Wallpaper=w.wallpaper}
+    w.UIElements = {Main=w.panel,Wallpaper=w.wallpaper}
     w.pages = make("Frame", w.body, { Size = full })
     local divider = surface(w, w.body, "Edge", { Position = px(0, 0), Size = UDim2.new(0, 1, 1, 0), BackgroundTransparency=.5 })
     divider.Name = "RailRule"
@@ -1565,20 +1657,20 @@ function UI:CreateWindow(options)
     icon(w, w.resize, "grip", 17, "Muted", px(15, 13))
     w:SetResizable(o.Resizable ~= false)
 
-    w.launcher = make("TextButton", w.screen, {
-        Text = "", AutoButtonColor = false, Size = px(70, 70), AnchorPoint = Vector2.new(.5, .5),
-        Visible = false, ZIndex = 15,
+    w.launcher = make("TextButton",w.screen,{
+        Name="RyouPillLauncher",Text="",AutoButtonColor=false,
+        Size=px(152,44),AnchorPoint=Vector2.new(.5,.5),Visible=false,ZIndex=15,
     })
-    w.launchScale = make("UIScale", w.launcher, {})
-    local fallback = make("Frame", w.launcher, {Name="LauncherFallback", Size=full})
-    local pod = surface(w, fallback, "Rail", {Position=px(3,3), Size=px(64,64)}, 32)
-    edge(w, pod)
-    label(w, pod, "R", 28, true, "Accent", {Size=full, TextXAlignment=Enum.TextXAlignment.Center})
-    w.launcherPlate, w.OpenButton = pod, w.launcher
-    w.launcherImage = assetImage(w.launcher, "launcher", {
-        Name="LauncherArt", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.51,.50),
-        Size=UDim2.fromScale(1.34,1.34), ScaleType=Enum.ScaleType.Fit,
-    }, fallback, "launcher_fallback", UDim2.fromScale(1.06,1.06))
+    w.launchScale=make("UIScale",w.launcher,{})
+    local pod=surface(w,w.launcher,"Rail",{Name="LauncherPill",Size=full},22)
+    finish(w,pod,"Raised")
+    w.launcherPlate,w.OpenButton=pod,w.launcher
+    w.launcherDot=surface(w,pod,"Accent",{Position=px(15,17),Size=px(9,9)},5)
+    w.launcherWordmark=label(w,pod,w.Title,15,true,"Text",{
+        RichText=true,Position=px(33,2),Size=UDim2.new(1,-41,1,-4),
+        TextXAlignment=Enum.TextXAlignment.Left,TextTruncate=Enum.TextTruncate.AtEnd,
+    })
+    w:_paintWindowTitle()
     if type(o.OpenButton) == "table" then
         if o.OpenButton.Enabled ~= nil then w.launcherEnabled = o.OpenButton.Enabled ~= false end
         w:SetOpenButtonGhosted(o.OpenButton.Ghosted)
@@ -1857,13 +1949,16 @@ function Tab:Banner(options)
     local banner = insertBlock(self, "Frame", {Size=UDim2.new(1,-3,0,preferredHeight), ClipsDescendants=true})
     banner.BackgroundTransparency=0
     w:_bind(banner,"BackgroundColor3","Rail")
+    w.surfaceNodes[banner]="Rail"
     corner(banner,12)
     finish(w,banner,"Raised")
     local halo = artworkLayer(w,banner,"background_artwork",UDim2.fromScale(.15,-.12),UDim2.fromScale(.85,1.24),Enum.ScaleType.Crop,.70,nil)
+    w.wallpaperDecorations[halo]=true
     make("UIGradient",halo,{Transparency=NumberSequence.new({
         NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(.40,.75),NumberSequenceKeypoint.new(1,0),
     })})
     local orbits = artworkLayer(w,banner,"hero_orbits",UDim2.new(1,0,0,0),full,Enum.ScaleType.Fit,.22,.89)
+    w.wallpaperDecorations[orbits]=true
     orbits.AnchorPoint = Vector2.new(1,0)
     local device = make("Frame", banner, {
         AnchorPoint=Vector2.new(.5,.5), Size=px(220,210),
