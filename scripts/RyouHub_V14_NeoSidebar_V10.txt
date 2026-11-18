@@ -3965,6 +3965,7 @@ local function mountRyouMenuBackground(window, tab)
     local loading = {}
     local customAsset
     local refreshBackground
+    local selector
 
     local function isImage(bytes)
         if type(bytes) ~= "string" or #bytes < 50 or #bytes > 8000000 then return false end
@@ -4109,6 +4110,7 @@ local function mountRyouMenuBackground(window, tab)
             customAsset=cached
             ryouMenuBackground.CustomURL=url
             ryouMenuBackground.Mode="Personalizado"
+            if selector then selector:Set("Personalizado",true) end
             refreshBackground()
             return true
         end
@@ -4135,6 +4137,7 @@ local function mountRyouMenuBackground(window, tab)
         customAsset=asset
         ryouMenuBackground.CustomURL=url
         ryouMenuBackground.Mode="Personalizado"
+        if selector then selector:Set("Personalizado",true) end
         refreshBackground()
         return true
     end
@@ -4143,7 +4146,8 @@ local function mountRyouMenuBackground(window, tab)
     tab:Paragraph({Title="Fondos de RyouHub",Desc="Elige una imagen de la colección o usa tu propio enlace."})
     local names={}
     for _,entry in ipairs(RYOU_BG_PRESETS) do names[#names+1]=entry.Name end
-    local selector=tab:Dropdown({
+    names[#names+1]="Personalizado"
+    selector=tab:Dropdown({
         Title="Elegir fondo", Desc="Colección completa disponible en RyouHub",
         Values=names, Value="RyouHub",
         Callback=function(value)
