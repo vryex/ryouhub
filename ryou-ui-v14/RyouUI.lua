@@ -526,10 +526,13 @@ local function icon(w, parent, name, size, role, position)
             BackgroundColor3=rgb(230,0,35),BackgroundTransparency=0,
         })
         corner(badge,math.floor(size/2))
-        label(w,badge,"P",math.max(11,math.floor(size*.80)),true,nil,{
-            Size=full,TextXAlignment=Enum.TextXAlignment.Center,
+        make("TextLabel",badge,{
+            Text="P",Font=Enum.Font.GothamBold,
+            TextSize=math.max(11,math.floor(size*.80)),
+            Size=full,TextColor3=rgb(255,255,255),
+            TextXAlignment=Enum.TextXAlignment.Center,
             TextYAlignment=Enum.TextYAlignment.Center,
-        }).TextColor3=rgb(255,255,255)
+        })
         return badge
     end
     local slot = make("Frame", parent, { Size = px(size, size), Position = position or UDim2.new() })
@@ -1430,7 +1433,7 @@ function UI:CreateWindow(options)
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling, ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets,
     })
     w.gui:SetAttribute("RyouNeoSidebar",true)
-    ImageAssets:Preload("logo_mono", "logo_small", "header_ribbon", "launcher")
+    ImageAssets:Preload("logo_hero", "logo_mono", "logo_small", "header_ribbon", "launcher")
     w.ScreenGui = w.gui
     w.screen = make("Frame", w.gui, { Size = full })
     w.frame = make("Frame", w.screen, { AnchorPoint = Vector2.new(.5, .5) })
