@@ -255,6 +255,10 @@ local AssetRegistry = {
     rail_glow = { file = "RAIL_INFERIOR_RGBA.png", bytes = 43775 },
     background_artwork = { file = "FONDO_NEON_ARTWORK_1672x941.png", bytes = 1477520 },
     logo_mono = { file = "R_FACETADA_MONO_512.png", bytes = 17839 },
+    pinterest_logo = {
+        file = "PINTEREST_OFFICIAL_64.png",bytes = 868,
+        url = "https://raw.githubusercontent.com/vryex/ryouhub/c25b2d3e40cbdb0daee5e2d452d34b22dfa45abc/ryou-ui-v14/assets/neo/PINTEREST_OFFICIAL_64.png",
+    },
 }
 
 local ImageAssets = { ready = {}, pending = {}, warned = {} }
@@ -282,7 +286,7 @@ local function validPng(data, asset)
 end
 
 local function downloadPng(asset)
-    local url = ASSET_URL .. asset.file
+    local url = asset.url or (ASSET_URL .. asset.file)
     local ok, data = pcall(function() return game:HttpGet(url) end)
     if ok and validPng(data, asset) then return data end
     if sendRequest then
@@ -530,19 +534,22 @@ end
 local function icon(w, parent, name, size, role, position)
     if name == "ryou" then return mark(w, parent, size, position or UDim2.new(), false) end
     if name == "pinterest" then
-        -- Identificador reconocible, dibujado localmente sin descargar iconos.
-        local badge = make("Frame",parent,{
-            Size=px(size,size),Position=position or UDim2.new(),
-            BackgroundColor3=rgb(230,0,35),BackgroundTransparency=0,
+        local badge=make("Frame",parent,{
+            Name="PinterestBadge",Size=px(size,size),
+            Position=position or UDim2.new(),
+            BackgroundTransparency=1,
         })
-        corner(badge,math.floor(size/2))
-        make("TextLabel",badge,{
+        local fallback=make("TextLabel",badge,{
             Text="P",Font=Enum.Font.GothamBold,
-            TextSize=math.max(11,math.floor(size*.80)),
-            Size=full,TextColor3=rgb(255,255,255),
-            TextXAlignment=Enum.TextXAlignment.Center,
-            TextYAlignment=Enum.TextYAlignment.Center,
+            TextSize=math.max(10,math.floor(size*.74)),
+            Size=full,TextColor3=rgb(255,255,255),BackgroundColor3=rgb(230,0,35),
+            BackgroundTransparency=0,TextXAlignment=Enum.TextXAlignment.Center,
         })
+        corner(fallback,math.floor(size/2))
+        assetImage(badge,"pinterest_logo",{
+            Name="OfficialPinterestLogo",Size=full,
+            BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,
+        },fallback)
         return badge
     end
     local slot = make("Frame", parent, { Size = px(size, size), Position = position or UDim2.new() })
@@ -1577,7 +1584,7 @@ function UI:CreateWindow(options)
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling, ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets,
     })
     w.gui:SetAttribute("RyouNeoSidebar",true)
-    ImageAssets:Preload("logo_hero", "logo_mono", "logo_small", "header_ribbon")
+    ImageAssets:Preload("logo_hero", "logo_mono", "logo_small", "header_ribbon", "pinterest_logo")
     w.ScreenGui = w.gui
     w.screen = make("Frame", w.gui, { Size = full })
     w.frame = make("Frame", w.screen, { AnchorPoint = Vector2.new(.5, .5) })
