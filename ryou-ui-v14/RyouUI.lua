@@ -256,8 +256,8 @@ local AssetRegistry = {
     background_artwork = { file = "FONDO_NEON_ARTWORK_1672x941.png", bytes = 1477520 },
     logo_mono = { file = "R_FACETADA_MONO_512.png", bytes = 17839 },
     pinterest_logo = {
-        file = "PINTEREST_OFFICIAL_64.png",bytes = 868,
-        url = "https://raw.githubusercontent.com/vryex/ryouhub/c25b2d3e40cbdb0daee5e2d452d34b22dfa45abc/ryou-ui-v14/assets/neo/PINTEREST_OFFICIAL_64.png",
+        file = "PINTEREST_BADGE_RED_64.png",bytes = 938,
+        url = "https://raw.githubusercontent.com/vryex/ryouhub/bc7f3036a791eaa611bcc185249f1c817775df7e/ryou-ui-v14/assets/neo/PINTEREST_BADGE_RED_64.png",
     },
 }
 
