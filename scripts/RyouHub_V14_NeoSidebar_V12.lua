@@ -37,7 +37,7 @@ end
 local WindUI
 
 local RYOU_UI_URL =
-    "https://raw.githubusercontent.com/vryex/ryouhub/d2ea81aaaff7182d8c800b21a3c019eb1b9a1890/ryou-ui-v14/RyouUI.lua"
+    "https://raw.githubusercontent.com/vryex/ryouhub/8a29db883560dfc79bbf1789a7e783af7ff3d87b/ryou-ui-v14/RyouUI.lua"
 
 local ATTACK_Y_OFFSET = -4.60
 local SLASH_RETRY_DELAY = 0.16
@@ -3365,9 +3365,9 @@ end)
 
 -- UI RYOU · V9: reutilizar el módulo ya cargado y el archivo validado.
 do
-    local UI_CACHE_PATH = "RyouUI-14.5.0-d2ea81aaaf.lua"
-    local UI_SIZE, UI_ADLER = 140233, 2358147988
-    local CACHE_KEY = "__RyouHub_NeoSidebarV11_d2ea81aaaf"
+    local UI_CACHE_PATH = "RyouUI-14.6.0-8a29db8835.lua"
+    local UI_SIZE, UI_ADLER = 144349, 1923315147
+    local CACHE_KEY = "__RyouHub_NeoSidebarV12_8a29db8835"
 
     local function validLibrarySource(source)
         if type(source)~="string" or #source~=UI_SIZE then return false end
@@ -3384,9 +3384,9 @@ do
         if not chunk then error("Luau: "..tostring(compileError)) end
         local ui=chunk()
         if type(ui)~="table" or type(ui.CreateWindow)~="function"
-            or tostring(ui.Version)~="14.5.0"
-            or tostring(ui.Variant)~="Neo Sidebar V11" then
-            error("La biblioteca no es Neo Sidebar V11.")
+            or tostring(ui.Version)~="14.6.0"
+            or tostring(ui.Variant)~="Neo Sidebar V12" then
+            error("La biblioteca no es Neo Sidebar V12.")
         end
         return ui
     end
@@ -3400,8 +3400,8 @@ do
         if not hostEnv and type(shared)=="table" then hostEnv=shared end
 
         local inMemory=hostEnv and hostEnv[CACHE_KEY]
-        if type(inMemory)=="table" and inMemory.Version=="14.5.0"
-            and inMemory.Variant=="Neo Sidebar V11"
+        if type(inMemory)=="table" and inMemory.Version=="14.6.0"
+            and inMemory.Variant=="Neo Sidebar V12"
             and type(inMemory.CreateWindow)=="function" then
             return inMemory
         end
@@ -3419,7 +3419,7 @@ do
 
         local source=game:HttpGet(RYOU_UI_URL)
         if not validLibrarySource(source) then
-            error("Archivo V11 remoto distinto de la revisión fijada.")
+            error("Archivo V12 remoto distinto de la revisión fijada.")
         end
         local ui=instantiateLibrary(source)
         if hostEnv then hostEnv[CACHE_KEY]=ui end
@@ -3427,7 +3427,7 @@ do
         return ui
     end)
     if not ok then
-        warn("[Ryou] Error cargando Neo Sidebar V11: "..tostring(result))
+        warn("[Ryou] Error cargando Neo Sidebar V12: "..tostring(result))
         return
     end
     WindUI=result
@@ -9457,7 +9457,7 @@ task.defer(function()
     end
 end)
 
-pcall(function() notify("RyouHub V14 listo: Neo Sidebar V11", 3) end)
+pcall(function() notify("RyouHub V14 listo: Neo Sidebar V12", 3) end)
 
 end
 
