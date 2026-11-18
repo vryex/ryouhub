@@ -1,5 +1,16 @@
 # Cambios
 
+## 14.1.0 · Neo Sidebar V7 · Personalización
+
+- Ocho temas de acento listos para usar y colores de acento/fondo editables en vivo.
+- Fuentes Gotham, SourceSans y Arial sin reconstruir las pestañas.
+- Transparencia de superficies de 0 a 35 %, velocidad de animación de 0.5× a 2× y modos de movimiento conservados.
+- `Window:ExportAppearance()` / `Window:ImportAppearance()` devuelven/restauran una tabla JSON segura.
+- Evita generar tweens cuando el objetivo coincide con el valor actual.
+- Mantiene la API V6 de búsqueda, Outfits, dropdowns, modal y launcher.
+- El hub integrador puede guardar las preferencias en su propio fichero, sin imponer dependencias de sistema de archivos a la biblioteca.
+
+
 ## 14.0.0 · Neo Sidebar V6
 
 - Desplegables anclados en una capa interna con apertura hacia arriba cuando falta espacio debajo.
