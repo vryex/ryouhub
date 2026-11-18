@@ -1,4 +1,4 @@
--- Ryou UI 14.1.0 | Neo Sidebar V7 | Created by Ryou
+-- Ryou UI 14.2.0 | Neo Sidebar V8 | Created by Ryou
 --[[
 MIT License
 
@@ -27,7 +27,7 @@ local Input = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local TextService = game:GetService("TextService")
 
-local UI = { Version = "14.1.0", Variant = "Neo Sidebar V7" }
+local UI = { Version = "14.2.0", Variant = "Neo Sidebar V8" }
 local Window, Tab, Control = {}, {}, {}
 Window.__index, Tab.__index, Control.__index = Window, Tab, Control
 
@@ -498,10 +498,13 @@ local function mark(w, parent, size, position, large, exact)
     local fallback = label(w, node, "R", math.floor(size*.61), true, "Accent", {
         Name = "LogoFallback", Size = full, TextXAlignment = Enum.TextXAlignment.Center,
     })
-    assetImage(node, large and "logo_hero" or "logo_small", {
+    -- Máscara monocromática del logotipo oficial: ImageColor3 permite tintar
+    -- la R con el acento del usuario sin depender de un PNG verde fijo.
+    local logo = assetImage(node, "logo_mono", {
         Name = "Logo", AnchorPoint = Vector2.new(.5,.5), Position = UDim2.fromScale(.51,.46),
         Size = large and full or UDim2.fromScale(1.15,1.15), ScaleType = Enum.ScaleType.Fit,
-    }, fallback, not exact and (large and "logo_small" or "logo_mono") or nil)
+    }, fallback, "logo_small")
+    w:_bind(logo,"ImageColor3","Accent")
     return node
 end
 
@@ -750,7 +753,7 @@ function Window:_moveFrame(position)
     local halfX, halfY = size.X.Offset/2, size.Y.Offset/2
     local center = Vector2.new(
         math.clamp(position.X,halfX+8,math.max(halfX+8,bounds.X-halfX-8)),
-        math.clamp(position.Y,halfY+8,math.max(halfY+8,bounds.Y-halfY-8)))
+        math.clamp(position.Y,halfY+8+(self.safeTopInset or 0),math.max(halfY+8+(self.safeTopInset or 0),bounds.Y-halfY-8)))
     self.frame.Position = px(math.floor(center.X+.5),math.floor(center.Y+.5))
     self:_fitLauncher()
     return center
@@ -760,12 +763,13 @@ function Window:_fit()
     local bounds = self.screen.AbsoluteSize
     if bounds.X <= 0 or bounds.Y <= 0 then return end
     local scale = self.interfaceScale
-    local maximum = Vector2.new(math.max(1,bounds.X-16)/scale,math.max(1,bounds.Y-16)/scale)
+    local safeTop = math.min(self.safeTopInset or 0, math.max(0,bounds.Y-190))
+    local maximum = Vector2.new(math.max(1,bounds.X-16)/scale,math.max(1,bounds.Y-16-safeTop)/scale)
     local width = math.clamp(self.desired.X,math.min(MIN_WIDTH,maximum.X),maximum.X)
     local height = math.clamp(self.desired.Y,math.min(MIN_HEIGHT,maximum.Y),maximum.Y)
     self.frame.Size = px(math.floor(width*scale+.5),math.floor(height*scale+.5))
     self.panel.Size = px(width,height)
-    self:_moveFrame(self.position or bounds/2)
+    self:_moveFrame(self.position or Vector2.new(bounds.X/2,(bounds.Y+safeTop)/2))
     local widest, minimum = 0, 0
     for _, tab in ipairs(self.Tabs) do
         widest = math.max(widest,tab.labelWidths[14])
@@ -784,10 +788,15 @@ function Window:_fit()
     self.headerRibbon.Position = UDim2.new(math.clamp(.26-width/6000,.11,.17),48,0,0)
     self.content.Position = px(0, headerHeight)
     self.content.Size = UDim2.new(1, 0, 1, -headerHeight)
-    self.utilities.Visible = width >= 660
-    for _, button in ipairs(self.headerTools) do button.Visible = self.utilities.Visible end
-    self.titleGroup.Size = UDim2.new(1, -(width >= 660 and 347 or 176), 0, 26)
-    self.subtitleGroup.Size = self.titleGroup.Size - px(0, 7)
+    -- Solo los controles útiles se muestran. Cloud/bell no ocupan espacio
+    -- si el consumidor no proporcionó handlers.
+    self.utilities.Visible = self.showStatus and width >= 920
+    self.headerTools[1].Visible = self.showUtilities and width >= 1060 and self.hasCloud
+    self.headerTools[2].Visible = self.showUtilities and width >= 1060 and self.hasNotifications
+    self.titleGroup.Size = UDim2.new(1,-245,0,26)
+    self.subtitleGroup.Size = UDim2.new(1,-245,0,19)
+    self.title.TextSize = width < 510 and 18 or 23
+    self.subtitle.Visible = width >= 485
     self.rail.Size = UDim2.new(0, railWidth, 1, 0)
     self.body.Position = px(railWidth + 1, 0)
     self.body.Size = UDim2.new(1, -railWidth-1, 1, 0)
@@ -881,12 +890,12 @@ function Window:_open(fromLauncher)
     self:_fitLauncher()
     self:_resetEntrance()
     if not visible then
-        self.panel.GroupTransparency,self.panel.Position = 1,centerAnchor+start
+        self.panel.Position = centerAnchor+start
         local shrink = self.motion=="Full" and (first and .94 or .975) or .985
         self.panelScale.Scale = self.interfaceScale*shrink
     end
     local duration = first and .27 or .21
-    self:_animate(self.panel,duration,{GroupTransparency=0,Position=centerAnchor})
+    self:_animate(self.panel,duration,{Position=centerAnchor})
     self:_animate(self.panelScale,duration,{Scale=self.interfaceScale})
     if first and self.motion == "Full" then
         self:_stage(self.brand, .26, .11, -7, 0)
@@ -938,7 +947,7 @@ function Window:_hide(minimized)
     local target = towardLauncher and self:_launcherOffset(23,17) or px(0,8)
     local duration = towardLauncher and .22 or .18
     self:_animate(self.panelScale,duration,{Scale=self.interfaceScale*(towardLauncher and .95 or .985)})
-    self:_animate(self.panel,duration,{GroupTransparency=1,Position=centerAnchor+target},0,function()
+    self:_animate(self.panel,duration,{Position=centerAnchor+target},0,function()
         if self.Opened then return end
         self.panel.Visible = false
         self.shadow.Visible = false
@@ -1364,6 +1373,8 @@ function UI:CreateWindow(options)
         font = o.Font or Enum.Font.Gotham, boldFont = o.BoldFont or Enum.Font.GothamBold,
         fontStyle = "Gotham", animationSpeed = 1, surfaceTransparency = 0,
         desired = sizeInPixels(o.Size or Vector2.new(1040, 615)), position = o.Position,
+        safeTopInset = math.max(0,tonumber(o.SafeTopInset) or 0),
+        showStatus = o.ShowStatus == true, showUtilities = o.ShowUtilities == true,
         key = o.ToggleKey or KEYBOARD, launcherEnabled = o.Launcher ~= false,
         Tabs = {}, groups = {}, entrance = {}, notices = {},
         art = {}, effects = {}, faces = {}, heroTitles = {}, tracked = {}, tweens = {}, bindings = {},
@@ -1379,14 +1390,14 @@ function UI:CreateWindow(options)
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling, ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets,
     })
     w.gui:SetAttribute("RyouNeoSidebar",true)
-    ImageAssets:Preload("logo_small", "header_ribbon", "launcher")
+    ImageAssets:Preload("logo_mono", "logo_small", "header_ribbon", "launcher")
     w.ScreenGui = w.gui
     w.screen = make("Frame", w.gui, { Size = full })
     w.frame = make("Frame", w.screen, { AnchorPoint = Vector2.new(.5, .5) })
     w.shadow = depth(w.frame,22,4)
     w.shadow.Position = px(0,4)
     w.shadow.Visible = false
-    w.panel = make("CanvasGroup",w.frame,{
+    w.panel = make("Frame",w.frame,{
         AnchorPoint=Vector2.new(.5,.5),Position=centerAnchor,Visible=false,Interactable=false,
     })
     w.panelScale = make("UIScale",w.panel,{Scale=w.interfaceScale})
@@ -1398,6 +1409,7 @@ function UI:CreateWindow(options)
     listen(w.owner,dismiss.Activated,function() w:_closePopup() end)
     w:_bind(w.panel, "BackgroundColor3", "Base")
     w.panel.BackgroundTransparency = 0
+    w.panel.ClipsDescendants = true
     corner(w.panel, 22)
     finish(w,w.panel,"Shell")
 
@@ -1435,9 +1447,10 @@ function UI:CreateWindow(options)
     local badge = surface(w, w.utilities, "Field", { Size = px(92,26), Position = px(0,4) }, 7)
     finish(w,badge,"Raised")
     surface(w,badge,"Accent",{Size = px(5,5),Position = px(8,11)}, 4)
-    label(w,badge,copyText(o.Badge, "V14 · Stable"),12,true,"Text",{Position=px(19,0),Size=UDim2.new(1,-22,1,0),
+    label(w,badge,copyText(o.Badge, "Ryou · V8"),12,true,"Text",{Position=px(19,0),Size=UDim2.new(1,-22,1,0),
         TextTruncate=Enum.TextTruncate.AtEnd})
     local util = type(o.Utilities) == "table" and o.Utilities or {}
+    w.hasCloud, w.hasNotifications = type(util.Cloud)=="function", type(util.Notifications)=="function"
     local cloud = action(w,w.owner,header,"",{Position=UDim2.new(1,-155,.5,-16),Size=px(31,32),ZIndex=4})
     local bell = action(w,w.owner,header,"",{Position=UDim2.new(1,-120,.5,-16),Size=px(31,32),ZIndex=4})
     w.headerTools = {cloud,bell}
@@ -1546,7 +1559,7 @@ function UI:CreateWindow(options)
         local position, drawn = w.frame.Position, w.panel.Position
         local center = Vector2.new(position.X.Offset+drawn.X.Offset,position.Y.Offset+drawn.Y.Offset)
         w:_cancel(w.panel)
-        w.panel.Position,w.panel.GroupTransparency = centerAnchor,0
+        w.panel.Position = centerAnchor
         w.position = w:_moveFrame(center)
         w.gesture.windowOrigin = w.position
         return true
@@ -1897,15 +1910,15 @@ local function control(tab, options, bare)
         corner(row, w.radius)
         finish(w,row,"Card")
     end
-    pad(row, bare and 0 or 8, bare and 1 or 6)
-    stack(row, 4)
+    pad(row, bare and 0 or 11, bare and 1 or 8)
+    stack(row, 6)
     local head = make("Frame", row, { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = VERTICAL, LayoutOrder = 0 })
     local iconSize = math.clamp(tonumber(o.IconSize) or 17, 12, 24)
     local inset = o.Icon and iconSize + 8 or 0
     if o.Icon then icon(w, head, o.Icon, iconSize, "Muted", px(0, 2)) end
     c.head = head
     c.copy = make("Frame", head, { Position = px(inset, 0), Size = UDim2.new(1, -inset, 0, 0), AutomaticSize = VERTICAL })
-    stack(c.copy, 0)
+    stack(c.copy, 3)
     c.title = label(w, c.copy, copyText(o.Title or o.Name), 14, true, nil,
         { LayoutOrder = 0, TextWrapped = true, AutomaticSize = VERTICAL, Size = UDim2.new(1, 0, 0, 0) })
     c.title.Visible = c.title.Text ~= ""
@@ -1978,23 +1991,49 @@ function Tab:Paragraph(options)
 end
 function Tab:Button(options)
     local o = options or {}
-    local c = control(self, o, o.Compact or self.cardColumn)
     local w = self.Window
-    if o.Compact then c.head.Visible=false end
-    local hit = action(w, c.owner, c.row, copyText(o.Action, o.Compact and c.Title or "Abrir"),
-        { Size = UDim2.new(1,0,0,o.Compact and 35 or 37), LayoutOrder = 1 }, o.Primary == true)
-    if o.Compact then
+    local compact = o.Compact or self.cardColumn
+    local fullCTA = compact or o.Primary == true or o.Action ~= nil
+    local c = control(self, o, compact)
+    local hit
+    if fullCTA then
+        if o.Compact then c.head.Visible=false end
+        hit = action(w,c.owner,c.row,copyText(o.Action,o.Title or "Ejecutar"),{
+            Size=UDim2.new(1,0,0,compact and 36 or 39),LayoutOrder=1,
+        },o.Primary==true)
         hit.TextTruncate=Enum.TextTruncate.AtEnd
-        hit.TextXAlignment=LEFT
-        pad(hit,o.Icon and 28 or 9,0)
-        if o.Icon then icon(w,hit,o.Icon,16,o.Primary and "Ink" or "Accent",UDim2.new(0,-21,.5,-8)) end
+        if o.Compact then
+            hit.TextXAlignment=LEFT
+            pad(hit,o.Icon and 28 or 10,0)
+            if o.Icon then icon(w,hit,o.Icon,16,o.Primary and "Ink" or "Accent",UDim2.new(0,-21,.5,-8)) end
+        else
+            icon(w,hit,"arrow",16,o.Primary and "Ink" or "Muted",UDim2.new(1,-26,.5,-8))
+        end
     else
-        icon(w, hit, "arrow", 17, o.Primary and "Ink" or "Muted", UDim2.new(1, -27, .5, -8))
+        -- Una fila: título + explicación a la izquierda, botón de acción
+        -- a la derecha. Sin un segundo botón enorme que repita "Abrir".
+        c.copy.Size=UDim2.new(1,-58,0,0)
+        c.head.Size=UDim2.new(1,0,0,61)
+        c.head.AutomaticSize=Enum.AutomaticSize.None
+        hit=action(w,c.owner,c.head,"",{
+            Name="Action",AnchorPoint=Vector2.new(1,.5),
+            Position=UDim2.new(1,-2,.5,0),Size=px(40,40),
+        },false,"bare")
+        hit.Text=""
+        hit.BackgroundTransparency=.12
+        icon(w,hit,"arrow",17,"Accent",UDim2.new(.5,-8,.5,-8))
+        listen(c.owner,c.copy:GetPropertyChangedSignal("AbsoluteSize"),function()
+            local height=math.max(61,math.ceil(c.copy.AbsoluteSize.Y/w.interfaceScale)+8)
+            if c.head.Size.Y.Offset~=height then c.head.Size=UDim2.new(1,0,0,height) end
+        end)
     end
-    c.targets[hit] = true
-    listen(c.owner, hit.Activated, function() if not c.Locked then callback(c.Callback) end end)
+    c.targets[hit]=true
+    listen(c.owner,hit.Activated,function()
+        if not c.Locked then callback(c.Callback) end
+    end)
     return c
 end
+
 function Tab:Toggle(options)
     local o = options or {}
     local c, w = control(self, o), self.Window
@@ -2038,31 +2077,45 @@ local function finite(value, default)
 end
 
 local function valueBar(w, c, parent, order, name, update)
-    local area = action(w, c.owner, parent, "", { LayoutOrder = order, Size = UDim2.new(1, 0, 0, 44) })
-    local caption = label(w, area, name, 13, true, nil, { Position = px(9, 1), Size = UDim2.new(1, -18, 0, 21) })
-    local rail = surface(w, area, "Edge", { Position = px(10, 29), Size = UDim2.new(1, -20, 0, 4) }, 2)
-    local fill = surface(w, rail, "Accent", { Size = UDim2.fromScale(0, 1) }, 2)
-    local thumb = surface(w, rail, "Text", { AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(0, .5), Size = px(10, 10) }, 5)
-    c.targets[area] = true
+    local area=make("TextButton",parent,{
+        Text="",AutoButtonColor=false,BackgroundTransparency=1,Active=true,
+        Size=UDim2.new(1,0,0,46),LayoutOrder=order,
+    })
+    local hint=label(w,area,"Desliza para ajustar",11,false,"Muted",{
+        Position=px(2,1),Size=UDim2.new(1,-85,0,18),
+    })
+    local amount=label(w,area,"",13,true,"Accent",{
+        TextXAlignment=Enum.TextXAlignment.Right,Position=UDim2.new(1,-84,0,0),
+        Size=px(82,20),
+    })
+    local rail=surface(w,area,"Edge",{
+        Position=px(8,32),Size=UDim2.new(1,-16,0,5),
+    },3)
+    local fill=surface(w,rail,"Accent",{Size=UDim2.fromScale(0,1)},3)
+    local thumb=surface(w,rail,"Text",{
+        AnchorPoint=Vector2.new(.5,.5),
+        Position=UDim2.fromScale(0,.5),Size=px(15,15),
+    },8)
+    c.targets[area]=true
     local origin,width
     local function slide(point)
         if width>0 and not c.Locked then update(math.clamp((point.X-origin)/width,0,1)) end
     end
-    w:_gesture(c.owner, area, slide, nil, function(point)
+    w:_gesture(c.owner,area,slide,nil,function(point)
         if c.Locked then return false end
-        origin,width = rail.AbsolutePosition.X,rail.AbsoluteSize.X
-        local scroller = c.tab.scrollHost or c.tab.scroller
-        local previous = scroller.ScrollingEnabled
-        scroller.ScrollingEnabled = false
-        w.gesture.restore = function()
-            if scroller.Parent then scroller.ScrollingEnabled = previous end
+        origin,width=rail.AbsolutePosition.X,rail.AbsoluteSize.X
+        local scroller=c.tab.scrollHost or c.tab.scroller
+        local previous=scroller.ScrollingEnabled
+        scroller.ScrollingEnabled=false
+        w.gesture.restore=function()
+            if scroller.Parent then scroller.ScrollingEnabled=previous end
         end
         slide(point)
         return true
     end)
-    return function(fraction, text)
-        caption.Text = name .. "  " .. text
-        fill.Size, thumb.Position = UDim2.fromScale(fraction, 1), UDim2.fromScale(fraction, .5)
+    return function(fraction,text)
+        amount.Text=text
+        fill.Size,thumb.Position=UDim2.fromScale(fraction,1),UDim2.fromScale(fraction,.5)
     end
 end
 
@@ -2551,7 +2604,7 @@ function Tab:Gallery(options)
     local o,w=options or {},self.Window
     local c=control(self,o)
     c.Items=normalizeItems(o.Items)
-    local pane=make("Frame",c.row,{Name="OutfitPane",LayoutOrder=1,Size=UDim2.new(1,0,0,245)})
+    local pane=make("Frame",c.row,{Name="OutfitPane",LayoutOrder=1,Size=UDim2.new(1,0,0,450)})
     local scrollHost=self.scrollHost or self.scroller
     local search=textBox(w,c.owner,pane,"Buscar por nombre o ID…",{Size=UDim2.new(.64,-6,0,38)})
     local grid=scroll(w,pane,{Name="OutfitGrid"})
@@ -2559,20 +2612,30 @@ function Tab:Gallery(options)
     local empty=label(w,pane,"Sin resultados",13,true,"Muted",{
         Position=px(3,53),Size=UDim2.new(.62,0,0,30),Visible=false,TextWrapped=true,
     })
-    local preview=surface(w,pane,"Field",{Name="OutfitPreview",Position=UDim2.fromScale(.64,0),Size=UDim2.fromScale(.36,1)},10)
+    local preview=surface(w,pane,"Field",{Name="OutfitPreview",Position=UDim2.fromScale(.58,0),Size=UDim2.fromScale(.42,1)},10)
     finish(w,preview,"Raised")
-    local previewTitle=label(w,preview,"Vista previa",13,true,"Text",{Position=px(8,3),Size=UDim2.new(1,-16,0,18)})
-    local previewName=label(w,preview,"",12,false,"Muted",{Position=px(8,19),Size=UDim2.new(1,-16,0,16),
+    local previewTitle=label(w,preview,"Vista previa",15,true,"Text",{Position=px(12,10),Size=UDim2.new(1,-24,0,22)})
+    local previewName=label(w,preview,"",13,false,"Muted",{Position=px(12,35),Size=UDim2.new(1,-24,0,19),
         TextTruncate=Enum.TextTruncate.AtEnd})
-    local apply=action(w,c.owner,preview,"Aplicar",{Position=UDim2.new(0,7,1,-40),Size=UDim2.new(1,-14,0,34)},true)
+    local apply=action(w,c.owner,preview,"Aplicar outfit",{Position=UDim2.new(0,10,1,-54),Size=UDim2.new(1,-20,0,44)},true)
     c.targets[search],c.targets[apply]=true,true
     local sketch, shownItem, rowOwner
     local rows={}
+    local page, pageSize = 1, 48
+    local pager=make("Frame",pane,{Name="GalleryPager",Size=px(100,34),Visible=false})
+    local prev=action(w,c.owner,pager,"‹",{Size=px(36,32)})
+    local pageText=label(w,pager,"1 / 1",12,true,"Muted",{
+        TextXAlignment=Enum.TextXAlignment.Center,
+        Position=px(39,0),Size=UDim2.new(1,-78,0,32),
+    })
+    local nextButton=action(w,c.owner,pager,"›",{
+        AnchorPoint=Vector2.new(1,0),Position=UDim2.new(1,0,0,0),Size=px(36,32),
+    })
     function c.paint()
         local current=itemWithId(c.Items,c.Value)
         if not sketch or shownItem~=current then
             if sketch then sketch:Destroy() end
-            sketch=artwork(w,preview,current,px(7,36),UDim2.new(1,-14,1,-80),true)
+            sketch=artwork(w,preview,current,px(10,61),UDim2.new(1,-20,1,-124),true)
             shownItem=current
         end
         previewName.Text=current and copyText(current.Title,tostring(current.Id)) or "Sin selección"
@@ -2599,7 +2662,14 @@ function Tab:Gallery(options)
         empty.Visible=c.statusText~=nil or #items==0
         grid.Visible=c.statusText==nil
         w:_bind(empty,"TextColor3",c.statusKind=="error" and "Text" or "Muted")
-        for index=1,math.min(c.statusText and 0 or #items,120) do
+        local pages=math.max(1,math.ceil(#items/pageSize))
+        page=math.clamp(page,1,pages)
+        pageText.Text=tostring(page).." / "..tostring(pages)
+        pager.Visible=pages>1 and not c.statusText
+        prev.Active=page>1
+        nextButton.Active=page<pages
+        local first=(page-1)*pageSize+1
+        for index=first,math.min(c.statusText and first-1 or #items,first+pageSize-1) do
             local item=items[index]
             local hit=action(w,rowOwner,grid,"",{LayoutOrder=index})
             local light=selectionLight(w,hit)
@@ -2628,49 +2698,53 @@ function Tab:Gallery(options)
         self.Items=normalizeItems(items)
         if not itemWithId(self.Items,self.Value) then self.Value=nil end
         if sketch then sketch:Destroy(); sketch = nil end
+        page=1
         rebuild()
         return self
     end
+    listen(c.owner,prev.Activated,function()
+        if page>1 then page-=1; rebuild() end
+    end)
+    listen(c.owner,nextButton.Activated,function()
+        page+=1
+        rebuild()
+    end)
     local function fit()
-        local scale = w.interfaceScale
-        local width = pane.AbsoluteSize.X/scale
-        -- CanvasPosition is expressed in layout pixels.
-        local top = (pane.AbsolutePosition.Y-scrollHost.AbsolutePosition.Y)/scale+scrollHost.CanvasPosition.Y
-        local height = math.clamp(scrollHost.AbsoluteSize.Y/scale-math.max(0,top)-16,120,280)
-        if width<330 then
-            local narrowHeight = math.max(height,275)
+        local scale=w.interfaceScale
+        local width=pane.AbsoluteSize.X/scale
+        local viewport=scrollHost.AbsoluteSize.Y/scale
+        local height=math.clamp(viewport-24,385,560)
+        if width<340 then
+            local narrowHeight=math.max(650,height+180)
             if pane.Size.Y.Offset~=narrowHeight then pane.Size=UDim2.new(1,0,0,narrowHeight) end
-            search.Size=UDim2.new(1,0,0,32)
-            grid.Position,grid.Size=px(0,38),UDim2.new(1,0,0,100)
-            empty.Position,empty.Size=px(4,42),UDim2.new(1,-8,0,28)
-            preview.Position,preview.Size=px(0,145),UDim2.new(1,0,1,-145)
-            previewTitle.TextSize=13
-            local count = width>=216 and 3 or 2
-            tiles.CellSize=px(math.max(1,math.floor((width-count*5)/count)),86)
-            tiles.FillDirectionMaxCells=count
+            search.Size=UDim2.new(1,0,0,38)
+            grid.Position,grid.Size=px(0,46),UDim2.new(1,0,0,245)
+            pager.Position,pager.Size=px(0,298),UDim2.new(1,0,0,34)
+            empty.Position,empty.Size=px(6,46),UDim2.new(1,-12,0,34)
+            preview.Position,preview.Size=px(0,344),UDim2.new(1,0,1,-344)
+            tiles.FillDirectionMaxCells=math.max(1,math.floor(width/116))
+            local count=tiles.FillDirectionMaxCells
+            local cell=math.max(84,math.floor((width-(count-1)*7-8)/count))
+            tiles.CellSize=px(cell,math.clamp(cell+15,110,158))
             return
         end
-        local split = width < 360 and .58 or .64
-        local gridWidth = math.max(1,math.floor(width*split)-6)
-        local columns = math.clamp(math.floor((gridWidth+5)/65),1,4)
-        local cellWidth = math.max(1,math.floor((gridWidth-(columns-1)*5-3)/columns))
         if pane.Size.Y.Offset~=height then pane.Size=UDim2.new(1,0,0,height) end
-        search.Size=UDim2.new(split,-6,0,32)
-        grid.Position=px(0,38)
-        grid.Size=UDim2.new(split,-6,1,-38)
-        empty.Position=px(3,40)
-        empty.Size=UDim2.new(split,-9,0,28)
-        preview.Position=UDim2.fromScale(split,0)
-        preview.Size=UDim2.fromScale(1-split,1)
-        previewTitle.Text="Vista previa"
-        previewTitle.TextSize=13
-        tiles.CellSize=px(cellWidth,math.clamp(cellWidth+12,68,103))
+        local split=width < 520 and .55 or .58
+        local gridWidth=math.max(1,math.floor(width*split)-9)
+        local columns=math.clamp(math.floor((gridWidth+7)/118),2,3)
+        local cellWidth=math.max(78,math.floor((gridWidth-(columns-1)*7-5)/columns))
+        search.Size=UDim2.new(split,-9,0,38)
+        grid.Position,grid.Size=px(0,45),UDim2.new(split,-9,1,-89)
+        empty.Position,empty.Size=px(6,48),UDim2.new(split,-15,0,32)
+        pager.Position,pager.Size=UDim2.new(0,0,1,-37),UDim2.new(split,-9,0,34)
+        preview.Position,preview.Size=UDim2.fromScale(split,0),UDim2.fromScale(1-split,1)
+        tiles.CellSize=px(cellWidth,math.clamp(cellWidth+22,110,160))
         tiles.FillDirectionMaxCells=columns
     end
     listen(c.owner,pane:GetPropertyChangedSignal("AbsoluteSize"),fit)
     listen(c.owner,pane:GetPropertyChangedSignal("AbsolutePosition"),fit)
     listen(c.owner,scrollHost:GetPropertyChangedSignal("AbsoluteSize"),fit)
-    listen(c.owner,search:GetPropertyChangedSignal("Text"),rebuild)
+    listen(c.owner,search:GetPropertyChangedSignal("Text"),function() page=1; rebuild() end)
     listen(c.owner,apply.Activated,function()
         local item=itemWithId(c.Items,c.Value)
         if not c.Locked and not c.statusText and item then callback(o.OnApply,item) end
