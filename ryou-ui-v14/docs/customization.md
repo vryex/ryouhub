@@ -15,3 +15,27 @@ Usa opciones del constructor para fijar la composición inicial. Las propiedades
 | `Motion` | `Full` | Intensidad de movimiento. |
 
 La escala visual usa 21 px en la marca, 19 px en encabezados de página, 14 px en acciones y campos, 13 px para descripciones y valores y 12 px para rótulos de organización. Los controles de interacción primaria tienen áreas de 44 px; el launcher mide 70 × 70 px. Prueba fuentes nativas alternativas con textos largos y en el emulador de dispositivo.
+
+
+## Neo Sidebar V7: apariencia en vivo
+
+La API admite estos presets: Menta Ryou, Medianoche, Violeta, Carmesí, Azul hielo, Rosa, Ámbar y Perla (claro). Los métodos funcionan sobre la ventana existente, sin destruirla.
+
+```lua
+local win = UI:CreateWindow({Title="Ryou", ThemePreset="Violeta", AnimationSpeed=1.3})
+win:SetThemePreset("Medianoche")
+win:SetAccent(Color3.fromRGB(190, 110, 255))
+win:SetBackgroundColor(Color3.fromRGB(12, 16, 25))
+win:SetFontStyle("Gotham")        -- Gotham, SourceSans, Arial
+win:SetAnimationSpeed(1.5)       -- 0.5x ... 2.0x (2 = más rápido)
+win:SetSurfaceTransparency(.15)  -- 0 ... .35
+win:SetMotion("Reduced")          -- Full, Reduced, Off
+local data = win:ExportAppearance()   -- tabla JSON segura
+win:ImportAppearance(data)             -- restaura campos válidos
+```
+
+`UI:GetThemePresets()`, `UI:GetThemes()` y `UI:GetFontStyles()` permiten construir controles de configuración. Los métodos `GetAccent`, `GetBackgroundColor`, `GetFontStyle`, `GetAnimationSpeed` y `GetSurfaceTransparency` devuelven los valores actuales.
+
+La biblioteca **no escribe archivos automáticamente**. La aplicación puede guardar `HttpService:JSONEncode(win:ExportAppearance())` usando las API que tenga disponibles. Esta decisión evita dependencias obligatorias y escritura constante en Android.
+
+**Rendimiento:** la transparencia se limita a 35 %, no añade desenfoques ni nuevos ciclos de renderizado. `SetMotion("Off")` elimina el tiempo de tween; `SetDecorationIntensity(0)` oculta efectos decorativos. Las pruebas táctiles en un Android real siguen pendientes.

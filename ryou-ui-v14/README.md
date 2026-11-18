@@ -2,7 +2,7 @@
   <img src="assets/neo/R_FACETADA_VECTOR_512.png" width="104" alt="Símbolo Ryou">
   <h1>Ryou UI</h1>
   <p>Biblioteca visual en un archivo para scripts Luau de cliente Roblox.</p>
-  <p><strong>14.0.0 · Neo Sidebar V6</strong> · Rama de revisión · Created by Ryou</p>
+  <p><strong>14.1.0 · Neo Sidebar V7</strong> · Rama de revisión · Created by Ryou</p>
 </div>
 
 ![Master Neo Sidebar · mockup conceptual](assets/neo-master-mockup.jpg)
@@ -28,7 +28,7 @@ home:Button({ Title = "Estado", Callback = function()
 end })
 ```
 
-## Showcase Neo Sidebar V6
+## Showcase Neo Sidebar V7
 
 Ejecuta el bloque en el cliente compatible. El showcase abre desde el launcher con `Open = true`. Usa la lupa junto a Minimizar para navegar a las pestañas y controles de la ventana.
 
@@ -64,3 +64,5 @@ La biblioteca requiere servicios del cliente Roblox y acceso a `PlayerGui`. Luau
 Consulta [cómo contribuir](CONTRIBUTING.md) y la [revisión de procedencia](docs/provenance.md) antes de enviar recursos nuevos. El código original de la biblioteca, los ejemplos y las pruebas se distribuye bajo [MIT](LICENSE).
 
 **Created by Ryou**
+
+**V7:** [Presets, tipografía, transparencia y velocidad de movimiento](docs/customization.md#neo-sidebar-v7-apariencia-en-vivo).

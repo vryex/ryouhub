@@ -1,4 +1,4 @@
--- Ryou UI 14.0.0 | Created by Ryou
+-- Ryou UI 14.1.0 | Neo Sidebar V7 | Created by Ryou
 --[[
 MIT License
 
@@ -27,7 +27,7 @@ local Input = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local TextService = game:GetService("TextService")
 
-local UI = { Version = "14.0.0", Variant = "Neo Sidebar V6" }
+local UI = { Version = "14.1.0", Variant = "Neo Sidebar V7" }
 local Window, Tab, Control = {}, {}, {}
 Window.__index, Tab.__index, Control.__index = Window, Tab, Control
 
@@ -52,6 +52,23 @@ local LIGHT = {
     Selected=rgb(191,226,213), Raised=rgb(249,252,250),
     Primary=rgb(117,222,179), PrimaryHover=rgb(94,211,165), HeroAccent=rgb(3,108,77),
     LightMint=rgb(61,144,116), Rim=rgb(95,126,114), SelectedText=rgb(0,78,56),
+}
+-- Presets originales de Ryou. Los modos antiguos Dark/Light siguen disponibles.
+local THEME_PRESETS = {
+    ["Menta Ryou"] = { Base = "Dark", Accent = rgb(73,245,184) },
+    ["Medianoche"] = { Base = "Dark", Accent = rgb(71,167,255) },
+    ["Violeta"] = { Base = "Dark", Accent = rgb(175,118,255) },
+    ["Carmesí"] = { Base = "Dark", Accent = rgb(252,92,124) },
+    ["Azul hielo"] = { Base = "Dark", Accent = rgb(80,220,255) },
+    ["Rosa"] = { Base = "Dark", Accent = rgb(255,134,189) },
+    ["Ámbar"] = { Base = "Dark", Accent = rgb(255,191,94) },
+    ["Perla"] = { Base = "Light", Accent = rgb(2,106,77) },
+}
+local THEME_ORDER = {"Menta Ryou","Medianoche","Violeta","Carmesí","Azul hielo","Rosa","Ámbar","Perla"}
+local FONT_STYLES = {
+    Gotham = { Enum.Font.Gotham, Enum.Font.GothamBold },
+    SourceSans = { Enum.Font.SourceSans, Enum.Font.SourceSansBold },
+    Arial = { Enum.Font.Arial, Enum.Font.ArialBold },
 }
 local MOTION = { Full = 1, Reduced = .34, Off = 0 }
 local KEYBOARD = Enum.KeyCode.RightShift
@@ -120,6 +137,7 @@ local function label(w, parent, str, size, bold, role, props)
     for key, value in pairs(props or {}) do settings[key] = value end
     local item = make("TextLabel", parent, settings)
     w:_bind(item, "TextColor3", role or "Text")
+    w.fontNodes[item] = bold == true
     return item
 end
 
@@ -150,6 +168,10 @@ local function surface(w, parent, role, props, radius)
     local frame = make("Frame", parent, props)
     frame.BackgroundTransparency = 0
     w:_bind(frame, "BackgroundColor3", role)
+    if role == "Base" or role == "Rail" or role == "Field" or role == "Raised" then
+        w.surfaceNodes[frame] = true
+        frame.BackgroundTransparency = w.surfaceTransparency or 0
+    end
     if radius then corner(frame, radius) end
     return frame
 end
@@ -516,6 +538,7 @@ end
 local function action(w, owner, parent, text, props, primary, style)
     local b = make("TextButton", parent, props)
     b.Text, b.TextSize, b.Font = text or "", 14, w.boldFont
+    w.fontNodes[b] = true
     b.AutoButtonColor = false
     b.BackgroundTransparency = 0
     corner(b, w.radius)
@@ -582,6 +605,7 @@ local function textBox(w, owner, parent, placeholder, props)
     box.BackgroundTransparency, box.Text = 0, ""
     box.PlaceholderText, box.ClearTextOnFocus = placeholder, false
     box.TextSize, box.Font, box.TextXAlignment = 14, w.font, LEFT
+    w.fontNodes[box] = false
     box.TextTruncate = Enum.TextTruncate.AtEnd
     pad(box, 9, 0)
     corner(box, w.radius)
@@ -605,6 +629,7 @@ function Window:_track(item)
     item.Destroying:Connect(function()
         self.tracked[item],self.bindings[item],self.faces[item] = nil,nil,nil
         self.art[item],self.effects[item],self.heroTitles[item] = nil,nil,nil
+        self.fontNodes[item],self.surfaceNodes[item] = nil,nil
         self:_cancel(item)
     end)
 end
@@ -671,8 +696,18 @@ function Window:_cancel(item)
 end
 
 function Window:_animate(item, seconds, goal, delay, done)
+    local same = true
+    if not self.tweens[item] then
+        for property, value in pairs(goal) do
+            if item[property] ~= value then same = false; break end
+        end
+        if same and (delay or 0) == 0 then
+            if done then done() end
+            return
+        end
+    end
     self:_cancel(item)
-    local scale = MOTION[self.motion]
+    local scale = MOTION[self.motion] / (self.animationSpeed or 1)
     if scale == 0 then
         for property, value in pairs(goal) do item[property] = value end
         if done then done() end
@@ -961,7 +996,6 @@ function Window:SetTheme(theme)
     for item, stops in pairs(self.faces) do item.Color = faceColors(stops,light) end
     for item in pairs(self.art) do self:_paintArt(item) end
     for item in pairs(self.effects) do self:_paintEffect(item) end
-    for item in pairs(self.heroTitles) do self:_paintHeroTitle(item) end
     if typeof(config.Background) == "Color3" then self.theme.Base = config.Background end
     if typeof(config.Accent) == "Color3" then
         local color = config.Accent
@@ -975,6 +1009,9 @@ function Window:SetTheme(theme)
         self.theme.PrimaryHover = color:Lerp(rgb(255,255,255),.10)
         self.theme.Ink = (bottom+.05)/.05 >= 1.05/(top+.05) and rgb(0,0,0) or rgb(255,255,255)
     end
+    self.customAccent = typeof(config.Accent) == "Color3" and config.Accent or nil
+    self.customBackground = typeof(config.Background) == "Color3" and config.Background or nil
+    for item in pairs(self.heroTitles) do self:_paintHeroTitle(item) end
     for item, props in pairs(self.bindings) do
         if item.Parent then
             for property, role in pairs(props) do
@@ -993,6 +1030,97 @@ function Window:SetTheme(theme)
 end
 
 function Window:GetTheme() return self.ThemeName end
+
+function Window:SetThemePreset(name)
+    local preset = THEME_PRESETS[tostring(name or "")]
+    if not preset then return self end
+    self:SetTheme({Name=preset.Base, Accent=preset.Accent})
+    self.ThemePreset = name
+    return self
+end
+function Window:GetThemePreset() return self.ThemePreset or "Menta Ryou" end
+
+function Window:SetAccent(color)
+    if typeof(color) ~= "Color3" then return self end
+    return self:SetTheme({
+        Name=self.ThemeName or "Dark", Accent=color, Background=self.customBackground,
+    })
+end
+function Window:GetAccent() return self.theme.Accent end
+
+function Window:SetBackgroundColor(color)
+    if typeof(color) ~= "Color3" then return self end
+    return self:SetTheme({
+        Name=self.ThemeName or "Dark", Accent=self.customAccent, Background=color,
+    })
+end
+function Window:GetBackgroundColor() return self.theme.Base end
+
+function Window:SetFontStyle(name)
+    local fonts = FONT_STYLES[tostring(name or "")]
+    if not fonts then return self end
+    self.fontStyle = name
+    self.font, self.boldFont = fonts[1], fonts[2]
+    for item, bold in pairs(self.fontNodes) do
+        if item.Parent then item.Font = bold and self.boldFont or self.font end
+    end
+    return self
+end
+function Window:GetFontStyle() return self.fontStyle or "Gotham" end
+
+function Window:SetSurfaceTransparency(value)
+    self.surfaceTransparency = math.clamp(tonumber(value) or 0,0,.35)
+    for item in pairs(self.surfaceNodes) do
+        if item.Parent then item.BackgroundTransparency = self.surfaceTransparency end
+    end
+    if self.panel then self.panel.BackgroundTransparency = self.surfaceTransparency*.6 end
+    return self
+end
+function Window:GetSurfaceTransparency() return self.surfaceTransparency or 0 end
+
+function Window:SetAnimationSpeed(value)
+    self.animationSpeed = math.clamp(tonumber(value) or 1,.5,2)
+    return self
+end
+function Window:GetAnimationSpeed() return self.animationSpeed or 1 end
+
+-- Tabla segura para serializar con HttpService:JSONEncode; no incluye funciones ni instancias.
+function Window:ExportAppearance()
+    return {
+        Version=1, Preset=self:GetThemePreset(), Base=self.ThemeName,
+        Accent=self:GetAccent():ToHex(),
+        Background=self.customBackground and self.customBackground:ToHex() or nil,
+        Font=self:GetFontStyle(), Motion=self.motion,
+        Speed=self:GetAnimationSpeed(), Transparency=self:GetSurfaceTransparency(),
+        Scale=self:GetScale(), Neon=self:GetNeon(),
+        Decoration=self:GetDecorationIntensity(),
+    }
+end
+function Window:ImportAppearance(data)
+    if type(data) ~= "table" then return self end
+    if THEME_PRESETS[data.Preset] then
+        self:SetThemePreset(data.Preset)
+    elseif data.Base=="Light" or data.Base=="Dark" then
+        self:SetTheme(data.Base)
+    end
+    local function parseColor(hex)
+        if type(hex) ~= "string" or not hex:match("^#?%x%x%x%x%x%x$") then return nil end
+        local ok, color = pcall(Color3.fromHex, hex:sub(1,1)=="#" and hex or ("#"..hex))
+        return ok and color or nil
+    end
+    local accent = parseColor(data.Accent)
+    if accent then self:SetAccent(accent) end
+    local background = parseColor(data.Background)
+    if background then self:SetBackgroundColor(background) end
+    if FONT_STYLES[data.Font] then self:SetFontStyle(data.Font) end
+    if MOTION[data.Motion] then self:SetMotion(data.Motion) end
+    if data.Speed ~= nil then self:SetAnimationSpeed(data.Speed) end
+    if data.Transparency ~= nil then self:SetSurfaceTransparency(data.Transparency) end
+    if data.Scale ~= nil then self:SetScale(data.Scale) end
+    if data.Neon ~= nil then self:SetNeon(data.Neon==true) end
+    if data.Decoration ~= nil then self:SetDecorationIntensity(data.Decoration) end
+    return self
+end
 function Window:SetTitle(str) self.Title = copyText(str); self.title.Text = self.Title; return self end
 function Window:SetAuthor(str) self.Author = copyText(str); self.subtitle.Text = self.Author; return self end
 Window.SetSubtitle = Window.SetAuthor
@@ -1219,10 +1347,12 @@ function UI:CreateWindow(options)
         radius = math.clamp(tonumber(o.Radius) or 8, 4, 16),
         gap = math.clamp(tonumber(o.Spacing) or 7, 4, 16),
         font = o.Font or Enum.Font.Gotham, boldFont = o.BoldFont or Enum.Font.GothamBold,
+        fontStyle = "Gotham", animationSpeed = 1, surfaceTransparency = 0,
         desired = sizeInPixels(o.Size or Vector2.new(1040, 615)), position = o.Position,
         key = o.ToggleKey or KEYBOARD, launcherEnabled = o.Launcher ~= false,
         Tabs = {}, groups = {}, entrance = {}, notices = {},
         art = {}, effects = {}, faces = {}, heroTitles = {}, tracked = {}, tweens = {}, bindings = {},
+        fontNodes = {}, surfaceNodes = {},
         neon = o.Neon ~= false, interfaceScale = boundedValue(o.Scale,.85,1.2),
         decorationIntensity = boundedValue(o.DecorationIntensity,0,1),
         openedCallbacks = {}, closedCallbacks = {}, destroyCallbacks = {},
@@ -1463,6 +1593,10 @@ function UI:CreateWindow(options)
         end
     end)
     w:SetTheme(o.Theme or self._defaultTheme or "Dark")
+    if o.ThemePreset then w:SetThemePreset(o.ThemePreset) end
+    if o.FontStyle then w:SetFontStyle(o.FontStyle) end
+    if o.AnimationSpeed then w:SetAnimationSpeed(o.AnimationSpeed) end
+    if o.SurfaceTransparency then w:SetSurfaceTransparency(o.SurfaceTransparency) end
     w:SetNeon(w.neon)
     w:_fit()
     if o.Open == false then
@@ -2713,6 +2847,14 @@ function UI:GetCurrentTheme()
     name = string.lower(tostring(name))
     return (name == "light" or name == "white" or name == "blanco") and "Light" or "Dark"
 end
-function UI:GetThemes() return { Dark = { Name = "Dark" }, Light = { Name = "Light" } } end
+function UI:GetThemes()
+    local result = { Dark = {Name="Dark"}, Light = {Name="Light"} }
+    for name, preset in pairs(THEME_PRESETS) do
+        result[name] = { Name=preset.Base, Accent=preset.Accent }
+    end
+    return result
+end
+function UI:GetThemePresets() return table.clone(THEME_ORDER) end
+function UI:GetFontStyles() return {"Gotham", "SourceSans", "Arial"} end
 
 return UI
