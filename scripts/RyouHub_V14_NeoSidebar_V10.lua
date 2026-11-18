@@ -4047,10 +4047,10 @@ local function mountRyouMenuBackground(window, tab)
 
     -- Caché determinista por URL, independiente del tema y la escala.
     local function urlHash(value)
-        local hash=2166136261
+        local hash=0
         for i=1,#value do
-            hash=bit32.bxor(hash,string.byte(value,i))
-            hash=(hash*16777619)%4294967296
+            -- Arithmetic below 2^53, deterministic on mobile and desktop.
+            hash=(hash*131+string.byte(value,i))%2147483647
         end
         return string.format("%08x",hash)
     end
@@ -4086,9 +4086,10 @@ local function mountRyouMenuBackground(window, tab)
         end
         -- Algunas páginas Pinterest incrustan la miniatura pinimg sin meta OG.
         if pageURL:find("pinterest.com",1,true) or pageURL:find("pin.it",1,true) then
-            local url=html:match("https://i%.pinimg%.com/[^\"'%s<>\\]+")
+            local normalized=html:gsub("\\/","/")
+            local url=normalized:match([[https://i%.pinimg%.com/[^"'%s<>]+]])
             if url then
-                url=url:gsub("&amp;","&"):gsub("\\/","/")
+                url=url:gsub("&amp;","&")
                 local valid=validateWebURL(url)
                 if valid then return valid end
             end
