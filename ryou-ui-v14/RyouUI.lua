@@ -2023,7 +2023,7 @@ function Tab:Button(options)
         hit.BackgroundTransparency=.12
         icon(w,hit,"arrow",17,"Accent",UDim2.new(.5,-8,.5,-8))
         listen(c.owner,c.copy:GetPropertyChangedSignal("AbsoluteSize"),function()
-            local height=math.max(61,math.ceil(c.copy.AbsoluteSize.Y/w.interfaceScale)+8)
+            local height=math.clamp(math.ceil(c.copy.AbsoluteSize.Y/w.interfaceScale)+8,61,140)
             if c.head.Size.Y.Offset~=height then c.head.Size=UDim2.new(1,0,0,height) end
         end)
     end
@@ -2546,7 +2546,11 @@ local function artwork(w, parent, item, pos, size, isPreview)
     if not item then return frame end
     local thumbnail = isPreview and avatarImage(item.Preview) and item.Preview or item.Thumbnail
     if avatarImage(thumbnail) then
-        make("ImageLabel",frame,{Name="AvatarImage",Size=full,Image=thumbnail,ScaleType=Enum.ScaleType.Fit})
+        make("ImageLabel",frame,{
+            Name="AvatarImage",Image=thumbnail,ScaleType=Enum.ScaleType.Fit,
+            AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),
+            Size=isPreview and UDim2.fromScale(1.22,1.22) or full,
+        })
         return frame
     end
     local tone = typeof(item.Tint)=="Color3" and item.Tint or rgb(70,210,161)
