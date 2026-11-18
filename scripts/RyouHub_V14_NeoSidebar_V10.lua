@@ -37,7 +37,7 @@ end
 local WindUI
 
 local RYOU_UI_URL =
-    "https://raw.githubusercontent.com/vryex/ryouhub/7b81ad836e678f7ef0d59588d72580eb3b704d5b/ryou-ui-v14/RyouUI.lua"
+    "https://raw.githubusercontent.com/vryex/ryouhub/41c1fcda721f25bb69140ab72b7f0c2ccabd9354/ryou-ui-v14/RyouUI.lua"
 
 local ATTACK_Y_OFFSET = -4.60
 local SLASH_RETRY_DELAY = 0.16
@@ -3365,9 +3365,9 @@ end)
 
 -- UI RYOU · V9: reutilizar el módulo ya cargado y el archivo validado.
 do
-    local UI_CACHE_PATH = "RyouUI-14.3.0-87b8898aeb.lua"
-    local UI_SIZE, UI_ADLER = 134235, 586929333
-    local CACHE_KEY = "__RyouHub_NeoSidebarV9_87b8898aeb"
+    local UI_CACHE_PATH = "RyouUI-14.4.0-41c1fcda72.lua"
+    local UI_SIZE, UI_ADLER = 136218, 861557597
+    local CACHE_KEY = "__RyouHub_NeoSidebarV10_41c1fcda72"
 
     local function validLibrarySource(source)
         if type(source)~="string" or #source~=UI_SIZE then return false end
@@ -3384,9 +3384,9 @@ do
         if not chunk then error("Luau: "..tostring(compileError)) end
         local ui=chunk()
         if type(ui)~="table" or type(ui.CreateWindow)~="function"
-            or tostring(ui.Version)~="14.3.0"
-            or tostring(ui.Variant)~="Neo Sidebar V9" then
-            error("La biblioteca no es Neo Sidebar V9.")
+            or tostring(ui.Version)~="14.4.0"
+            or tostring(ui.Variant)~="Neo Sidebar V10" then
+            error("La biblioteca no es Neo Sidebar V10.")
         end
         return ui
     end
@@ -3400,8 +3400,8 @@ do
         if not hostEnv and type(shared)=="table" then hostEnv=shared end
 
         local inMemory=hostEnv and hostEnv[CACHE_KEY]
-        if type(inMemory)=="table" and inMemory.Version=="14.3.0"
-            and inMemory.Variant=="Neo Sidebar V9"
+        if type(inMemory)=="table" and inMemory.Version=="14.4.0"
+            and inMemory.Variant=="Neo Sidebar V10"
             and type(inMemory.CreateWindow)=="function" then
             return inMemory
         end
@@ -3427,7 +3427,7 @@ do
         return ui
     end)
     if not ok then
-        warn("[Ryou] Error cargando Neo Sidebar V9: "..tostring(result))
+        warn("[Ryou] Error cargando Neo Sidebar V10: "..tostring(result))
         return
     end
     WindUI=result
