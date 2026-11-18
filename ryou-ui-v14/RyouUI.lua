@@ -996,7 +996,17 @@ function Window:SetTheme(theme)
     for item, stops in pairs(self.faces) do item.Color = faceColors(stops,light) end
     for item in pairs(self.art) do self:_paintArt(item) end
     for item in pairs(self.effects) do self:_paintEffect(item) end
-    if typeof(config.Background) == "Color3" then self.theme.Base = config.Background end
+    if typeof(config.Background) == "Color3" then
+        local color = config.Background
+        -- Derivar superficies cercanas al tono base en vez de conservar verdes fijos.
+        local bright = color.R*.299 + color.G*.587 + color.B*.114 > .52
+        local target = bright and rgb(0,0,0) or rgb(255,255,255)
+        self.theme.Base = color
+        self.theme.Rail = color:Lerp(target,bright and .045 or .035)
+        self.theme.Field = color:Lerp(target,bright and .08 or .075)
+        self.theme.Raised = color:Lerp(target,bright and .10 or .105)
+        self.theme.Hover = color:Lerp(target,bright and .14 or .145)
+    end
     if typeof(config.Accent) == "Color3" then
         local color = config.Accent
         local function linear(value)
@@ -1007,6 +1017,11 @@ function Window:SetTheme(theme)
         local bottom = .2126*linear(color.R*shade)+.7152*linear(color.G*shade)+.0722*linear(color.B*shade)
         self.theme.Accent, self.theme.Primary = color,color
         self.theme.PrimaryHover = color:Lerp(rgb(255,255,255),.10)
+        self.theme.HeroAccent = color
+        self.theme.LightMint = color:Lerp(rgb(255,255,255),.43)
+        self.theme.Selected = self.theme.Selected:Lerp(color,light and .13 or .22)
+        self.theme.SelectedText = light and rgb(11,54,41) or color:Lerp(rgb(255,255,255),.31)
+        self.theme.Rim = self.theme.Rim:Lerp(color,light and .13 or .29)
         self.theme.Ink = (bottom+.05)/.05 >= 1.05/(top+.05) and rgb(0,0,0) or rgb(255,255,255)
     end
     self.customAccent = typeof(config.Accent) == "Color3" and config.Accent or nil
