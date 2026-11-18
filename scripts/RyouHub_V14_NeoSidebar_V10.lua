@@ -7981,7 +7981,8 @@ SlashTab:Button({
 })
 
 AimTab:Paragraph({
-    Title = "Auto Shoot · Pistola",
+    -- La pestaña ya muestra "Auto Shoot" arriba. Dejar solo descripción.
+    Title = "",
     Desc =
         "Dispara cuando tengas la pistola equipada. "
         .. "Apunta al enemigo visible más cercano sin mover tu cámara.",
