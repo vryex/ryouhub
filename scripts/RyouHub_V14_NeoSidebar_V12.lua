@@ -4246,6 +4246,17 @@ local function mountRyouMenuBackground(window, tab)
         if logoInput then logoInput:Set("",true) end
         notify("Logo original restaurado.",2)
     end})
+    tab:Button({Title="Guía de logos y fondos",Icon="info",
+        Callback=function()
+            local guide="https://github.com/vryex/ryouhub/blob/ryouhub-v14-neo-v12-studio/docs/ASSETS_Y_PERSONALIZACION_V12.md"
+            if type(setclipboard)=="function" then
+                pcall(setclipboard,guide)
+                notify("Enlace a la guía copiado.",2)
+            else
+                notify("Abre el repositorio vryex/ryouhub y consulta docs/ASSETS_Y_PERSONALIZACION_V12.md",4)
+            end
+        end,
+    })
 
     window:OnDestroy(function()
         destroyed=true
