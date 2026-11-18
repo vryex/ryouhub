@@ -2,7 +2,7 @@
   <img src="assets/neo/R_FACETADA_VECTOR_512.png" width="104" alt="Símbolo Ryou">
   <h1>Ryou UI</h1>
   <p>Biblioteca visual en un archivo para scripts Luau de cliente Roblox.</p>
-  <p><strong>14.3.0 · Neo Sidebar V9</strong> · Rama de revisión · Created by Ryou</p>
+  <p><strong>14.4.0 · Neo Sidebar V10</strong> · Rama de revisión · Created by Ryou</p>
 </div>
 
 ![Master Neo Sidebar · mockup conceptual](assets/neo-master-mockup.jpg)
@@ -33,7 +33,7 @@ end })
 Ejecuta el bloque en el cliente compatible. El showcase abre desde el launcher con `Open = true`. Usa la lupa junto a Minimizar para navegar a las pestañas y controles de la ventana.
 
 ```lua
-local base = "https://raw.githubusercontent.com/vryex/ryouhub/ryou-ui-v14-neo-v9-polish/ryou-ui-v14/"
+local base = "https://raw.githubusercontent.com/vryex/ryouhub/ryou-ui-v14-neo-v10-personalizacion/ryou-ui-v14/"
 local UI = assert(loadstring(game:HttpGet(base .. "RyouUI.lua")))()
 local mount = assert(loadstring(game:HttpGet(base .. "examples/NeoShowcase.lua")))()
 mount(UI, { Motion = "Full", Open = true })
@@ -70,3 +70,5 @@ Consulta [cómo contribuir](CONTRIBUTING.md) y la [revisión de procedencia](doc
 **V8:** [Notas de migración y control de calidad Android](docs/neo-v8-qa.md).
 
 **V9:** [Revisión de bordes, cabecera y reapertura](docs/neo-v9-qa.md).
+
+**V10:** [Fondos estables, imagen personalizada y encabezados sin duplicados](docs/neo-v10-qa.md).

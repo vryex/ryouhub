@@ -1,5 +1,15 @@
 # Cambios
 
+## 14.4.0 · Neo Sidebar V10 · Personalización y fondos estables
+
+- Recupera la imagen ilustrada original del monograma R en el banner de Inicio. La cabecera sigue sin la R duplicada.
+- Los adornos del sidebar y del contenido usan coordenadas locales fijas, sin estirarse ni trasladarse al redimensionar la ventana.
+- Añade una capa de wallpaper detrás de páginas y tarjetas, expuesta como `Window:GetWallpaperLayer()` y `UIElements.Wallpaper`; su colocación evita tapar los controles.
+- Incluye un glifo Pinterest rojo con P blanca, sin requerir descargar imágenes adicionales.
+- Evita cabeceras repetidas cuando un `Paragraph` o `Section` inicial repite exactamente el nombre de la pestaña.
+- Conserva búsqueda, modales, outfits y la API del motor de temas.
+
+
 ## 14.3.0 · Neo Sidebar V9 · Bordes y limpieza
 
 - Botones normales de altura estable (37/53 px de contenido, 35 px de acción), sin expansión basada en AbsoluteSize.

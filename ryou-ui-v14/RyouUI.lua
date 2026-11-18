@@ -1,4 +1,4 @@
--- Ryou UI 14.3.0 | Neo Sidebar V9 | Created by Ryou
+-- Ryou UI 14.4.0 | Neo Sidebar V10 | Created by Ryou
 --[[
 MIT License
 
@@ -27,7 +27,7 @@ local Input = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local TextService = game:GetService("TextService")
 
-local UI = { Version = "14.3.0", Variant = "Neo Sidebar V9" }
+local UI = { Version = "14.4.0", Variant = "Neo Sidebar V10" }
 local Window, Tab, Control = {}, {}, {}
 Window.__index, Tab.__index, Control.__index = Window, Tab, Control
 
@@ -230,7 +230,7 @@ function UI:RegisterIcon(name, asset)
 end
 
 function UI:GetIcons()
-    local names = {"ryou"}
+    local names = {"ryou","pinterest"}
     for name in pairs(icons) do table.insert(names, name) end
     for name in pairs(iconAliases) do table.insert(names, name) end
     for name in pairs(self._assets or {}) do table.insert(names, name) end
@@ -500,11 +500,12 @@ local function mark(w, parent, size, position, large, exact)
     })
     -- Máscara monocromática del logotipo oficial: ImageColor3 permite tintar
     -- la R con el acento del usuario sin depender de un PNG verde fijo.
-    local logo = assetImage(node, "logo_mono", {
+    -- El hero usa la R ilustrada original; el resto puede tintarse según el tema.
+    local logo = assetImage(node, large and "logo_hero" or "logo_mono", {
         Name = "Logo", AnchorPoint = Vector2.new(.5,.5), Position = UDim2.fromScale(.51,.46),
         Size = large and full or UDim2.fromScale(1.15,1.15), ScaleType = Enum.ScaleType.Fit,
     }, fallback, "logo_small")
-    w:_bind(logo,"ImageColor3","Accent")
+    if not large then w:_bind(logo,"ImageColor3","Accent") end
     return node
 end
 
@@ -518,6 +519,22 @@ end
 
 local function icon(w, parent, name, size, role, position)
     if name == "ryou" then return mark(w, parent, size, position or UDim2.new(), false) end
+    if name == "pinterest" then
+        -- Identificador reconocible, dibujado localmente sin descargar iconos.
+        local badge = make("Frame",parent,{
+            Size=px(size,size),Position=position or UDim2.new(),
+            BackgroundColor3=rgb(230,0,35),BackgroundTransparency=0,
+        })
+        corner(badge,math.floor(size/2))
+        make("TextLabel",badge,{
+            Text="P",Font=Enum.Font.GothamBold,
+            TextSize=math.max(11,math.floor(size*.80)),
+            Size=full,TextColor3=rgb(255,255,255),
+            TextXAlignment=Enum.TextXAlignment.Center,
+            TextYAlignment=Enum.TextYAlignment.Center,
+        })
+        return badge
+    end
     local slot = make("Frame", parent, { Size = px(size, size), Position = position or UDim2.new() })
     local asset = (w.library._assets or {})[name] or name
     if type(asset) == "string" and asset:match("^rbxassetid://%d+$") then
@@ -1104,6 +1121,7 @@ function Window:SetBackgroundColor(color)
     })
 end
 function Window:GetBackgroundColor() return self.theme.Base end
+function Window:GetWallpaperLayer() return self.wallpaper end
 
 function Window:SetFontStyle(name)
     local fonts = FONT_STYLES[tostring(name or "")]
@@ -1415,7 +1433,7 @@ function UI:CreateWindow(options)
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling, ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets,
     })
     w.gui:SetAttribute("RyouNeoSidebar",true)
-    ImageAssets:Preload("logo_mono", "logo_small", "header_ribbon", "launcher")
+    ImageAssets:Preload("logo_hero", "logo_mono", "logo_small", "header_ribbon", "launcher")
     w.ScreenGui = w.gui
     w.screen = make("Frame", w.gui, { Size = full })
     w.frame = make("Frame", w.screen, { AnchorPoint = Vector2.new(.5, .5) })
@@ -1502,15 +1520,20 @@ function UI:CreateWindow(options)
     w:_bind(w.rail, "BackgroundColor3", "Rail")
     corner(w.rail,20)
     faceGradient(w,w.rail,"Rail")
-    local railGlow = artworkLayer(w,w.rail,"rail_glow",UDim2.fromScale(0,1),UDim2.fromScale(1,.84),Enum.ScaleType.Fit,.12,.94)
-    railGlow.AnchorPoint = Vector2.new(0,1)
+    -- Arte estable en píxeles: no se estira ni se mueve con la altura del menú.
+    local railArtClip = make("Frame",w.rail,{Name="StaticRailArtwork",Size=full,ClipsDescendants=true})
+    local railGlow = artworkLayer(w,railArtClip,"rail_glow",
+        px(0,225),px(230,275),Enum.ScaleType.Fit,.12,.94)
     corner(railGlow,19)
     w.nav = scroll(w, w.rail, { Size = UDim2.new(1,0,1,-9) })
     pad(w.nav, 6, 9)
     stack(w.nav, 4)
     w.body = make("Frame", content, {ClipsDescendants=true})
     -- Suaviza el corte de la imagen en el límite de la sidebar.
-    local bodyArt = artworkLayer(w,w.body,"background_artwork",UDim2.new(),full,Enum.ScaleType.Crop,.68,nil)
+    -- Fondo de diseño fijo: al hacer resize se revela más/menos imagen,
+    -- sin que el patrón interno se desplace ni cambie de tamaño.
+    local bodyArt = artworkLayer(w,w.body,"background_artwork",
+        px(0,0),px(1040,585),Enum.ScaleType.Fit,.68,nil)
     corner(bodyArt,19)
     make("UIGradient",bodyArt,{
         Rotation=0,
@@ -1521,6 +1544,14 @@ function UI:CreateWindow(options)
             NumberSequenceKeypoint.new(1,.06),
         }),
     })
+    -- Capa de wallpaper para fondos personalizados. Debajo de las páginas,
+    -- por encima del arte decorativo, sin superponer botones ni texto.
+    w.wallpaper = make("ImageLabel",w.body,{
+        Name="RyouHubWallpaper",Size=full,ScaleType=Enum.ScaleType.Crop,
+        BackgroundTransparency=1,ImageTransparency=.12,Visible=false,
+    })
+    corner(w.wallpaper,19)
+    w.UIElements = {Main=w.body,Wallpaper=w.wallpaper}
     w.pages = make("Frame", w.body, { Size = full })
     local divider = surface(w, w.body, "Edge", { Position = px(0, 0), Size = UDim2.new(0, 1, 1, 0), BackgroundTransparency=.5 })
     divider.Name = "RailRule"
@@ -1788,6 +1819,8 @@ function Tab:LockAll() for _, control in ipairs(self.Elements) do control:Lock()
 function Tab:UnlockAll() for _, control in ipairs(self.Elements) do control:Unlock() end; return self end
 function Tab:Section(options)
     local o = type(options) == "string" and { Title = options } or options or {}
+    -- Una cabecera igual al nombre de la página no aporta información.
+    if copyText(o.Title or o.Name)==self.Title and (self.order or 0)<3 then return self end
     local w = self.Window
     self.order = (self.order or 0) + 1
     local row = make("Frame", self.scroller, { Size = UDim2.new(1, 0, 0, 19), LayoutOrder = self.order })
@@ -2030,6 +2063,11 @@ end
 
 function Tab:Paragraph(options)
     local c = control(self, options, true)
+    -- El título de la pestaña ya está visible arriba. No repetirlo.
+    if c.Title == self.Title then
+        c.title.Visible = false
+        if c.Desc == "" then c.row.Visible = false end
+    end
     function c:Set(value) return self:SetDesc(value) end
     return c
 end
