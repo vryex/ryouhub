@@ -1,5 +1,16 @@
 # Cambios
 
+## 14.2.0 · Neo Sidebar V8 · Rediseño responsive
+
+- La ventana raíz usa `Frame` en lugar de un `CanvasGroup` de pantalla completa; elimina esa pasada de composición que podía suavizar el texto. La apertura mantiene movimiento y escala, sin opacidad global.
+- El logo usa la máscara PNG monocromática oficial y `ImageColor3` ligado al acento de tema.
+- Las acciones normales muestran título, explicación y botón con flecha en una sola fila, sin el texto genérico «Abrir». Las llamadas `Primary`, `Compact` y `Action` conservan el estilo CTA.
+- Sliders con pista de 5 px, agarradera de 15 px y valor separado.
+- Outfits con panel mayor, preview de 42–45 % del ancho, zoom de miniatura y paginación interna de 48 por página.
+- La cabecera oculta por defecto estado y acciones sin callback; admite `ShowStatus`, `ShowUtilities` y `SafeTopInset` para evitar solaparse con controles del juego.
+- Se conservan dropdowns, fuentes, temas, buscador, APIs y callbacks V7.
+
+
 ## 14.1.0 · Neo Sidebar V7 · Personalización
 
 - Ocho temas de acento listos para usar y colores de acento/fondo editables en vivo.
