@@ -1120,7 +1120,7 @@ function Window:ImportAppearance(data)
     end
     local function parseColor(hex)
         if type(hex) ~= "string" or not hex:match("^#?%x%x%x%x%x%x$") then return nil end
-        local ok, color = pcall(Color3.fromHex, hex:sub(1,1)=="#" and hex or ("#"..hex))
+        local ok, color = pcall(Color3.fromHex, hex:gsub("^#", ""))
         return ok and color or nil
     end
     local accent = parseColor(data.Accent)
