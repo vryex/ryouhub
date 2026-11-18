@@ -7718,19 +7718,34 @@ HomeTab:Banner({
 })
 local homeAction, homeStatus = HomeTab:Columns({Split=.53, MinWidth=340})
 homeAction:Button({
-    Title = "Panel de funciones",
-    Desc = "Accede a TP Slash y los ajustes del juego.",
-    Icon = "activity",
-    Action = "Abrir funciones",
-    Primary = true,
-    Callback = function() Window:SelectTab("TP Slash") end,
+    Title="Funciones",
+    Icon="activity",
+    Action="TP Slash",
+    Primary=true,
+    Callback=function() Window:SelectTab("TP Slash") end,
 })
-homeStatus:Section({Title="Estado", Icon="activity", Badge="Listo"})
-homeStatus:Stats({
-    {Icon="layers",Value="V14",Text="Ryou UI"},
-    {Icon="activity",Value="Activo",Text="Hub"},
-    {Icon="palette",Value="Neo",Text="Tema"},
+homeStatus:Section({Title="Estado",Icon="activity"})
+local currentGameName = tostring(game.Name or "Juego")
+if currentGameName=="" or currentGameName=="Game" then currentGameName="Juego actual" end
+local universeId=tonumber(game.GameId) or 0
+local gameThumb="rbxthumb://type=GameIcon&id="..tostring(universeId>0 and universeId or game.PlaceId).."&w=150&h=150"
+local homeStatusRow=homeStatus:Stats({
+    {Thumbnail=gameThumb,Value=currentGameName,Text="Juego"},
+    {Icon="palette",Value=Window:GetThemePreset(),Text="Tema"},
+    {Icon="layers",Value="V14 · 14.6",Text="Versión"},
 })
+local homeThemeValue=homeStatusRow and homeStatusRow:FindFirstChild("Stat2")
+homeThemeValue=homeThemeValue and homeThemeValue:FindFirstChild("Value")
+task.spawn(function()
+    local ok,info=pcall(function()
+        return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
+    end)
+    if ok and type(info)=="table" and type(info.Name)=="string" and #info.Name>0 then
+        local card=homeStatusRow and homeStatusRow:FindFirstChild("Stat1")
+        local title=card and card:FindFirstChild("Value")
+        if title and title.Parent then title.Text=info.Name end
+    end
+end)
 HomeTab:Section({Title="Accesos rápidos",Icon="grid"})
 local shortcutAppearance, shortcutAnimations, shortcutConfig =
     HomeTab:Columns({Count=3, MinWidth=360, Cards=false})
@@ -8211,6 +8226,7 @@ local visualTheme = PersonalizeTab:Dropdown({
     Values=WindUI:GetThemePresets(),Value="Menta Ryou",
     Callback=function(value)
         Window:SetThemePreset(value)
+        if homeThemeValue then homeThemeValue.Text=tostring(value) end
         if visualAccent then visualAccent:Set(Window:GetAccent(),true) end
         if visualBackground then visualBackground:Set(Window:GetBackgroundColor(),true) end
         requestAppearancePersist()
@@ -8222,6 +8238,7 @@ visualAccent = PersonalizeTab:Colorpicker({
     Value=Window:GetAccent(),
     Callback=function(color)
         Window:SetAccent(color)
+        if homeThemeValue then homeThemeValue.Text="Personalizado" end
         requestAppearancePersist()
     end,
 })
@@ -8264,14 +8281,23 @@ visualGlass = PersonalizeTab:Toggle({
 })
 visualGlassIntensity = PersonalizeTab:Slider({
     Title="Intensidad Glass (%)",
-    Desc="Ajusta cuánto se transparentan tarjetas, controles y botones.",
     Min=0,Max=100,Step=5,Default=55,
     Callback=function(value)
         Window:SetGlassIntensity(value/100)
         requestAppearancePersist()
     end,
 })
-PersonalizeTab:Section({Title="Animaciones y tamaño",Icon="activity"})
+PersonalizeTab:Section({Title="Efectos",Icon="activity"})
+local visualEffects=PersonalizeTab:Dropdown({
+    Title="Efectos de interfaz",
+    Values={"Suave","Destellos","Desactivados"},
+    Value="Suave",
+    Callback=function(value)
+        Window:SetVisualEffects(value)
+        requestAppearancePersist()
+    end,
+})
+PersonalizeTab:Section({Title="Animaciones",Icon="activity"})
 local visualMotion = PersonalizeTab:Dropdown({
     Title="Animaciones",
     Values={"Completas","Reducidas","Desactivadas"},
@@ -8301,6 +8327,8 @@ local function syncAppearanceControls()
     visualOpacity:Set(math.round((data.Transparency or 0)*100),true)
     visualGlass:Set(data.LiquidGlass==true,true)
     visualGlassIntensity:Set(math.round((data.GlassIntensity or .55)*100),true)
+    visualEffects:Set(data.VisualEffects or "Suave",true)
+    if homeThemeValue then homeThemeValue.Text=data.Preset or "Personalizado" end
     local names = {Full="Completas",Reduced="Reducidas",Off="Desactivadas"}
     visualMotion:Set(names[data.Motion] or "Completas",true)
     visualSpeed:Set(math.round((data.Speed or 1)*100),true)
@@ -8408,6 +8436,7 @@ local function restoreUIAppearance()
     if ok and type(saved)=="table" then
         local loaded, err = pcall(function()
             Window:ImportAppearance(saved)
+            Window:SetScale(1)
             Window:SetNeon(true)
             Window:SetDecorationIntensity(1)
             syncAppearanceControls()
@@ -8583,6 +8612,7 @@ local function applyConfig(data)
     end
     if type(data.UIAppearance) == "table" then
         Window:ImportAppearance(data.UIAppearance)
+        Window:SetScale(1)
         Window:SetNeon(true)
         Window:SetDecorationIntensity(1)
         syncAppearanceControls()
