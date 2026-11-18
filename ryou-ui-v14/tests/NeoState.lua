@@ -328,10 +328,26 @@ local tiles=t:Gallery({Items={{Id=4,Title="Outfit",Preview="rbxthumb://type=Outf
 local galleryFrame=tiles.ElementFrame:FindFirstChild("OutfitPane")
 assert(galleryFrame and galleryFrame.Size.Y.Offset>=385)
 v8:SetThemePreset("Violeta")
-local logo
-for _,node in ipairs(v8.brand:GetDescendants()) do
-    if node.Name=="Logo" then logo=node; break end
-end
-assert(logo and logo.ImageColor3==v8:GetAccent())
+-- En V9 no hay R duplicada en la cabecera; queda en el hero y launcher.
+assert(not v8.brand:FindFirstChild("RyouMark"))
+v8:SetTitle("RyouHub")
+assert(v8.title.Text:find('<font color="#'..v8:GetAccent():ToHex()..'">Hub</font>',1,true))
+assert(not v8.panel.ClipsDescendants)
+assert(row.head.Size.Y.Offset==53)
+assert(actionButton.Size.Y.Offset==35)
 v8:Destroy()
-print("Neo Sidebar V8 roots, buttons, gallery, logo: OK")
+print("Neo Sidebar V9 compact buttons, title, root corners: OK")
+
+-- La reapertura debe mantener el mismo tab y scroll, sin animar toda la UI.
+local v9=UI:CreateWindow({Title="RyouHub",Open=false,Motion="Full"})
+local keepTab=v9:Tab("Permanente")
+keepTab.scroller.CanvasPosition=Vector2.new(0,42)
+v9:Open()
+v9:Minimize()
+v9:Open()
+assert(v9.Selected==keepTab)
+assert(keepTab.scroller.CanvasPosition.Y==42)
+assert(v9.panel.Position==UDim2.fromScale(.5,.5))
+assert(v9.panelScale.Scale==v9.interfaceScale)
+v9:Destroy()
+print("Neo Sidebar V9 fast reopen and scroll state: OK")
