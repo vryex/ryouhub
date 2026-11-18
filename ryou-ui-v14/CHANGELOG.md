@@ -1,5 +1,16 @@
 # Cambios
 
+## 14.5.0 · Neo Sidebar V11 · Wallpaper completo y Liquid Glass
+
+- Los fondos personalizados se dibujan bajo **toda** la ventana, incluyendo cabecera y sidebar, en una única capa. Se ocultan las decoraciones de Ryou mientras exista un wallpaper activo.
+- Añade `Window:SetWallpaper(assetId,transparency)` y `Window:HasWallpaper()`, sin reconstruir controles ni descargar de nuevo el tema.
+- Estilo Liquid Glass opcional mediante `SetGlassMode` y `SetGlassIntensity`: transparencias moderadas y reflejos sobre tarjetas, botones, barra lateral y cabecera. No usa un `BlurEffect` global sobre Roblox.
+- Las preferencias Glass se guardan en `ExportAppearance` e importan desde `ImportAppearance`.
+- Launcher circular sustituido por una **pastilla de 152 × 44 px** situada arriba y centrada por defecto, todavía táctil y arrastrable. El menú conserva animaciones de abrir/cerrar y el icono circular deja de descargarse.
+- El encabezado sigue mostrando RyouHub con Hub en el color del tema; el hero conserva la R ilustrada oficial.
+- No se modifica la API de Outfits, color pickers, dropdowns ni callbacks.
+
+
 ## 14.4.0 · Neo Sidebar V10 · Personalización y fondos estables
 
 - Recupera la imagen ilustrada original del monograma R en el banner de Inicio. La cabecera sigue sin la R duplicada.
