@@ -4135,6 +4135,34 @@ local function mountRyouMenuBackground(window, tab)
         return true
     end
 
+    local function loadLogoURL(value)
+        local url,validationError=validateWebURL(value)
+        if not url then return false,validationError end
+        local cacheBase="Ryou/Assets/UserWallpapers/logo_"..urlHash(url)
+        local asset=cachedAsset(cacheBase..".png") or cachedAsset(cacheBase..".jpg")
+        if not asset then
+            local bytes,err=ryouHttpGet(url)
+            if not isImage(bytes) then
+                local linked=parsePageImage(bytes,url)
+                local resolved=linked and validateWebURL(linked)
+                if not resolved or resolved==url then
+                    return false,err or "Necesitas una imagen PNG o JPG pública."
+                end
+                bytes,err=ryouHttpGet(resolved)
+            end
+            if not isImage(bytes) then
+                return false,err or "El enlace no entrega un PNG/JPG público (máximo 8 MB)."
+            end
+            local ext=bytes:sub(1,8)=="\137PNG\r\n\26\n" and ".png" or ".jpg"
+            asset,err=ryouSaveAsset(bytes,cacheBase..ext)
+            if not asset then return false,err end
+        end
+        if destroyed then return false,"Ventana cerrada." end
+        window:SetBrandLogo(asset)
+        ryouMenuBackground.LogoURL=url
+        return true
+    end
+
     tab:Section({Title="Fondo del menú"})
     tab:Paragraph({Title="Fondos de RyouHub",Desc="Elige una imagen de la colección o usa tu propio enlace."})
     local names={}
@@ -4186,7 +4214,37 @@ local function mountRyouMenuBackground(window, tab)
     tab:Button({Title="Restaurar fondo RyouHub",Callback=function()
         selector:Set("RyouHub",true)
         selectPreset("RyouHub")
-        notify("Fondo original de RyouHub restaurado.",2)
+        notify("Fondo original restaurado.",2)
+    end})
+
+    tab:Section({Title="Logo personalizado",Icon="image"})
+    local logoInput=tab:Input({
+        Title="URL del logo",
+        Placeholder="https://raw.githubusercontent.com/.../logo.png",
+    })
+    local loadingLogo=false
+    tab:Button({
+        Title="Aplicar logo",
+        Desc="PNG/JPG público desde GitHub, Discord o tu propio servidor.",
+        Callback=function()
+            if loadingLogo then return end
+            loadingLogo=true
+            local url=logoInput.TextBox and logoInput.TextBox.Text or ""
+            task.spawn(function()
+                local ok,applied,err=pcall(loadLogoURL,url)
+                loadingLogo=false
+                if not destroyed then
+                    notify(ok and applied and "Logo actualizado."
+                        or ("No se pudo cargar el logo: "..tostring(ok and err or applied)),3)
+                end
+            end)
+        end,
+    })
+    tab:Button({Title="Restaurar logo R",Callback=function()
+        window:SetBrandLogo(nil)
+        ryouMenuBackground.LogoURL=""
+        if logoInput then logoInput:Set("",true) end
+        notify("Logo original restaurado.",2)
     end})
 
     window:OnDestroy(function()
@@ -4198,10 +4256,20 @@ local function mountRyouMenuBackground(window, tab)
     return {
         Save=function()
             return {Enabled=ryouMenuBackground.Enabled,Transparency=ryouMenuBackground.Transparency,
-                Mode=ryouMenuBackground.Mode,CustomURL=ryouMenuBackground.CustomURL}
+                Mode=ryouMenuBackground.Mode,CustomURL=ryouMenuBackground.CustomURL,
+                LogoURL=ryouMenuBackground.LogoURL}
         end,
         Load=function(data)
             if type(data)~="table" then return end
+            if type(data.LogoURL)=="string" and data.LogoURL~="" then
+                task.spawn(function()
+                    local ok,err=loadLogoURL(data.LogoURL)
+                    if not ok then warn("[Ryou] Logo no restaurado: "..tostring(err)) end
+                end)
+            elseif data.LogoURL=="" then
+                window:SetBrandLogo(nil)
+                ryouMenuBackground.LogoURL=""
+            end
             if data.Transparency~=nil then
                 ryouMenuBackground.Transparency=math.clamp(tonumber(data.Transparency) or .12,0,.95)
                 opacity:Set(math.floor(ryouMenuBackground.Transparency*100+.5),true)
