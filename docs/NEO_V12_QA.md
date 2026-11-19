@@ -23,4 +23,14 @@
 9. Comprobar la ausencia de las imágenes antiguas Xero.
 10. Validar Outfits, TP Slash, Auto Shoot, ESP, animaciones, búsqueda, teclados y dropdowns.
 
-**No se realizó ejecución física Roblox Android ni compilación Luau CLI desde este entorno.**
+## Sincronización con el pulido de la biblioteca (PR #34)
+
+El hub V12 fija la biblioteca en el commit `3234e3f21326e17ee50ec133f224f69b4fa05eed`:
+- Tamaño del archivo en UTF-8: `146434` bytes.
+- Adler-32: `469485821`.
+- Nuevas tarjetas de estados vacíos, sin coincidencias, carga y error; diálogos y galería más adaptables.
+- Los destellos se detienen al cerrar o minimizar y no se animan con movimiento reducido.
+
+**Pruebas:** Work informó que compiló Luau y que pasaron las pruebas del cambio; también informó tres fallos antiguos reproducibles en la biblioteca original. Esos resultados no tienen un registro de GitHub Actions asociado al commit, por lo que aún no se han verificado de forma independiente aquí.
+
+**Pendiente:** confirmar funcionamiento en Roblox Android, incluida carga de UI y los controles táctiles.
