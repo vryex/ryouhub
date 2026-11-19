@@ -1,5 +1,15 @@
 # Cambios
 
+## 14.6.0 · Neo Sidebar V12 · Personalización y efectos
+
+- Liquid Glass activado por defecto en las ventanas nuevas. Se respeta la preferencia existente cuando se importa una configuración.
+- Permite cambiar el logo ilustrado del banner con `Window:SetBrandLogo(contentId)`, o restaurar con `nil`. El recurso se carga mediante el controlador del hub, sin alojar PNG/JPG arbitrarios dentro de la biblioteca.
+- `Tab:Stats` acepta miniaturas `Thumbnail`, id de celdas y nombres de campos para mostrar Juego actual, Tema y Versión y actualizar el tema sin rehacer el panel.
+- Nuevo sistema de efectos `SetVisualEffects("Suave"|"Destellos"|"Desactivados")`, con un único tween de gradiente y limpieza al destruir la ventana. Guarda `VisualEffects` en ExportAppearance.
+- Icono Pinterest real rasterizado desde su silueta vectorial de marca; no es una letra P aproximada.
+- Se preservan la API de V11, Outfits, búsqueda y capa de wallpaper completo.
+
+
 ## 14.5.0 · Neo Sidebar V11 · Wallpaper completo y Liquid Glass
 
 - Los fondos personalizados se dibujan bajo **toda** la ventana, incluyendo cabecera y sidebar, en una única capa. Se ocultan las decoraciones de Ryou mientras exista un wallpaper activo.

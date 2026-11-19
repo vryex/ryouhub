@@ -1,4 +1,4 @@
--- Ryou UI 14.5.0 | Neo Sidebar V11 | Created by Ryou
+-- Ryou UI 14.6.0 | Neo Sidebar V12 | Created by Ryou
 --[[
 MIT License
 
@@ -27,7 +27,7 @@ local Input = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local TextService = game:GetService("TextService")
 
-local UI = { Version = "14.5.0", Variant = "Neo Sidebar V11" }
+local UI = { Version = "14.6.0", Variant = "Neo Sidebar V12" }
 local Window, Tab, Control = {}, {}, {}
 Window.__index, Tab.__index, Control.__index = Window, Tab, Control
 
@@ -43,6 +43,7 @@ local DARK = {
     Hover = rgb(29, 46, 47), Edge = rgb(45, 69, 68), Text = rgb(243, 249, 248),
     Muted = rgb(168, 183, 185), Disabled = rgb(116,136,132), Accent = rgb(73, 245, 184), Ink = rgb(4, 23, 17),
     Selected = rgb(16, 47, 41), Raised = rgb(26, 41, 42),
+    Warning = rgb(255, 196, 108), Danger = rgb(255, 143, 160),
     Primary = rgb(73,245,184), PrimaryHover = rgb(124,255,207), HeroAccent = rgb(111,231,183), LightMint = rgb(181, 255, 225), Rim = rgb(80, 113, 107), SelectedText = rgb(198,255,230),
 }
 local LIGHT = {
@@ -50,6 +51,7 @@ local LIGHT = {
     Hover=rgb(203,222,216), Edge=rgb(132,155,147), Text=rgb(20,41,34),
     Muted=rgb(63,87,78), Disabled=rgb(84,107,99), Accent=rgb(2,106,77), Ink=rgb(12,45,34),
     Selected=rgb(191,226,213), Raised=rgb(249,252,250),
+    Warning=rgb(133, 78, 13), Danger=rgb(167, 47, 73),
     Primary=rgb(117,222,179), PrimaryHover=rgb(94,211,165), HeroAccent=rgb(3,108,77),
     LightMint=rgb(61,144,116), Rim=rgb(95,126,114), SelectedText=rgb(0,78,56),
 }
@@ -255,6 +257,10 @@ local AssetRegistry = {
     rail_glow = { file = "RAIL_INFERIOR_RGBA.png", bytes = 43775 },
     background_artwork = { file = "FONDO_NEON_ARTWORK_1672x941.png", bytes = 1477520 },
     logo_mono = { file = "R_FACETADA_MONO_512.png", bytes = 17839 },
+    pinterest_logo = {
+        file = "PINTEREST_BADGE_RED_64.png",bytes = 938,
+        url = "https://raw.githubusercontent.com/vryex/ryouhub/bc7f3036a791eaa611bcc185249f1c817775df7e/ryou-ui-v14/assets/neo/PINTEREST_BADGE_RED_64.png",
+    },
 }
 
 local ImageAssets = { ready = {}, pending = {}, warned = {} }
@@ -282,7 +288,7 @@ local function validPng(data, asset)
 end
 
 local function downloadPng(asset)
-    local url = ASSET_URL .. asset.file
+    local url = asset.url or (ASSET_URL .. asset.file)
     local ok, data = pcall(function() return game:HttpGet(url) end)
     if ok and validPng(data, asset) then return data end
     if sendRequest then
@@ -506,7 +512,16 @@ local function mark(w, parent, size, position, large, exact)
         Name = "Logo", AnchorPoint = Vector2.new(.5,.5), Position = UDim2.fromScale(.51,.46),
         Size = large and full or UDim2.fromScale(1.15,1.15), ScaleType = Enum.ScaleType.Fit,
     }, fallback, "logo_small")
-    if not large then w:_bind(logo,"ImageColor3","Accent") end
+    if not large then
+        w:_bind(logo,"ImageColor3","Accent")
+    else
+        w.heroLogoNodes[logo]=true
+        if w.brandLogo then logo.Image=w.brandLogo end
+        listen(w.owner,logo:GetPropertyChangedSignal("Image"),function()
+            -- La carga diferida de la R original no debe sobrescribir el logo de usuario.
+            if w.brandLogo and logo.Image~=w.brandLogo then logo.Image=w.brandLogo end
+        end)
+    end
     return node
 end
 
@@ -521,19 +536,22 @@ end
 local function icon(w, parent, name, size, role, position)
     if name == "ryou" then return mark(w, parent, size, position or UDim2.new(), false) end
     if name == "pinterest" then
-        -- Identificador reconocible, dibujado localmente sin descargar iconos.
-        local badge = make("Frame",parent,{
-            Size=px(size,size),Position=position or UDim2.new(),
-            BackgroundColor3=rgb(230,0,35),BackgroundTransparency=0,
+        local badge=make("Frame",parent,{
+            Name="PinterestBadge",Size=px(size,size),
+            Position=position or UDim2.new(),
+            BackgroundTransparency=1,
         })
-        corner(badge,math.floor(size/2))
-        make("TextLabel",badge,{
+        local fallback=make("TextLabel",badge,{
             Text="P",Font=Enum.Font.GothamBold,
-            TextSize=math.max(11,math.floor(size*.80)),
-            Size=full,TextColor3=rgb(255,255,255),
-            TextXAlignment=Enum.TextXAlignment.Center,
-            TextYAlignment=Enum.TextYAlignment.Center,
+            TextSize=math.max(10,math.floor(size*.74)),
+            Size=full,TextColor3=rgb(255,255,255),BackgroundColor3=rgb(230,0,35),
+            BackgroundTransparency=0,TextXAlignment=Enum.TextXAlignment.Center,
         })
+        corner(fallback,math.floor(size/2))
+        assetImage(badge,"pinterest_logo",{
+            Name="OfficialPinterestLogo",Size=full,
+            BackgroundTransparency=1,ScaleType=Enum.ScaleType.Fit,
+        },fallback)
         return badge
     end
     local slot = make("Frame", parent, { Size = px(size, size), Position = position or UDim2.new() })
@@ -554,6 +572,25 @@ local function icon(w, parent, name, size, role, position)
         segment.Name = "Segment"
     end
     return slot
+end
+
+local function statusCard(w, parent, props)
+    local card = surface(w, parent, "Field", props, w.radius)
+    finish(w, card, "Card")
+    local glyphs = {
+        empty = icon(w, card, "magnifier", 17, "Muted", UDim2.new(0, 9, .5, -8)),
+        loading = icon(w, card, "cloud", 17, "Accent", UDim2.new(0, 9, .5, -8)),
+        error = icon(w, card, "warning", 17, "Danger", UDim2.new(0, 9, .5, -8)),
+    }
+    local message = label(w, card, "", 13, true, "Muted", {
+        Position = px(32, 3), Size = UDim2.new(1, -40, 1, -6),
+        TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd,
+    })
+    return card, function(kind, text)
+        for name, glyph in pairs(glyphs) do glyph.Visible = name == kind end
+        message.Text = text
+        w:_bind(message, "TextColor3", kind == "error" and "Danger" or "Muted")
+    end
 end
 
 local function action(w, owner, parent, text, props, primary, style)
@@ -909,6 +946,7 @@ function Window:_open(fromLauncher)
     local start = fromLauncher and self:_launcherOffset(26,20) or px(0,9)
     if fromLauncher then self:_pulseLauncher() end
     self.Opened, self.hasOpened = true,true
+    self:_refreshVisualEffects()
     self.panel.Visible, self.panel.Interactable = true,true
     self.shadow.Visible = true
     self:_fitLauncher()
@@ -968,6 +1006,7 @@ function Window:_hide(minimized)
     self.initialCancelled = true
     if not self.Opened then return self:SetOpenButtonVisible(self.launcherEnabled) end
     self.Opened = false
+    self:_refreshVisualEffects()
     self.panel.Interactable = false
     self:_closePopup()
     if self.dismissModal then self.dismissModal() end
@@ -1002,6 +1041,7 @@ function Window:SetMotion(mode)
     assert(MOTION[mode] ~= nil, "Motion must be Full, Reduced or Off")
     if self.motion == mode then return self end
     self.motion = mode
+    self:_refreshVisualEffects()
     -- Settle in-flight transitions before using the new timing for every control.
     for item, animation in pairs(table.clone(self.tweens)) do
         if self.tweens[item] ~= animation then continue end
@@ -1198,6 +1238,62 @@ function Window:SetGlassIntensity(value)
 end
 function Window:GetGlassIntensity() return self.glassIntensity or .5 end
 
+-- Logo alternativo para banners: requiere un ContentId PNG/JPG válido.
+-- El hub registra las URLs públicas mediante su caché local.
+function Window:SetBrandLogo(assetId)
+    local asset=type(assetId)=="string" and assetId or nil
+    self.brandLogo=asset and asset~="" and asset or nil
+    for logo in pairs(self.heroLogoNodes) do
+        if logo.Parent then
+            if self.brandLogo then
+                logo.ImageColor3=rgb(255,255,255)
+                logo.Image=self.brandLogo
+            else
+                logo.ImageColor3=rgb(255,255,255)
+                ImageAssets:Get("logo_hero",function(id)
+                    if logo.Parent and not self.brandLogo and id then logo.Image=id end
+                end)
+            end
+        end
+    end
+    return self
+end
+function Window:GetBrandLogo() return self.brandLogo end
+
+-- El brillo estático también está disponible con movimiento reducido o apagado.
+function Window:_refreshVisualEffects()
+    if self.visualEffectTween then
+        self.visualEffectTween:Cancel()
+        self.visualEffectTween:Destroy()
+        self.visualEffectTween = nil
+    end
+    if not self.visualGlowGradient then return end
+
+    local selected = self.visualEffectsMode
+    self.visualGlow.Visible = selected ~= "Desactivados"
+    self.visualGlowGradient.Offset = Vector2.new(0, 0)
+    if selected == "Destellos" and self.Opened and self.motion == "Full" then
+        self.visualGlowGradient.Offset = Vector2.new(-.3, 0)
+        self.visualEffectTween = TweenService:Create(self.visualGlowGradient,
+            TweenInfo.new(5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+            { Offset = Vector2.new(.38, 0) })
+        self.visualEffectTween:Play()
+    end
+end
+
+function Window:SetVisualEffects(mode)
+    local selected = tostring(mode or "Suave")
+    if selected ~= "Suave" and selected ~= "Destellos" and selected ~= "Desactivados" then
+        selected = "Suave"
+    end
+    if self.visualEffectsMode ~= selected then
+        self.visualEffectsMode = selected
+        self:_refreshVisualEffects()
+    end
+    return self
+end
+function Window:GetVisualEffects() return self.visualEffectsMode or "Suave" end
+
 function Window:SetFontStyle(name)
     local fonts = FONT_STYLES[tostring(name or "")]
     if not fonts then return self end
@@ -1234,6 +1330,7 @@ function Window:ExportAppearance()
         Scale=self:GetScale(), Neon=self:GetNeon(),
         Decoration=self:GetDecorationIntensity(),
         LiquidGlass=self:GetGlassMode(), GlassIntensity=self:GetGlassIntensity(),
+        VisualEffects=self:GetVisualEffects(),
     }
 end
 function Window:ImportAppearance(data)
@@ -1258,6 +1355,7 @@ function Window:ImportAppearance(data)
     if data.Transparency ~= nil then self:SetSurfaceTransparency(data.Transparency) end
     if data.LiquidGlass ~= nil then self:SetGlassMode(data.LiquidGlass == true) end
     if data.GlassIntensity ~= nil then self:SetGlassIntensity(data.GlassIntensity) end
+    if data.VisualEffects ~= nil then self:SetVisualEffects(data.VisualEffects) end
     if data.Scale ~= nil then self:SetScale(data.Scale) end
     if data.Neon ~= nil then self:SetNeon(data.Neon==true) end
     if data.Decoration ~= nil then self:SetDecorationIntensity(data.Decoration) end
@@ -1345,6 +1443,11 @@ function Window:Destroy()
     clean(self.owner)
     while #self.notices > 0 do self.notices[#self.notices].Remove() end
     for item in pairs(self.tweens) do self:_cancel(item) end
+    if self.visualEffectTween then
+        self.visualEffectTween:Cancel()
+        self.visualEffectTween:Destroy()
+        self.visualEffectTween=nil
+    end
     if not self.guiDestroying then self.gui:Destroy() end
     if self.library.Window == self then self.library.Window = nil end
     for _, fn in ipairs(self.destroyCallbacks) do callback(fn, self) end
@@ -1459,7 +1562,10 @@ local function addHeaderSearch(w)
                 end
             end
         end
-        if count==0 then label(w,results,"Sin resultados",13,false,"Muted") end
+        if count == 0 then
+            local _, paint = statusCard(w, results, { Size = UDim2.new(1, -3, 0, 36) })
+            paint("empty", "Sin coincidencias")
+        end
         results.CanvasPosition = Vector2.zero
     end
     listen(w.owner,query:GetPropertyChangedSignal("Text"),refresh)
@@ -1498,7 +1604,8 @@ function UI:CreateWindow(options)
         Tabs = {}, groups = {}, entrance = {}, notices = {},
         art = {}, effects = {}, faces = {}, heroTitles = {}, tracked = {}, tweens = {}, bindings = {},
         fontNodes = {}, surfaceNodes = {}, wallpaperDecorations = {},
-        wallpaperActive=false,glassMode=o.LiquidGlass==true,
+        heroLogoNodes = {}, brandLogo=nil,
+        wallpaperActive=false,glassMode=o.LiquidGlass~=false,
         glassIntensity=math.clamp(tonumber(o.GlassIntensity) or .5,0,1),
         neon = o.Neon ~= false, interfaceScale = boundedValue(o.Scale,.85,1.2),
         decorationIntensity = boundedValue(o.DecorationIntensity,0,1),
@@ -1511,7 +1618,7 @@ function UI:CreateWindow(options)
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling, ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets,
     })
     w.gui:SetAttribute("RyouNeoSidebar",true)
-    ImageAssets:Preload("logo_hero", "logo_mono", "logo_small", "header_ribbon")
+    ImageAssets:Preload("logo_hero", "logo_mono", "logo_small", "header_ribbon", "pinterest_logo")
     w.ScreenGui = w.gui
     w.screen = make("Frame", w.gui, { Size = full })
     w.frame = make("Frame", w.screen, { AnchorPoint = Vector2.new(.5, .5) })
@@ -1565,6 +1672,21 @@ function UI:CreateWindow(options)
         Name="GlassHeaderHighlight",Position=UDim2.new(0,15,0,2),
         Size=UDim2.new(1,-30,0,1),BackgroundTransparency=.75,
         BackgroundColor3=rgb(255,255,255),Visible=false,
+    })
+    w.visualGlow=make("Frame",w.panel,{
+        Name="AmbientGlow",BackgroundTransparency=.90,
+        BackgroundColor3=rgb(255,255,255),
+        Position=UDim2.new(.2,0,0,1),Size=UDim2.new(.62,0,0,2),
+        Visible=false,ZIndex=2,
+    })
+    w:_bind(w.visualGlow,"BackgroundColor3","Accent")
+    w.visualGlowGradient=make("UIGradient",w.visualGlow,{
+        Offset=Vector2.new(-.3,0),
+        Transparency=NumberSequence.new({
+            NumberSequenceKeypoint.new(0,1),
+            NumberSequenceKeypoint.new(.5,.14),
+            NumberSequenceKeypoint.new(1,1),
+        }),
     })
     w.sweep = make("Frame",header,{Size=px(65,8),Rotation=-26,Visible=false})
     w:_bind(w.sweep,"BackgroundColor3","Accent")
@@ -1793,6 +1915,7 @@ function UI:CreateWindow(options)
     if o.AnimationSpeed then w:SetAnimationSpeed(o.AnimationSpeed) end
     if o.SurfaceTransparency then w:SetSurfaceTransparency(o.SurfaceTransparency) end
     w:SetNeon(w.neon)
+    w:SetVisualEffects(o.VisualEffects)
     w:_fit()
     if o.Open == false then
         w:SetOpenButtonVisible(w.launcherEnabled)
@@ -2044,11 +2167,21 @@ function Tab:Stats(options)
     local cells = {}
     for index=1,count do
         local value = values[index]
-        local cell = surface(w,row,"Field",{Size=UDim2.new(1/count,-math.ceil(4*(count-1)/count),1,0),LayoutOrder=index},8)
+        local cell = surface(w,row,"Field",{Name="Stat"..index,Size=UDim2.new(1/count,-math.ceil(4*(count-1)/count),1,0),LayoutOrder=index},8)
         finish(w,cell,"Field")
-        local glyph = icon(w,cell,value.Icon or "activity",14,"Accent",UDim2.new(0,6,.5,-7))
-        local caption = label(w,cell,copyText(value.Value),12,true,"Text",{TextTruncate=Enum.TextTruncate.AtEnd})
-        local detail = label(w,cell,copyText(value.Text),10,false,"Muted",{TextTruncate=Enum.TextTruncate.AtEnd})
+        local glyph
+        if value.Thumbnail then
+            glyph=make("ImageLabel",cell,{
+                Name="GameThumbnail",Image=tostring(value.Thumbnail),
+                Position=UDim2.new(0,5,.5,-11),Size=px(22,22),
+                BackgroundTransparency=1,ScaleType=Enum.ScaleType.Crop,
+            })
+            corner(glyph,5)
+        else
+            glyph=icon(w,cell,value.Icon or "activity",14,"Accent",UDim2.new(0,6,.5,-7))
+        end
+        local caption = label(w,cell,copyText(value.Value),12,true,"Text",{Name="Value",TextTruncate=Enum.TextTruncate.AtEnd})
+        local detail = label(w,cell,copyText(value.Text),10,false,"Muted",{Name="Caption",TextTruncate=Enum.TextTruncate.AtEnd})
         cells[index] = { glyph, caption, detail }
     end
     local function fit()
@@ -2432,7 +2565,10 @@ function Tab:Dropdown(options)
                 end
             end)
         end
-        if count == 0 then label(w, list, "Sin resultados", 13, false, "Muted") end
+        if count == 0 then
+            local _, paint = statusCard(w, list, { Size = UDim2.new(1, -3, 0, 36) })
+            paint("empty", #c.Values == 0 and "No hay opciones" or "Sin coincidencias")
+        end
         list.CanvasPosition = Vector2.zero
         c.paint()
     end
@@ -2523,7 +2659,9 @@ local function dialog(w, owner, title, subtitle, width, height, alignToContent)
         local size = w.panel.Size
         local bounds = Vector2.new(size.X.Offset,size.Y.Offset)
         local short = bounds.Y < 415
-        local cardHeight = math.max(1,math.min(height,bounds.Y-(short and 48 or 32)))
+        local compact = bounds.Y < 260
+        local verticalMargin = compact and 16 or (short and 36 or 32)
+        local cardHeight = math.max(1, math.min(height, bounds.Y - verticalMargin))
         local cardWidth = math.max(1,math.min(width,bounds.X-32, short and 468 or width))
         local top, bottom = short and 45 or 52, short and 32 or 36
         shell.Size=px(cardWidth,cardHeight)
@@ -2799,8 +2937,8 @@ function Tab:Gallery(options)
     local search=textBox(w,c.owner,pane,"Buscar por nombre o ID…",{Size=UDim2.new(.64,-6,0,38)})
     local grid=scroll(w,pane,{Name="OutfitGrid"})
     local tiles=make("UIGridLayout",grid,{CellPadding=px(5,5),SortOrder=Enum.SortOrder.LayoutOrder})
-    local empty=label(w,pane,"Sin resultados",13,true,"Muted",{
-        Position=px(3,53),Size=UDim2.new(.62,0,0,30),Visible=false,TextWrapped=true,
+    local empty, paintStatus = statusCard(w, pane, {
+        Name = "GalleryStatus", Visible = false,
     })
     local preview=surface(w,pane,"Field",{Name="OutfitPreview",Position=UDim2.fromScale(.58,0),Size=UDim2.fromScale(.42,1)},10)
     finish(w,preview,"Raised")
@@ -2841,6 +2979,40 @@ function Tab:Gallery(options)
         local item=itemWithId(self.Items,value)
         return self:_commit(item and item.Id or nil,silent)
     end
+    local function fit()
+        local scale=w.interfaceScale
+        local width=pane.AbsoluteSize.X/scale
+        local viewport=scrollHost.AbsoluteSize.Y/scale
+        local height=math.clamp(viewport-24,385,560)
+        if width<340 then
+            local previewTop = empty.Visible and 108 or (pager.Visible and 344 or 301)
+            local previewHeight = math.max(306, height - 164)
+            local narrowHeight = previewTop + previewHeight
+            if pane.Size.Y.Offset ~= narrowHeight then pane.Size = UDim2.new(1, 0, 0, narrowHeight) end
+            search.Size=UDim2.new(1,0,0,38)
+            grid.Position,grid.Size=px(0,46),UDim2.new(1,0,0,245)
+            pager.Position,pager.Size=px(0,298),UDim2.new(1,0,0,34)
+            empty.Position, empty.Size = px(0, 46), UDim2.new(1, 0, 0, 52)
+            preview.Position, preview.Size = px(0, previewTop), UDim2.new(1, 0, 0, previewHeight)
+            tiles.FillDirectionMaxCells=math.max(1,math.floor(width/116))
+            local count=tiles.FillDirectionMaxCells
+            local cell=math.max(84,math.floor((width-(count-1)*7-8)/count))
+            tiles.CellSize=px(cell,math.clamp(cell+15,110,158))
+            return
+        end
+        if pane.Size.Y.Offset~=height then pane.Size=UDim2.new(1,0,0,height) end
+        local split=width < 520 and .55 or .58
+        local gridWidth=math.max(1,math.floor(width*split)-9)
+        local columns=math.clamp(math.floor((gridWidth+7)/118),2,3)
+        local cellWidth=math.max(78,math.floor((gridWidth-(columns-1)*7-5)/columns))
+        search.Size=UDim2.new(split,-9,0,38)
+        grid.Position,grid.Size=px(0,45),UDim2.new(split,-9,1,-89)
+        empty.Position, empty.Size = px(0, 46), UDim2.new(split, -9, 0, 52)
+        pager.Position,pager.Size=UDim2.new(0,0,1,-37),UDim2.new(split,-9,0,34)
+        preview.Position,preview.Size=UDim2.fromScale(split,0),UDim2.fromScale(1-split,1)
+        tiles.CellSize=px(cellWidth,math.clamp(cellWidth+22,110,160))
+        tiles.FillDirectionMaxCells=columns
+    end
     local function rebuild()
         if rowOwner then clean(rowOwner) end
         rowOwner=childScope(c.owner)
@@ -2848,10 +3020,12 @@ function Tab:Gallery(options)
         table.clear(rows)
         clearRows(w,grid)
         local items=filteredItems(c.Items,search.Text)
-        empty.Text=c.statusText or "Sin resultados"
-        empty.Visible=c.statusText~=nil or #items==0
-        grid.Visible=c.statusText==nil
-        w:_bind(empty,"TextColor3",c.statusKind=="error" and "Text" or "Muted")
+        empty.Visible = c.statusText ~= nil or #items == 0
+        grid.Visible = not empty.Visible
+        if empty.Visible then
+            paintStatus(c.statusText and c.statusKind or "empty",
+                c.statusText or (#c.Items == 0 and "No hay elementos" or "Sin coincidencias"))
+        end
         local pages=math.max(1,math.ceil(#items/pageSize))
         page=math.clamp(page,1,pages)
         pageText.Text=tostring(page).." / "..tostring(pages)
@@ -2874,6 +3048,7 @@ function Tab:Gallery(options)
         end
         grid.CanvasPosition=Vector2.zero
         c.paint()
+        fit()
     end
     function c:SetStatus(status, message)
         if self.Destroyed then return self end
@@ -2899,38 +3074,6 @@ function Tab:Gallery(options)
         page+=1
         rebuild()
     end)
-    local function fit()
-        local scale=w.interfaceScale
-        local width=pane.AbsoluteSize.X/scale
-        local viewport=scrollHost.AbsoluteSize.Y/scale
-        local height=math.clamp(viewport-24,385,560)
-        if width<340 then
-            local narrowHeight=math.max(650,height+180)
-            if pane.Size.Y.Offset~=narrowHeight then pane.Size=UDim2.new(1,0,0,narrowHeight) end
-            search.Size=UDim2.new(1,0,0,38)
-            grid.Position,grid.Size=px(0,46),UDim2.new(1,0,0,245)
-            pager.Position,pager.Size=px(0,298),UDim2.new(1,0,0,34)
-            empty.Position,empty.Size=px(6,46),UDim2.new(1,-12,0,34)
-            preview.Position,preview.Size=px(0,344),UDim2.new(1,0,1,-344)
-            tiles.FillDirectionMaxCells=math.max(1,math.floor(width/116))
-            local count=tiles.FillDirectionMaxCells
-            local cell=math.max(84,math.floor((width-(count-1)*7-8)/count))
-            tiles.CellSize=px(cell,math.clamp(cell+15,110,158))
-            return
-        end
-        if pane.Size.Y.Offset~=height then pane.Size=UDim2.new(1,0,0,height) end
-        local split=width < 520 and .55 or .58
-        local gridWidth=math.max(1,math.floor(width*split)-9)
-        local columns=math.clamp(math.floor((gridWidth+7)/118),2,3)
-        local cellWidth=math.max(78,math.floor((gridWidth-(columns-1)*7-5)/columns))
-        search.Size=UDim2.new(split,-9,0,38)
-        grid.Position,grid.Size=px(0,45),UDim2.new(split,-9,1,-89)
-        empty.Position,empty.Size=px(6,48),UDim2.new(split,-15,0,32)
-        pager.Position,pager.Size=UDim2.new(0,0,1,-37),UDim2.new(split,-9,0,34)
-        preview.Position,preview.Size=UDim2.fromScale(split,0),UDim2.fromScale(1-split,1)
-        tiles.CellSize=px(cellWidth,math.clamp(cellWidth+22,110,160))
-        tiles.FillDirectionMaxCells=columns
-    end
     listen(c.owner,pane:GetPropertyChangedSignal("AbsoluteSize"),fit)
     listen(c.owner,pane:GetPropertyChangedSignal("AbsolutePosition"),fit)
     listen(c.owner,scrollHost:GetPropertyChangedSignal("AbsoluteSize"),fit)
@@ -2940,7 +3083,6 @@ function Tab:Gallery(options)
         if not c.Locked and not c.statusText and item then callback(o.OnApply,item) end
     end)
     c.Value=itemWithId(c.Items,o.Value) and o.Value or (c.Items[1] and c.Items[1].Id)
-    fit()
     rebuild()
     return c
 end
@@ -3011,7 +3153,10 @@ function Tab:Catalog(options)
             rowOwner=childScope(owner)
             clearRows(w,list)
             local items=filteredItems(c.Items,search.Text)
-            if #items==0 then label(w,list,"Sin resultados",13,false,"Muted") end
+            if #items == 0 then
+                local _, paint = statusCard(w, list, { Size = UDim2.new(1, -4, 0, 36) })
+                paint("empty", #c.Items == 0 and "El catálogo está vacío" or "Sin coincidencias")
+            end
             local rows={}
             for index=1,math.min(#items,120) do
                 local item=items[index]
@@ -3068,7 +3213,7 @@ function Window:Notify(options)
     if self.Destroyed then return nil end
     local o = options or {}
     local kind = string.lower(copyText(o.Type, "info"))
-    local tint = ({ info = "Muted", success = "Accent", warning = "Muted", error = "Text" })[kind]
+    local tint = ({ info = "Muted", success = "Accent", warning = "Warning", error = "Danger" })[kind]
     if not tint then kind, tint = "info", "Muted" end
     self.noticeOrder = (self.noticeOrder or 0) + 1
     local shell = make("Frame", self.tray, { LayoutOrder = self.noticeOrder, Size = UDim2.new(1, 0, 0, 72) })
@@ -3078,8 +3223,9 @@ function Window:Notify(options)
     self:_bind(item, "BackgroundColor3", "Rail")
     corner(item, self.radius)
     edge(self, item)
-    icon(self, item, kind, 18, tint, px(10, 12))
-    local copy = make("Frame", item, { Position = px(36, 0), Size = UDim2.new(1, -46, 0, 0), AutomaticSize = VERTICAL })
+    local badge = surface(self, item, "Field", { Position = px(8, 8), Size = px(28, 28) }, 7)
+    icon(self, badge, kind, 16, tint, px(6, 6))
+    local copy = make("Frame", item, { Position = px(44, 0), Size = UDim2.new(1, -54, 0, 0), AutomaticSize = VERTICAL })
     pad(copy, 0, 8)
     stack(copy, 2)
     label(self, copy, copyText(o.Title, "Ryou"),
