@@ -37,7 +37,7 @@ end
 local WindUI
 
 local RYOU_UI_URL =
-    "https://raw.githubusercontent.com/vryex/ryouhub/8a29db883560dfc79bbf1789a7e783af7ff3d87b/ryou-ui-v14/RyouUI.lua"
+    "https://raw.githubusercontent.com/vryex/ryouhub/3234e3f21326e17ee50ec133f224f69b4fa05eed/ryou-ui-v14/RyouUI.lua"
 
 local ATTACK_Y_OFFSET = -4.60
 local SLASH_RETRY_DELAY = 0.16
@@ -3365,9 +3365,9 @@ end)
 
 -- UI RYOU · V9: reutilizar el módulo ya cargado y el archivo validado.
 do
-    local UI_CACHE_PATH = "RyouUI-14.6.0-8a29db8835.lua"
-    local UI_SIZE, UI_ADLER = 144349, 1923315147
-    local CACHE_KEY = "__RyouHub_NeoSidebarV12_8a29db8835"
+    local UI_CACHE_PATH = "RyouUI-14.6.0-3234e3f213.lua"
+    local UI_SIZE, UI_ADLER = 146434, 469485821
+    local CACHE_KEY = "__RyouHub_NeoSidebarV12_3234e3f213"
 
     local function validLibrarySource(source)
         if type(source)~="string" or #source~=UI_SIZE then return false end
